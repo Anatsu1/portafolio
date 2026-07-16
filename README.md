@@ -1,27 +1,57 @@
-# Portafolio — César Augusto Fernández Carbonell
+# Portfolio
 
-Portafolio personal single-page construido con **Vite + React 18 + TypeScript + Tailwind CSS**.
+## Objetivo
 
-## Requisitos
-- Node.js 18+
+Sitio web personal (React + Vite + TypeScript + Tailwind),
+servido como estáticos por nginx.
 
-## Uso
-```bash
-npm install
-npm run dev      # servidor de desarrollo en http://localhost:5173
-npm run build    # build de producción en /dist
-npm run preview  # previsualizar el build
-```
+## Acceso
 
-## Personalización
-Todo el contenido (nombre, correo, redes, habilidades y proyectos) está centralizado en `src/data.ts`. Edita ese archivo para actualizar la página sin tocar los componentes.
+https://www.augustofc.com
+(augustofc.com redirige a www mediante middleware de Traefik)
 
-- Colores y fuentes: `tailwind.config.ts`
-- Secciones: `src/components/`
-- CV descargable: coloca tu PDF en `public/cv-cesar-fernandez.pdf`
+## Despliegue (CI/CD)
 
-## Deploy
-El proyecto genera archivos estáticos, compatible con Netlify, Vercel o GitHub Pages:
-- Comando de build: `npm run build`
-- Directorio de publicación: `dist`
-# portafolio
+Este servicio NO se construye en el servidor. El flujo es:
+
+    push a main (repo del portfolio)
+        │
+    GitHub Actions
+        │  build imagen ARM64
+        ▼
+    ghcr.io/anatsu1/portfolio:latest
+        │
+    SSH (usuario deploy)
+        ▼
+    docker compose pull && up -d
+
+- Repo de la aplicación: github.com/Anatsu1/<repo-portfolio>
+- Workflow: .github/workflows/deploy.yml (en el repo de la app)
+- Usuario de deploy en el VPS: deploy (clave SSH en secrets del repo)
+
+Para desplegar manualmente si hiciera falta:
+
+    cd /srv/infrastructure/portfolio
+    docker compose pull && docker compose up -d
+
+## Persistencia
+
+Ninguna. Contenedor sin estado: todo el contenido viene de la imagen.
+
+## Notas
+
+- La etiqueta `latest` es una excepción deliberada a la política de
+  versiones fijas: la imagen es propia y cada `latest` corresponde
+  exactamente al último commit en main.
+- Los deploys dejan imágenes huérfanas; limpiar ocasionalmente con
+  `docker image prune -f`.
+
+## Dependencias
+
+- Traefik
+- Red externa: server-ubuntu-network
+- GitHub Actions + ghcr.io
+
+## Estado
+
+Producción
