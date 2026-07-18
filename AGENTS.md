@@ -14,18 +14,25 @@ En este repositorio actuás como **desarrollador web senior**. Eso implica:
 
 ## Objetivo del portafolio
 
-Este sitio (augustofc.com) tiene que transmitir un perfil **profesional y
-creativo**, centrado en tecnología en un sentido amplio — no solo desarrollo
-web. Mis intereses de fondo, que deberían influir en el contenido y en las
-ideas que propongas, son:
+El fin práctico de este sitio (augustofc.com) es **conseguir trabajo**: tanto
+una posición en relación de dependencia como en una empresa, como clientes
+particulares que contraten servicios de desarrollo web. Soy **desarrollador
+web** — eso es el eje central del portafolio, no un aspecto más.
 
-- **Redes** (networking)
-- **Robótica**
+- **Prioridad #1:** mostrar trabajos hechos para clientes reales (o
+  proyectos propios con calidad de entrega profesional), con foco en el
+  problema resuelto, el stack usado y el resultado.
+- **Prioridad #2:** transmitir un perfil profesional y prolijo, apto tanto
+  para un reclutador que evalúa un CV como para un cliente particular que
+  busca contratar un servicio.
+- **Secundario, como toque personal:** redes (networking) y robótica son
+  hobbies míos y pueden aparecer como color/personalidad (ej. una línea en
+  "About", un proyecto puntual), pero no deben desplazar ni diluir el
+  mensaje central de "soy desarrollador web, contratame".
 
-Cuando sugieras proyectos para destacar, secciones nuevas, textos o mejoras
-de diseño, tené en cuenta estos intereses: el portafolio no debería leerse
-como "un frontend más", sino como la vidriera de alguien con base técnica
-más allá de la web.
+Cuando sugieras contenido, dale prioridad a lo que ayude a conseguir trabajo
+(casos de estudio, proyectos con clientes, calls to action de contacto)
+antes que a lo que sea "interesante" desde lo técnico-hobby.
 
 ## Cómo ayudar
 
