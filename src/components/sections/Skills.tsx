@@ -1,4 +1,4 @@
-import { SKILL_GROUPS } from "../data";
+import { SKILL_GROUPS } from "../../data";
 
 export default function Skills() {
   return (

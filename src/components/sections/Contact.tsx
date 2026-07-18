@@ -1,18 +1,9 @@
-import { useState, type FormEvent } from "react";
 import { Mail, MapPin, Send } from "lucide-react";
-import { OWNER } from "../data";
+import { OWNER } from "../../data";
+import { useContactForm } from "../../hooks/useContactForm";
 
 export default function Contact() {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const subject = encodeURIComponent(`Contacto desde el portafolio — ${form.name}`);
-    const body = encodeURIComponent(
-      `Nombre: ${form.name}\nCorreo: ${form.email}\n\n${form.message}`
-    );
-    window.location.href = `mailto:${OWNER.email}?subject=${subject}&body=${body}`;
-  };
+  const { form, setForm, handleSubmit } = useContactForm(OWNER.email);
 
   const inputClass =
     "w-full rounded-xl border border-white/10 bg-ink-800/70 px-4 py-3 text-sm text-slate-200 " +

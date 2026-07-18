@@ -1,5 +1,5 @@
 import { Github, Linkedin, Mail } from "lucide-react";
-import { NAV_LINKS, OWNER } from "../data";
+import { NAV_LINKS, OWNER } from "../../data";
 
 export default function Footer() {
   return (

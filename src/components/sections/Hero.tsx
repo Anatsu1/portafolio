@@ -1,5 +1,5 @@
 import { ArrowDown, Download, Github, Linkedin, Mail } from "lucide-react";
-import { OWNER } from "../data";
+import { OWNER } from "../../data";
 
 export default function Hero() {
   return (

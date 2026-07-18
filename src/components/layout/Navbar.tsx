@@ -1,17 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { NAV_LINKS, OWNER } from "../data";
+import { NAV_LINKS, OWNER } from "../../data";
+import { useScrollPosition } from "../../hooks/useScrollPosition";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const scrolled = useScrollPosition();
 
   return (
     <header

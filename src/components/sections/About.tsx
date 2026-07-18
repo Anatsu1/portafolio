@@ -1,5 +1,5 @@
 import { Code2, Rocket, Users } from "lucide-react";
-import { OWNER } from "../data";
+import { OWNER } from "../../data";
 
 const HIGHLIGHTS = [
   {

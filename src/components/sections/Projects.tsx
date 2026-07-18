@@ -1,5 +1,5 @@
 import { ExternalLink, Github } from "lucide-react";
-import { PROJECTS } from "../data";
+import { PROJECTS } from "../../data";
 
 export default function Projects() {
   return (
