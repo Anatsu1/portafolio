@@ -1,7 +1,7 @@
 export const OWNER = {
-  name: "César Augusto Fernández Carbonell",
-  shortName: "César Fernández",
-  role: "Desarrollador freelance",
+  name: "Cesar Augusto Fernandez Carbonell",
+  shortName: "Cesar Fernandez",
+  role: "Desarrollador Full Stack + IA",
   credential: "Técnico universitario en Programación",
   currentlyStudying: "Licenciatura en Inteligencia Artificial",
   email: "cesar.fernandez@example.com", // TODO: reemplazar con tu correo real
