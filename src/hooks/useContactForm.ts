@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 
 type ContactFormState = { name: string; email: string; message: string };
 
-export function useContactForm(recipientEmail: string) {
+export function useContactForm(recipientEmail: string, contextLabel?: string) {
   const [form, setForm] = useState<ContactFormState>({
     name: "",
     email: "",
@@ -12,7 +12,7 @@ export function useContactForm(recipientEmail: string) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const subject = encodeURIComponent(
-      `Contacto desde el portafolio — ${form.name}`
+      `Contacto${contextLabel ? ` (${contextLabel})` : ""} desde el portafolio — ${form.name}`
     );
     const body = encodeURIComponent(
       `Nombre: ${form.name}\nCorreo: ${form.email}\n\n${form.message}`

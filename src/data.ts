@@ -1,7 +1,9 @@
 export const OWNER = {
   name: "César Augusto Fernández Carbonell",
   shortName: "César Fernández",
-  role: "Desarrollador de Software Full Stack",
+  role: "Desarrollador freelance",
+  credential: "Técnico universitario en Programación",
+  currentlyStudying: "Licenciatura en Inteligencia Artificial",
   email: "cesar.fernandez@example.com", // TODO: reemplazar con tu correo real
   location: "Argentina",
   github: "https://github.com/tu-usuario",
@@ -12,8 +14,8 @@ export const OWNER = {
 export const NAV_LINKS = [
   { id: "inicio", label: "Inicio" },
   { id: "sobre-mi", label: "Sobre mí" },
-  { id: "habilidades", label: "Habilidades" },
   { id: "proyectos", label: "Proyectos" },
+  { id: "habilidades", label: "Habilidades" },
   { id: "contacto", label: "Contacto" },
 ] as const;
 

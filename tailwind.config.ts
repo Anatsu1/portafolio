@@ -1,21 +1,21 @@
 import type { Config } from "tailwindcss";
 
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        ink: {
-          950: "#0b0d14",
-          900: "#10131d",
-          800: "#171b28",
-          700: "#222738",
-        },
-        accent: {
-          300: "#b5a6ff",
-          400: "#9d87ff",
-          500: "#7c5cff",
-          600: "#6644e8",
+        background: "rgb(var(--color-background) / <alpha-value>)",
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        border: "rgb(var(--color-border) / <alpha-value>)",
+        heading: "rgb(var(--color-heading) / <alpha-value>)",
+        body: "rgb(var(--color-body) / <alpha-value>)",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
+        brand: {
+          primary: "rgb(var(--color-brand-primary) / <alpha-value>)",
+          projects: "rgb(var(--color-brand-projects) / <alpha-value>)",
+          skills: "rgb(var(--color-brand-skills) / <alpha-value>)",
         },
       },
       fontFamily: {
