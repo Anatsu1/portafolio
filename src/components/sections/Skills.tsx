@@ -1,14 +1,24 @@
+import { motion } from "motion/react";
 import { SKILL_GROUPS } from "../../data";
+import { Reveal, containerVariants, itemVariants } from "../Reveal";
 
 export default function Skills() {
   return (
     <section id="habilidades" className="section-shell">
-      <p className="eyebrow text-brand-skills">Habilidades</p>
-      <h2 className="section-title">Tecnologías que domino</h2>
+      <Reveal>
+        <p className="eyebrow text-brand-skills">Habilidades</p>
+        <h2 className="section-title">Tecnologías que domino</h2>
+      </Reveal>
 
-      <div className="mt-10 grid gap-6 md:grid-cols-3">
+      <motion.div
+        className="mt-10 grid gap-6 md:grid-cols-3"
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.15 }}
+      >
         {SKILL_GROUPS.map((group) => (
-          <div key={group.title} className="card">
+          <motion.div key={group.title} className="card" variants={itemVariants}>
             <h3 className="font-display text-lg font-semibold text-heading">
               {group.title}
             </h3>
@@ -35,9 +45,9 @@ export default function Skills() {
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 }

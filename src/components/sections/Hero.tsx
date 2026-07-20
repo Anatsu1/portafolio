@@ -4,8 +4,10 @@ import { OWNER } from "../../data";
 import HeroArmVideo from "./hero/HeroArmVideo";
 import { useHeroReveal } from "../../hooks/useHeroReveal";
 
+// pb-[0.15em]: extiende la caja del gradiente para que no recorte los
+// descendentes (la "g" de Augusto) al usar bg-clip-text.
 const NAME_GRADIENT =
-  "inline-block translate-y-2 bg-gradient-to-r from-brand-primary to-brand-primary/70 bg-clip-text text-transparent opacity-0";
+  "inline-block translate-y-2 bg-gradient-to-r from-brand-primary to-brand-primary/70 bg-clip-text pb-[0.15em] text-transparent opacity-0";
 
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);

@@ -1,16 +1,20 @@
+import { motion } from "motion/react";
 import { ExternalLink, Github, Search } from "lucide-react";
 import { PROJECTS } from "../../data";
 import { useProjectFilter } from "../../hooks/useProjectFilter";
+import { Reveal, containerVariants, itemVariants } from "../Reveal";
 
 export default function Projects() {
   const { query, setQuery, filtered, allTags } = useProjectFilter(PROJECTS);
 
   return (
     <section id="proyectos" className="section-shell">
-      <p className="eyebrow text-brand-projects">Proyectos</p>
-      <h2 className="section-title">Trabajos recientes</h2>
+      <Reveal>
+        <p className="eyebrow text-brand-projects">Proyectos</p>
+        <h2 className="section-title">Trabajos recientes</h2>
+      </Reveal>
 
-      <div className="mt-8 space-y-4">
+      <Reveal delay={0.1} className="mt-8 space-y-4">
         <label className="relative block max-w-sm">
           <Search
             size={16}
@@ -46,7 +50,7 @@ export default function Projects() {
             );
           })}
         </ul>
-      </div>
+      </Reveal>
 
       {filtered.length === 0 && (
         <p className="mt-10 text-sm text-muted">
@@ -54,9 +58,15 @@ export default function Projects() {
         </p>
       )}
 
-      <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <motion.div
+        className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.1 }}
+      >
         {filtered.map((project) => (
-          <article key={project.title} className="card flex flex-col">
+          <motion.article key={project.title} className="card flex flex-col" variants={itemVariants}>
             <h3 className="font-display text-lg font-semibold text-heading">
               {project.title}
             </h3>
@@ -97,9 +107,9 @@ export default function Projects() {
                 </a>
               )}
             </div>
-          </article>
+          </motion.article>
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Mail, MapPin, Send } from "lucide-react";
 import { OWNER } from "../../data";
 import { useContactForm } from "../../hooks/useContactForm";
+import { Reveal } from "../Reveal";
 
 type Audience = "freelance" | "empresa";
 
@@ -38,13 +39,14 @@ export default function Contact() {
 
   return (
     <section id="contacto" className="section-shell">
-      <p className="eyebrow text-brand-primary">Contacto</p>
+      <Reveal>
+        <p className="eyebrow text-brand-primary">Contacto</p>
 
-      <div
-        role="tablist"
-        aria-label="Audiencia de contacto"
-        className="mt-4 inline-flex rounded-xl border border-border/10 bg-surface/70 p-1"
-      >
+        <div
+          role="tablist"
+          aria-label="Audiencia de contacto"
+          className="mt-4 inline-flex rounded-xl border border-border/10 bg-surface/70 p-1"
+        >
         {(Object.keys(AUDIENCE_COPY) as Audience[]).map((key) => (
           <button
             key={key}
@@ -61,11 +63,12 @@ export default function Contact() {
             {AUDIENCE_COPY[key].label}
           </button>
         ))}
-      </div>
+        </div>
 
-      <h2 className="section-title mt-6">{copy.heading}</h2>
+        <h2 className="section-title mt-6">{copy.heading}</h2>
+      </Reveal>
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.2fr]">
+      <Reveal delay={0.1} className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.2fr]">
         <div className="space-y-6">
           <p className="text-muted">{copy.description}</p>
           <div className="space-y-4 text-sm">
@@ -129,7 +132,7 @@ export default function Contact() {
             <Send size={17} /> Enviar mensaje
           </button>
         </form>
-      </div>
+      </Reveal>
     </section>
   );
 }
