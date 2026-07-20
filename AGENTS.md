@@ -50,8 +50,9 @@ antes que a lo que sea "interesante" desde lo técnico-hobby.
 
 ## Stack
 
-React 18 + Vite + TypeScript + Tailwind CSS v3 + GSAP (animación del Hero),
-servido como estáticos por nginx dentro de un contenedor Docker.
+React 18 + Vite + TypeScript + Tailwind CSS v3 + GSAP (reveal del texto del
+Hero; el brazo es un video pre-renderizado), servido como estáticos por nginx
+dentro de un contenedor Docker.
 
 ## Estructura del proyecto
 
@@ -66,19 +67,20 @@ src/
       Navbar.tsx              Header con navegación + toggle de tema
       Footer.tsx               Pie con links y redes sociales
     sections/                Bloques de contenido de la landing (en orden)
-      Hero.tsx                 Sección inicial (#inicio): nombre + animación del brazo
+      Hero.tsx                 Sección inicial (#inicio): nombre + video del brazo
       hero/
-        RobotArmScene.tsx        SVG del brazo/cinta/figuras (presentacional puro)
+        HeroArmVideo.tsx         Video del brazo (claro/oscuro según tema, presentacional)
       About.tsx                 Sección "Sobre mí" (#sobre-mi)
       Projects.tsx              Sección "Proyectos" (#proyectos), con buscador
       Skills.tsx                Sección "Habilidades" (#habilidades)
       Contact.tsx               Sección "Contacto" (#contacto), dos audiencias
   hooks/
-    useTheme.ts              Modo claro/oscuro: toggle + persistencia en localStorage
+    useTheme.tsx             Modo claro/oscuro: contexto (ThemeProvider) + persistencia
     useScrollPosition.ts     Detecta scroll > umbral (usado por Navbar)
     useProjectFilter.ts      Filtro de proyectos por tecnología
     useContactForm.ts        Estado del form de contacto + submit por mailto
-    useHeroAssembly.ts       Timeline GSAP completo de la animación del Hero
+    useHeroReveal.ts         Reveal GSAP del texto del Hero (fade/slide en orden)
+  assets/                    Videos del brazo (arm-{light,dark}.mp4) + posters
 ```
 
 **Regla al agregar código:**
@@ -88,7 +90,7 @@ src/
 - Un componente nuevo que sea parte del contenido de la landing va en
   `components/sections/`. Algo que es parte de la estructura fija del sitio
   va en `components/layout/`. Piezas presentacionales usadas por una sola
-  sección (como `RobotArmScene`) van en una subcarpeta con el nombre de esa
+  sección (como `HeroArmVideo`) van en una subcarpeta con el nombre de esa
   sección (`sections/hero/`, `sections/skills/`, etc.).
 - Contenido editorial (textos, datos de proyectos, skills, links) va en
   `data.ts`, no hardcodeado dentro de un componente.
@@ -111,7 +113,10 @@ src/
 
 Arquitectura: variables CSS + `darkMode: "class"` de Tailwind — **no** hay
 clases `dark:` en ningún componente. Todo el flip de tema es una sola clase
-`dark` en `<html>`, manejada por `useTheme` (`src/hooks/useTheme.ts`).
+`dark` en `<html>`, manejada por `useTheme` (`src/hooks/useTheme.tsx`). Es un
+**contexto** (`ThemeProvider` envuelve la app en `main.tsx`): fuente única de
+verdad del tema, así cualquier componente comparte el mismo estado y reacciona
+al toggle (p. ej. `HeroArmVideo` cambia el clip claro/oscuro).
 
 - **Default: modo claro siempre**, sin consultar `prefers-color-scheme` del
   sistema — decisión explícita del usuario. La elección manual del usuario
@@ -128,9 +133,12 @@ clases `dark:` en ningún componente. Todo el flip de tema es una sola clase
 
   | Token | Slot | Claro | Oscuro |
   |---|---|---|---|
-  | `brand-primary` | Hero, Navbar, Contacto, brazo robótico | azul `#2563eb` | verde `#22c55e` |
-  | `brand-projects` | Sección Proyectos, cuadrado de la cinta | rojo `#dc2626` | naranja `#f97316` |
-  | `brand-skills` | Sección Skills, triángulo de la cinta | amarillo `#eab308` | violeta `#8b5cf6` |
+  | `brand-primary` | Hero, Navbar, Contacto | azul `#2563eb` | verde `#22c55e` |
+  | `brand-projects` | Sección Proyectos | rojo `#dc2626` | naranja `#f97316` |
+  | `brand-skills` | Sección Skills | amarillo `#eab308` | violeta `#8b5cf6` |
+
+  (El brazo/cinta ya no es un SVG themeable: es un video pre-renderizado con
+  la paleta quemada — `arm-light` usa azul, `arm-dark` usa verde. Ver abajo.)
 
   Si el usuario pide cambiar "el color de X", primero identificá a qué
   **slot** semántico pertenece X (no asumas que el nombre del token
@@ -142,47 +150,50 @@ clases `dark:` en ningún componente. Todo el flip de tema es una sola clase
 
 ## Animación del Hero (brazo robótico)
 
-`Hero.tsx` + `hero/RobotArmScene.tsx` (SVG presentacional) +
-`hooks/useHeroAssembly.ts` (todo el timeline de GSAP). El nombre completo
-se arma en 3 líneas apiladas (primer nombre / nombre del medio letra por
-letra / apellidos), derivadas de `OWNER.name.split(" ")` — nunca
-hardcodeadas. Un brazo robótico (SVG, un solo color de marca `brand-primary`
-en toda la ilustración) agarra un círculo de una cinta transportadora, lo
-lleva hasta la posición real de la última letra del nombre del medio, y ahí
-brilla y se transforma en esa letra; el resto de las letras completan con
-un efecto de incandescencia (`textShadow` animado), y después se revela en
-orden: nombre → apellidos → el resto (eyebrow + tagline + botones + redes).
+`Hero.tsx` + `hero/HeroArmVideo.tsx` (video presentacional) +
+`hooks/useHeroReveal.ts` (reveal GSAP del texto). El brazo es un **video
+pre-renderizado** (no un SVG animado a mano); el reveal del texto es una
+timeline GSAP corta e independiente. El nombre completo se arma en 3 líneas
+apiladas (primer nombre / nombre del medio / apellidos), derivadas de
+`OWNER.name.split(" ")` — nunca hardcodeadas. El `<h1>` lleva
+`aria-label={OWNER.name}` y las 3 líneas van `aria-hidden` (evita doble
+lectura; el texto real sigue en el DOM para SEO).
 
-**Gotcha de GSAP + SVG anidado (ya resuelto, no lo reintroduzcas):**
-cada articulación del brazo es un `<g>` anidado que debe rotar sobre su
-propio origen local (0,0), heredado del `translate` del padre. **No uses
-`transformOrigin: "0px 0px"`** para esto — en CSS, eso apunta a la esquina
-superior-izquierda del *bounding box* del elemento, no a la coordenada
-local (0,0) del SVG (que para una `<line>` que va de (0,0) hacia arriba
-queda en el borde inferior-centro del bbox, no en el superior-izquierdo).
-Usar ese valor hace que el pivote esté mal y el segmento se "despegue" de
-su base al rotar ángulos grandes (funciona en reposo por coincidencia, se
-rompe a mitad de animación). La forma correcta es `svgOrigin: "0 0"`, que
-sí opera en el espacio de coordenadas local del propio SVG sin la
-ambigüedad del bbox ni el escalado del `viewBox`. Los `<g>` de las
-articulaciones **no llevan rotación estática en el JSX**: la rotación de
-reposo se setea vía GSAP (`gsap.set(ref, { svgOrigin: "0 0", rotation: ... })`)
-como primer paso del hook, antes de armar el timeline.
+**Layout — overlay:** el video va **a pantalla completa** detrás del contenido
+(`absolute inset-0`, `object-cover`), con un **scrim** (degradado del color de
+fondo → transparente) que respalda el lado izquierdo para legibilidad. El brazo
+"entrega" el círculo a la celda que brilla (izquierda, ~x20%/y32% del frame) y
+ahí, **sincronizado**, aparece el nombre HTML.
 
-**Comportamiento mobile vs. desktop (`isMobile` en `useHeroAssembly`):**
-- Desktop: el brazo queda visible siempre (columna derecha del grid),
-  incluso después de terminar su animación (pose de reposo con `animate-float`).
-- Mobile: el brazo es protagonista solo al principio (el resto del texto ya
-  arranca en `opacity-0`, así que naturalmente lo único visible al cargar
-  es el brazo). Cuando termina de armar la letra, se desvanece y se le
-  agrega la clase `hidden` (vía estado de React `armCollapsed` en
-  `Hero.tsx`, disparado por el callback `onMobileArmHidden`) para que deje
-  de ocupar espacio en el flujo — recién ahí se revela el resto del nombre.
-  Si cambiás el timing de esta secuencia, el fade-out del brazo tiene que
-  terminar *antes* de que empiece a revelarse `firstNameRef`.
-- Respeta `prefers-reduced-motion`: si está activo, se salta todo el
-  timeline y se aplica el estado final de una sola vez (sin la secuencia
-  de dos actos en mobile — ahí simplemente se muestra todo junto, estático).
+**El video del brazo (`HeroArmVideo`):**
+- Assets en `src/assets/`: `arm-light.mp4` (azul/fondo claro, 1080p) y
+  `arm-dark.mp4` (verde/fondo oscuro, 720p), más `arm-{light,dark}-poster.jpg`.
+  Se importan en el componente (Vite los fingerprintea). Son el render **completo
+  sin texto** (generado con Google Flow/Veo), sin audio, con denoise y optimizados
+  (~1–1.5 MB). **mp4-only** (h264 anda en todos lados; vp9/webm no comprimía mejor
+  este contenido).
+- Elige la variante por tema con `useTheme()`. **Requiere el contexto de tema**
+  (por eso `useTheme` es un `ThemeProvider`, no estado local): al togglear, el
+  clip cambia y no desfasa con el fondo del sitio. El `key={theme}` en el
+  `<video>` fuerza remontar → recarga el `<source>` y reproduce de nuevo.
+- Corre **una vez** (`autoPlay muted playsInline`, **sin `loop`**): el navegador
+  retiene el último frame (pose de reposo).
+- Dispara `onDrop` cuando el tiempo del video cruza `DROP_TIME` (~4.4s, el
+  momento en que el brazo suelta el círculo) — eso sincroniza el reveal del texto.
+- `prefers-reduced-motion`: renderiza solo el poster (`<img>`), sin video.
+
+**El reveal del texto (`useHeroReveal`):**
+- Timeline GSAP **pausada** que arranca vía `startReveal()` cuando el video avisa
+  el drop (`onDrop`). Cada línea del nombre aparece con incandescencia (`textShadow`
+  glow que se apaga) + fade/slide, en orden: eyebrow → nombre → medio → apellidos
+  → resto (rol + botones + redes).
+- Red de seguridad: si el autoplay se bloquea, `startReveal` igual dispara a los 7s.
+- `prefers-reduced-motion`: aplica el estado final de una sola vez (sin glow).
+
+Para regenerar los videos: prompts de Flow/Veo y receta de encode (denoise
+`hqdn3d`, `-an`, h264 `libopenh264`) en el plan de trabajo del feature. El render
+debe venir **sin texto**, con el brazo a la derecha y la celda que brilla a la
+izquierda (~x20%/y32%), misma animación en ambas paletas.
 
 ## Build y despliegue (CI/CD)
 
@@ -217,7 +228,8 @@ docker compose pull && docker compose up -d
 | Cambiar texto/datos del sitio                   | `src/data.ts`                                    |
 | Cambiar la estructura fija (nav, footer, tema)  | `src/components/layout/`, `src/hooks/useTheme.ts`|
 | Agregar/editar una sección de contenido          | `src/components/sections/`                        |
-| Tocar la animación del brazo del Hero            | `src/components/sections/hero/RobotArmScene.tsx` (SVG), `src/hooks/useHeroAssembly.ts` (timeline) |
+| Tocar el video del brazo del Hero                | `src/components/sections/hero/HeroArmVideo.tsx`, assets en `src/assets/arm-*` |
+| Tocar el reveal del texto del Hero               | `src/hooks/useHeroReveal.ts` |
 | Lógica con estado reusable                       | `src/hooks/`                                      |
 | Colores de marca, modo claro/oscuro              | `src/index.css` (variables), `tailwind.config.ts` (tokens) |
 | Clases utilitarias globales (`.card`, etc.)      | `src/index.css`                                    |

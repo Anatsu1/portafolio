@@ -19,8 +19,8 @@ export default function Navbar() {
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-10">
         <a href="#inicio" className="font-display text-lg font-bold text-heading">
-          Augusto
-          <span className="text-brand-primary">.code</span>
+          hola
+          <span className="text-brand-primary">.mundo</span>
         </a>
 
         <ul className="hidden items-center gap-8 md:flex">
@@ -40,8 +40,9 @@ export default function Navbar() {
           <button
             type="button"
             aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
+            title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
             onClick={toggleTheme}
-            className="rounded-lg p-2 text-body transition hover:bg-border/5"
+            className="rounded-lg border border-border/15 bg-surface/70 p-2 text-brand-primary shadow-sm transition hover:border-brand-primary/60 hover:bg-brand-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           >
             {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
           </button>
