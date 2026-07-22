@@ -2,10 +2,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCarousel } from "../../../hooks/useCarousel";
 import about1 from "../../../assets/about-1.jpg";
 import about2 from "../../../assets/about-2.jpg";
-import about3 from "../../../assets/about-3.jpg";
 
-// La principal (about-1) va primera.
-const IMAGES = [about1, about2, about3];
+// Explicando a varias personas primero, después la de uno solo.
+const IMAGES = [about2, about1];
 
 /**
  * Carrusel de fotos para la sección "Sobre mí". Crossfade entre imágenes,

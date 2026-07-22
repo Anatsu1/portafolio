@@ -12,7 +12,10 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return stored === "dark" ? "dark" : "light";
+  if (stored === "dark" || stored === "light") return stored;
+  // Sin elección guardada: respeta el modo claro/oscuro que el visitante
+  // ya tiene configurado en su SO/navegador.
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 /**
