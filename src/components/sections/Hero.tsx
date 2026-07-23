@@ -64,7 +64,7 @@ export default function Hero({ onReady }: HeroProps) {
     <section
       id="inicio"
       ref={sectionRef}
-      className="relative flex min-h-screen items-start overflow-hidden border-b-2 border-border/30 pt-24 md:items-center md:pt-0"
+      className="relative min-h-screen overflow-hidden border-b-2 border-border/30 pt-24 md:pt-0"
     >
       {/* Video del brazo, a pantalla completa detrás del contenido (en desktop
           el brazo "entrega" el círculo y ahí aparece el nombre). En mobile,
@@ -83,7 +83,19 @@ export default function Hero({ onReady }: HeroProps) {
         className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent md:via-background/25"
       />
 
-      <div className="relative z-10 mx-auto w-full max-w-6xl px-6 md:px-10">
+      {/* Sin mx-auto/max-w-6xl ni items-center: esos dos centran en base al
+          viewport completo (ancho y alto), pero el video es full-bleed
+          (100vw x 100vh, object-cover) y el cuadrado que dibuja el brazo se
+          recorta en proporción al ancho de pantalla (no al alto) — por eso
+          tanto la posición horizontal como la vertical del cuadrado escalan
+          con vw, no con vh ni con un ancho fijo. Padding horizontal en vw +
+          top en `calc(vh, vw)` replican esa misma proporción para que el
+          texto quede siempre en el mismo lugar relativo al cuadrado, sea
+          cual sea la resolución (antes: en pantallas grandes el texto
+          quedaba desfasado a la derecha y más abajo del cuadrado). En mobile
+          sigue en flujo normal (pt-24 en la section) — el video ahí usa
+          cámara propia (useArmFollowCam), no este recorte estático. */}
+      <div className="relative z-10 w-full px-6 md:absolute md:inset-x-0 md:top-[calc(50vh-18vw)] md:pl-[14vw] md:pr-10">
         <div className="relative max-w-xl">
           {/* Aura detrás del bloque de texto: se activa (y queda encendida,
               con un pulso suave) cuando el brazo suelta el círculo. Núcleo

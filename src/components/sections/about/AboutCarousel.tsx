@@ -1,10 +1,12 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCarousel } from "../../../hooks/useCarousel";
+import aboutLinkedin from "../../../assets/about-linkedin.jpg";
 import about1 from "../../../assets/about-1.jpg";
 import about2 from "../../../assets/about-2.jpg";
 
-// Explicando a varias personas primero, después la de uno solo.
-const IMAGES = [about2, about1];
+// Foto de LinkedIn primero, después explicando a varias personas, después
+// la de uno solo.
+const IMAGES = [aboutLinkedin, about2, about1];
 
 /**
  * Carrusel de fotos para la sección "Sobre mí". Crossfade entre imágenes,
