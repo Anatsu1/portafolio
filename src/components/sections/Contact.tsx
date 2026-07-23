@@ -6,26 +6,28 @@ import { Reveal } from "../Reveal";
 
 type Audience = "freelance" | "empresa";
 
+// Empresas primero (orden de tabs = orden de estas keys) y como default:
+// el objetivo principal es conseguir trabajo en relación de dependencia.
 const AUDIENCE_COPY: Record<
   Audience,
   { label: string; heading: string; description: string }
 > = {
-  freelance: {
-    label: "Clientes / Freelance",
-    heading: "Hablemos de tu proyecto",
-    description:
-      "¿Tenés una idea, un sitio para armar o algo que mejorar? Escribime y te respondo lo antes posible.",
-  },
   empresa: {
     label: "Empresas",
     heading: "¿Buscás sumar talento a tu equipo?",
     description:
       "Estoy abierto a posiciones de tiempo completo en desarrollo web. Contame sobre la vacante y coordinamos una charla.",
   },
+  freelance: {
+    label: "Clientes / Freelance",
+    heading: "Hablemos de tu proyecto",
+    description:
+      "¿Tenés una idea, un sitio para armar o algo que mejorar? Escribime y te respondo lo antes posible.",
+  },
 };
 
 export default function Contact() {
-  const [audience, setAudience] = useState<Audience>("freelance");
+  const [audience, setAudience] = useState<Audience>("empresa");
   const copy = AUDIENCE_COPY[audience];
   const { form, setForm, handleSubmit } = useContactForm(
     OWNER.email,
