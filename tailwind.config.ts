@@ -5,6 +5,17 @@ export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      screens: {
+        // "md" = desktop de verdad: ancho de tablet Y altura razonable.
+        // Un teléfono girado (~900×410) supera los 768px de ancho pero no
+        // tiene alto para el layout desktop (el Hero se posiciona con vh y
+        // el nav horizontal se pisa con el texto) — con esta condición
+        // conserva el layout mobile, que fluye y scrollea. Ojo: al ser un
+        // screen "raw" no se auto-ordena con los demás; no usar md: y lg:
+        // sobre la MISMA propiedad de un mismo elemento (hoy no pasa en
+        // ningún componente — verificado por grep).
+        md: { raw: "(min-width: 768px) and (min-height: 500px)" },
+      },
       colors: {
         background: "rgb(var(--color-background) / <alpha-value>)",
         surface: "rgb(var(--color-surface) / <alpha-value>)",
