@@ -77,23 +77,40 @@ src/
       Navbar.tsx              Header con navegación + toggle de tema
       Footer.tsx               Pie con links y redes sociales
       PageLoader.tsx           Splash de entrada (tapa toda la página hasta que el Hero está listo)
+      ScrollProgress.tsx       Línea de progreso de scroll fija al borde derecho (useScroll de Motion)
     sections/                Bloques de contenido de la landing (en orden)
       Hero.tsx                 Sección inicial (#inicio): nombre + video del brazo
       hero/
         HeroArmVideo.tsx         Video del brazo (claro/oscuro según tema, presentacional)
       About.tsx                 Sección "Sobre mí" (#sobre-mi)
-      Projects.tsx              Sección "Proyectos" (#proyectos), con buscador
-      Skills.tsx                Sección "Habilidades" (#habilidades)
-      Contact.tsx               Sección "Contacto" (#contacto), dos audiencias
+      Projects.tsx              Sección "Proyectos" (#proyectos): fichas + árbol de skills (filtro)
+      projects/
+        ProjectPlate.tsx          Ficha técnica (blueprint) de un proyecto — cajetín + capturas + links
+        ProjectCarousel.tsx       Carrusel de media (capturas + videos) de la ficha (tira "FIG.")
+        SkillTree.tsx             Red de nodos de skills (tiers + SVG de aristas + línea de resultado)
+        SkillNodeButton.tsx       Nodo del árbol ("pad de circuito": probado/sin probar/locked/seleccionado)
+      Contact.tsx               Sección "Contacto" (#contacto), dos audiencias (Empresas primero y por defecto)
+  data/
+    projects/
+      types.ts                 Tipo Project compartido (id, role, status, featured, stack, links, media[])
+      prestarte.ts              Un archivo por proyecto real
+      index.ts                  Agrega PROJECTS (las skills probadas se derivan en skillTree.ts)
+    skillTree.ts               Nodos del árbol de skills (requires/tier/aliases) + derivados (aristas, clausuras, resolveStack, PROVEN_NODE_IDS)
   hooks/
     useTheme.tsx             Modo claro/oscuro: contexto (ThemeProvider) + persistencia
     useScrollPosition.ts     Detecta scroll > umbral (usado por Navbar)
-    useProjectFilter.ts      Filtro de proyectos por tecnología
     useContactForm.ts        Estado del form de contacto + submit por mailto
+    useCarousel.ts           Estado de carrusel genérico (About + capturas de proyectos)
+    useSkillTree.ts          Selección del árbol de skills (cadena de prerequisitos + cascade)
+    useMeasuredEdges.ts      Mide centros reales de los nodos para las aristas SVG (ResizeObserver)
+    useProjectSlider.ts      Slider de fichas: next/prev/goTo animados, índice desde el scroll real, focus del filtro
     useHeroReveal.ts         Reveal GSAP del texto del Hero + aura (fade/slide en orden)
     usePageLoaderExit.ts     Animación de "puertas de vault" al cerrar el PageLoader
     useArmFollowCam.ts       Cámara (zoom + pan del video) que sigue la pinza (solo mobile)
   assets/                    Videos del brazo (arm-{light,dark}.mp4) + posters
+    prestarte/               Capturas de cada proyecto — una carpeta por proyecto
+    utn-necochea/            (assets/<id-del-proyecto>/, 2-3 capturas que rotan
+                             en el carrusel, nombradas <id>-01.jpg, -02…)
 ```
 
 **Regla al agregar código:**
@@ -119,8 +136,142 @@ src/
 - **Convención de nombres sin tilde**: `OWNER.name`/`shortName` usan
   "Cesar"/"Fernandez" sin tildes en todo el sitio (decisión de estilo
   explícita del usuario, no un error de tipeo) — no las agregues.
-- `NAV_LINKS`, `SKILL_GROUPS`, `PROJECTS`: mismo patrón que antes.
-  `PROJECTS` son datos de ejemplo, hay que reemplazarlos por trabajos reales.
+- `NAV_LINKS`: igual que antes (una entrada, `#proyectos`, cubre proyectos y
+  skills — ver "Proyectos y skills unificados" abajo).
+
+## Proyectos y skills unificados (ficha técnica + árbol de skills)
+
+`Skills.tsx` ya no existe: proyectos y habilidades son **una sola sección**
+(`Projects.tsx`, `#proyectos`). La idea de fondo: las skills se demuestran
+con proyectos reales, no con barras de porcentaje inventadas.
+
+- **Modelo de datos** (`src/data/projects/`): un archivo por proyecto
+  (`prestarte.ts`, `utn-necochea.ts`, etc.) que exporta un objeto `Project`
+  (tipo en `types.ts`: `id`, `title`, `role` ("cliente" | "personal" |
+  "academico" — trabajos de la carrera/tesis), `status` ("activo" |
+  "en-progreso" | "preview" — terminado pero con la demo estática hasta
+  volver a levantar el backend), `featured`, `summary`, `stack` (tags
+  atómicos), `links.{demo,repo}`, `media` (array, puede ser vacío)).
+  Los roles "cliente" y "academico" muestran un **sello girado** en la
+  esquina de la ficha ("CLIENTE" / "TESIS", `STAMP_LABEL` en
+  `ProjectPlate.tsx`); "personal" no lleva sello.
+  **Temporal:** `ejemplo-homelab.ts` y `ejemplo-api.ts` son placeholders
+  para probar el slider/filtro (capturas grises generadas en
+  `assets/ejemplo-*/`) — sus stacks marcan nodos del árbol como
+  "probados" sin proyecto real detrás; reemplazarlos con datos reales o
+  sacarlos antes de deployar.
+  Para sumar un proyecto nuevo: crear su archivo + agregar una línea al
+  array en `index.ts`. Cada string de `stack` debe matchear el label o un
+  alias de un nodo del árbol de skills (en dev, `resolveStack` avisa por
+  consola si no).
+- **Media** (`ProjectCarousel.tsx`): cada ficha muestra su `media`
+  (capturas y/o **videos cortos** de 10-15s navegando el sitio) en un
+  carrusel con crossfade (reusa `useCarousel`), auto-avance de 6s y una
+  tira de controles "FIG. 01 / 03" **debajo** (no flechas superpuestas —
+  taparían UI real). Con 1 ítem no hay controles; con 0 no renderiza nada.
+  Fit: `object-cover object-top` (el recorte residual come el borde
+  inferior, nunca el header del sitio capturado). Videos con la misma
+  receta de encode que el brazo (`-an`, h264, ~1-2MB) + `poster`
+  obligatorio.
+  - **Proporción real con `aspect`**: cada ítem puede declarar su
+    aspect-ratio CSS (ej. `"1910 / 943"` para capturas de browser
+    full-screen, más anchas que 16:9) y el escenario landscape lo adopta —
+    la captura se ve completa, sin recorte lateral. Sin `aspect`, 16:9.
+    Toda la media landscape de un proyecto debe compartir proporción (el
+    escenario es uno solo: usa la del primer ítem). Las capturas se
+    re-escalan a 1440 de ancho (JPEG q88) conservando su proporción y van
+    en `assets/<id-del-proyecto>/`.
+  - **Videos**: mudos, loop, `preload="metadata"`. Solo el slide activo
+    reproduce (el resto se pausa — batería/datos) y el auto-avance se
+    suspende mientras un video está activo (no se corta a los 6s; se
+    avanza a mano). Con `prefers-reduced-motion` no hay autoplay: el video
+    muestra controles nativos.
+  - **Orientación por ítem** (`orientation: "portrait"` para grabaciones
+    móviles 9:16, dato explícito — cero layout shift): si toda la media es
+    portrait el escenario es vertical con alto fijo; mezclada, el ítem
+    portrait se centra dentro del escenario 16:9. Preferir una sola
+    orientación por proyecto.
+  - **Full-bleed en mobile**: el marco rompe el padding de la ficha
+    (`-mx-6`, sin bordes laterales) — la media va borde a borde; en `md:`
+    vuelve al marco con borde redondeado.
+- **Fichas = slider horizontal en todas las resoluciones** (`Projects.tsx`):
+  scroll-snap nativo (`snap-start`) — en mobile cada ficha es un slide al
+  88% del ancho (asoma la siguiente); en `lg:` entran 2 por vista
+  (`min-w-[calc(50%-0.75rem)]`). La sección mide siempre lo mismo aunque
+  se carguen muchos proyectos (decisión explícita del usuario: nada de una
+  ficha por fila / página infinita — `featured` ya NO ocupa 2 columnas,
+  solo ordena primero). **Sin scrollbar** (oculta con `scrollbar-width` +
+  `::-webkit-scrollbar`): se navega con una tira de controles debajo —
+  mismo lenguaje visual que la tira "FIG." del carrusel (chevrons +
+  contador "N.º 01 / 04" + ticks clickeables) — o con swipe/rueda nativos.
+  Todo vive en `useProjectSlider`: next/prev/goTo con scrollTo smooth
+  (directo bajo reduced-motion), índice actual derivado del scroll REAL
+  (única fuente de verdad — nunca se desincroniza del swipe),
+  `atStart`/`atEnd` para deshabilitar flechas (en desktop el scroll
+  termina antes que la última ficha: no alcanza con el índice), y el
+  focus del filtro (viaja a la primera ficha que matchea al seleccionar
+  tecnología). Posiciones medidas del DOM real, no índice × ancho.
+- **Fichas de composición FIJA** (`ProjectPlate.tsx`): cada zona tiene
+  altura **fija con `h-*` + overflow-hidden — NO `min-h`** (min-h reserva
+  un mínimo pero deja crecer: un stack o título que envolvía un renglón
+  extra corría todo lo de abajo; lección de esta iteración). Así imagen,
+  título y texto caen a la MISMA altura en todas las fichas y el slider
+  no salta al navegar (pedido explícito del usuario). Zonas: cajetín
+  `h-[4.25rem] content-start` (1 fila de metadatos + 2 renglones de
+  stack; el STACK siempre en su propia línea, `basis-full`, y `pr-24` si
+  hay sello); título `h-[2.8em] leading-[1.4]` (exactamente 2 renglones —
+  `text-lg` en mobile para que títulos largos entren en 2); resumen
+  `h-[4.875em]` + `line-clamp-3` (exactamente 3 renglones) con botón
+  "Ver más / Ver menos" en un **slot fijo `h-5`** (aparece solo si el
+  texto de verdad desborda — scrollHeight vs clientHeight +
+  ResizeObserver — pero el slot ocupa su altura siempre); tira de links
+  con `mt-auto` renderizada SIEMPRE (sin demo ni repo muestra "—", campo
+  vacío de plano técnico). Única variación permitida: "Ver más" expandido
+  (pasa a `min-h`, agranda solo esa ficha). Las tecnologías del STACK van
+  en `brand-projects`. Restricciones de contenido para no desbordar las
+  zonas fijas: stacks de hasta ~6 tecnologías, títulos de hasta 2
+  renglones en mobile, y toda la media landscape con la misma proporción
+  (~1910/943) y 2+ ítems (con 1 no hay tira FIG y esa ficha cierra
+  distinto).
+- **Árbol de skills** (`src/data/skillTree.ts` + `SkillTree.tsx` +
+  `useSkillTree`): reemplaza a los chips por ficha y al viejo catálogo de
+  "piezas sueltas". Nodos con `requires` (prerequisitos, lectura
+  pedagógica: HTML5 → CSS3/JS → frameworks; rama infra aparte: linux →
+  docker, git → github/cursor), `tier` (columna de layout) y `aliases`
+  (matching contra `Project.stack`, ej. "Bootstrap 5" → nodo `bootstrap`).
+  Mecánica: **clic en un nodo enciende toda su cadena de prerequisitos**
+  (1 clic en React = HTML5+JS+React); deseleccionar apaga en cascada a los
+  dependientes (invariante: la selección siempre es cerrada bajo
+  `requires`). Con nodos seleccionados, las fichas que usan **alguna** de
+  esas tecnologías se resaltan (`border-brand-skills/40`) y el resto se
+  atenúa (`opacity-40 saturate-50`) — **nunca se desmontan** (grilla
+  estable). 0 matches (ej. Docker hoy) muestra un mensaje que adelanta el
+  futuro proyecto del homelab. Estados visuales del nodo: borde sólido =
+  probado por un proyecto (`PROVEN_NODE_IDS`, derivado — nunca a mano),
+  punteado = sin proyecto todavía, candado = prerequisitos apagados (visual
+  nomás, sigue clickeable), relleno `brand-skills` = seleccionado.
+- **Look de grafo, no de tabla**: cada nodo es un **círculo con el label
+  debajo** (como una visualización de red/grafos), las aristas son
+  **curvas cuadráticas** (control point perpendicular al segmento, signo
+  alternado por índice — determinístico) y en desktop las columnas de fase
+  van centradas verticalmente con un stagger horizontal alternado
+  (`±translate-x`) para romper la grilla. En mobile las fases rotan a
+  **filas apiladas** (arriba → abajo), cada una centrada y sin wrap —
+  aristas cortas mayormente verticales (la versión con `flex-wrap`
+  quedaba caótica en el teléfono y se descartó).
+- **Las aristas se miden del DOM real** (`useMeasuredEdges`): el SVG de
+  fondo conecta **centros medidos** con `getBoundingClientRect` (que
+  incluye los transforms del stagger) + ResizeObserver — correcto en todo
+  breakpoint por construcción, sin coordenadas a ojo (misma lección del
+  marcador descartado del Hero). El ref medido es el **círculo** del nodo
+  (no el botón entero, que incluye el label); el círculo tiene fondo
+  opaco a propósito: enmascara los extremos de las curvas, que llegan a
+  su centro sin lógica de anclaje por lado.
+- La ficha conserva una **línea de texto plano** con el stack en el cajetín
+  (`STACK HTML5 · CSS3 · …`) — una ficha screenshoteada/impresa se
+  entiende sola, sin consultar el árbol.
+- **Se sacó el buscador/filtro por tag** que tenía la vieja `Projects.tsx`
+  (`useProjectFilter.ts`, borrado): el árbol de skills ES el filtro ahora.
 
 ## Sistema de theming (modo claro/oscuro)
 
@@ -149,8 +300,8 @@ al toggle (p. ej. `HeroArmVideo` cambia el clip claro/oscuro).
   | Token | Slot | Claro | Oscuro |
   |---|---|---|---|
   | `brand-primary` | Hero, Navbar, Contacto | azul `#2563eb` | verde `#22c55e` |
-  | `brand-projects` | Sección Proyectos | rojo `#dc2626` | naranja `#f97316` |
-  | `brand-skills` | Sección Skills | amarillo `#eab308` | violeta `#8b5cf6` |
+  | `brand-projects` | Cromado de la ficha de proyecto (eyebrow, sello, link demo) | rojo `#dc2626` | naranja `#f97316` |
+  | `brand-skills` | Anotaciones de stack en la ficha + catálogo de piezas sueltas | amarillo `#eab308` | violeta `#8b5cf6` |
 
   (El brazo/cinta ya no es un SVG themeable: es un video pre-renderizado con
   la paleta quemada — `arm-light` usa azul, `arm-dark` usa verde. Ver abajo.)
@@ -188,9 +339,43 @@ caché. Después, cuando el brazo "entrega" el círculo a la celda que brilla
 azul/verde según tema), se activa un **aura** sincronizada detrás del texto
 ya visible (ver abajo).
 
+**Posición del bloque de texto vs. el cuadrado del video:** el contenedor
+del texto **no** usa el patrón habitual `mx-auto max-w-6xl` (el mismo que
+usa `Navbar`) — ese contenedor se centra a partir de los 1152px de ancho,
+así que su margen crece cada vez más cuanto más grande la pantalla. El
+video, en cambio, es full-bleed (100vw × 100vh, `object-cover`) y el
+cuadrado que dibuja el brazo queda anclado a una proporción casi fija del
+ancho/alto reales (`object-position: center` + un clip nativo 16:9). En
+pantallas grandes (1920+) ambos sistemas divergían y el texto quedaba
+desfasado del cuadrado — a resoluciones más chicas coincidía por
+casualidad. Arreglo: el contenedor del texto usa `padding-left: 14vw` (en
+vez de un ancho fijo centrado) y, a partir de `md:`, se posiciona con
+`position: absolute; top: calc(50vh - 18vw)` en vez de centrarse por
+flexbox (`items-center`, que centra según el **alto** del viewport, no
+según el ancho — el cuadrado del video se mueve con el ancho). Los
+coeficientes (14vw, 18vw) salen de medir la posición real del cuadrado
+dentro de los videos nativos (`arm-light.mp4`/`arm-dark.mp4`, ambos 16:9) —
+si se regenera el video con el cuadrado en otro lugar del frame, hay que
+volver a medir y ajustar estos dos números.
+
+**Breakpoint `md` redefinido (teléfono apaisado):** en
+`tailwind.config.ts`, `md` es un screen "raw":
+`(min-width: 768px) and (min-height: 500px)`. Un teléfono girado (~900×410)
+supera los 768px de ancho pero no tiene alto para el layout desktop (el
+Hero posicionado con vh quedaba pisado por el nav horizontal) — con la
+condición de altura conserva el layout mobile (nav hamburguesa, Hero en
+flujo, fichas en snap-carousel), que scrollea sin romperse. Consecuencia de
+ser "raw": Tailwind no lo auto-ordena con los demás screens, así que **no
+usar `md:` y `lg:` sobre la misma propiedad de un mismo elemento** (hoy no
+ocurre en ningún componente). El follow-cam del video
+(`HeroArmVideo.tsx`) sigue chequeando `(max-width: 767px)` a propósito:
+esa decisión es por *ancho* (en apaisado la pantalla es ancha y el recorte
+estático del brazo se entiende bien, no hace falta la cámara con zoom).
+
 **El video del brazo (`HeroArmVideo`):**
-- Assets en `src/assets/`: `arm-light.mp4` (azul/fondo claro, 1080p) y
-  `arm-dark.mp4` (verde/fondo oscuro, 720p), más `arm-{light,dark}-poster.jpg`.
+- Assets en `src/assets/`: `arm-light.mp4` (azul/fondo claro) y
+  `arm-dark.mp4` (verde/fondo oscuro), ambos 1080p, más
+  `arm-{light,dark}-poster.jpg` (frame 0 de cada uno).
   Se importan en el componente (Vite los fingerprintea). Son el render **completo
   sin texto** (generado con Google Flow/Veo), sin audio, con denoise y optimizados
   (~1–1.5 MB). **mp4-only** (h264 anda en todos lados; vp9/webm no comprimía mejor
@@ -363,6 +548,9 @@ docker compose pull && docker compose up -d
 | Cambiar texto/datos del sitio                   | `src/data.ts`                                    |
 | Cambiar la estructura fija (nav, footer, tema)  | `src/components/layout/`, `src/hooks/useTheme.ts`|
 | Agregar/editar una sección de contenido          | `src/components/sections/`                        |
+| Agregar un proyecto nuevo                        | `src/data/projects/` (archivo nuevo + agregarlo a `index.ts`) + capturas en `src/assets/projects/` |
+| Agregar una skill al árbol / cambiar prerequisitos | `src/data/skillTree.ts` (SKILL_NODES)          |
+| Tocar la ficha de proyecto, el carrusel o el árbol | `src/components/sections/projects/`             |
 | Tocar el video del brazo del Hero                | `src/components/sections/hero/HeroArmVideo.tsx`, assets en `src/assets/arm-*` |
 | Tocar el reveal del texto del Hero o el aura      | `src/hooks/useHeroReveal.ts` |
 | Tocar el splash de entrada (puertas de vault)     | `src/components/layout/PageLoader.tsx`, `src/hooks/usePageLoaderExit.ts` |
