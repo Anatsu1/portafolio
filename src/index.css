@@ -54,6 +54,57 @@
            hover:-translate-y-1 hover:border-heading/20 hover:shadow-lg
            hover:shadow-heading/5;
   }
+
+  /* Botones de GitHub/LinkedIn del Hero: se "encienden" cuando el brazo
+     suelta el círculo — `useHeroReveal` agrega esta clase desde la timeline
+     del aura. Parpadean como un tubo fluorescente arrancando y después
+     quedan prendidos: la energía del círculo bajando por la página.
+     El selector lleva `a` (especificidad 0,1,1) a propósito: le gana a las
+     utilities de Tailwind (0,1,0) sin tapar los `hover:` (0,2,0), así el
+     hover sigue funcionando una vez encendido. */
+  a.hero-socket-on {
+    color: rgb(var(--color-brand-primary));
+    border-color: rgb(var(--color-brand-primary) / 0.55);
+    box-shadow: 0 0 14px rgb(var(--color-brand-primary) / 0.35);
+    animation: hero-socket-flicker 1s linear both;
+  }
+  /* El segundo arranca un pelín después: dos tubos nunca prenden juntos. */
+  a.hero-socket-on:nth-of-type(2) {
+    animation-delay: 140ms;
+  }
+}
+
+/* Los tramos "apagado" y "chispazo" comparten bloque (selectores agrupados):
+   los saltos son de 2 puntos porcentuales, o sea casi instantáneos, y el
+   último tramo (62% → 100%) sí es una rampa larga que asienta el brillo. */
+@keyframes hero-socket-flicker {
+  0%,
+  8%,
+  16%,
+  26%,
+  33%,
+  40%,
+  58% {
+    color: rgb(var(--color-body));
+    border-color: rgb(var(--color-border) / 0.1);
+    box-shadow: 0 0 0 rgb(var(--color-brand-primary) / 0);
+  }
+  10%,
+  14%,
+  28%,
+  31%,
+  43%,
+  55%,
+  62% {
+    color: rgb(var(--color-brand-primary));
+    border-color: rgb(var(--color-brand-primary) / 0.75);
+    box-shadow: 0 0 18px rgb(var(--color-brand-primary) / 0.6);
+  }
+  100% {
+    color: rgb(var(--color-brand-primary));
+    border-color: rgb(var(--color-brand-primary) / 0.55);
+    box-shadow: 0 0 14px rgb(var(--color-brand-primary) / 0.35);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

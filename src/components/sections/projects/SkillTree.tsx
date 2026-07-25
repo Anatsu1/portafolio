@@ -6,6 +6,9 @@ import { useMeasuredEdges, type MeasuredEdge } from "../../../hooks/useMeasuredE
 import SkillNodeButton from "./SkillNodeButton";
 
 type SkillTreeProps = {
+  /** Elegidos a mano: lo único que filtra proyectos. */
+  picked: Set<string>;
+  /** `picked` + sus prerequisitos: lo que se ve encendido en la red. */
   selected: Set<string>;
   matchedCount: number;
   onToggle: (id: string) => void;
@@ -40,11 +43,17 @@ function edgePath(edge: MeasuredEdge, index: number): string {
  * La selección y el filtrado de fichas viven en Projects.tsx
  * (useSkillTree) — este componente solo renderiza y reporta clics.
  */
-export default function SkillTree({ selected, matchedCount, onToggle, onClear }: SkillTreeProps) {
+export default function SkillTree({
+  picked,
+  selected,
+  matchedCount,
+  onToggle,
+  onClear,
+}: SkillTreeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { measured, registerRef } = useMeasuredEdges(containerRef);
 
-  const hasFilter = selected.size > 0;
+  const hasFilter = picked.size > 0;
 
   return (
     <div>
@@ -89,6 +98,7 @@ export default function SkillTree({ selected, matchedCount, onToggle, onClear }:
                   >
                     <SkillNodeButton
                       node={node}
+                      picked={picked.has(node.id)}
                       selected={selected.has(node.id)}
                       locked={node.requires.some((req) => !selected.has(req))}
                       proven={PROVEN_NODE_IDS.has(node.id)}
@@ -118,8 +128,9 @@ export default function SkillTree({ selected, matchedCount, onToggle, onClear }:
         )}
         {hasFilter && matchedCount === 0 && (
           <span className="normal-case tracking-normal">
-            Todavía ningún proyecto cargado usa esto — el próximo (cómo armé mi propio servidor)
-            se va a encargar.
+            {picked.size > 1
+              ? "Ningún proyecto usa esa combinación completa — probá sacando alguna tecnología."
+              : "Todavía ningún proyecto cargado usa esto — el próximo (cómo armé mi propio servidor) se va a encargar."}
           </span>
         )}
         {hasFilter && (

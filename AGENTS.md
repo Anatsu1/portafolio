@@ -88,23 +88,23 @@ src/
         ProjectPlate.tsx          Ficha técnica (blueprint) de un proyecto — cajetín + capturas + links
         ProjectCarousel.tsx       Carrusel de media (capturas + videos) de la ficha (tira "FIG.")
         SkillTree.tsx             Red de nodos de skills (tiers + SVG de aristas + línea de resultado)
-        SkillNodeButton.tsx       Nodo del árbol ("pad de circuito": probado/sin probar/locked/seleccionado)
+        SkillNodeButton.tsx       Nodo del árbol (probado/sin probar/locked + elegido/prerequisito/apagado)
       Contact.tsx               Sección "Contacto" (#contacto), dos audiencias (Empresas primero y por defecto)
   data/
     projects/
       types.ts                 Tipo Project compartido (id, role, status, featured, stack, links, media[])
       prestarte.ts              Un archivo por proyecto real
       index.ts                  Agrega PROJECTS (las skills probadas se derivan en skillTree.ts)
-    skillTree.ts               Nodos del árbol de skills (requires/tier/aliases) + derivados (aristas, clausuras, resolveStack, PROVEN_NODE_IDS)
+    skillTree.ts               Nodos del árbol de skills (requires/tier/aliases) + derivados (aristas, ANCESTORS, resolveStack, PROVEN_NODE_IDS)
   hooks/
     useTheme.tsx             Modo claro/oscuro: contexto (ThemeProvider) + persistencia
     useScrollPosition.ts     Detecta scroll > umbral (usado por Navbar)
     useContactForm.ts        Estado del form de contacto + submit por mailto
     useCarousel.ts           Estado de carrusel genérico (About + capturas de proyectos)
-    useSkillTree.ts          Selección del árbol de skills (cadena de prerequisitos + cascade)
+    useSkillTree.ts          Selección del árbol: `picked` (filtra) vs `selected` (= picked + prerequisitos, sólo visual)
     useMeasuredEdges.ts      Mide centros reales de los nodos para las aristas SVG (ResizeObserver)
     useProjectSlider.ts      Slider de fichas: next/prev/goTo animados, índice desde el scroll real, focus del filtro
-    useHeroReveal.ts         Reveal GSAP del texto del Hero + aura (fade/slide en orden)
+    useHeroReveal.ts         Reveal GSAP del texto del Hero + impacto (halo y nombre quedan prendidos, botones parpadean)
     usePageLoaderExit.ts     Animación de "puertas de vault" al cerrar el PageLoader
     useArmFollowCam.ts       Cámara (zoom + pan del video) que sigue la pinza (solo mobile)
   assets/                    Videos del brazo (arm-{light,dark}.mp4) + posters
@@ -239,17 +239,41 @@ con proyectos reales, no con barras de porcentaje inventadas.
   pedagógica: HTML5 → CSS3/JS → frameworks; rama infra aparte: linux →
   docker, git → github/cursor), `tier` (columna de layout) y `aliases`
   (matching contra `Project.stack`, ej. "Bootstrap 5" → nodo `bootstrap`).
-  Mecánica: **clic en un nodo enciende toda su cadena de prerequisitos**
-  (1 clic en React = HTML5+JS+React); deseleccionar apaga en cascada a los
-  dependientes (invariante: la selección siempre es cerrada bajo
-  `requires`). Con nodos seleccionados, las fichas que usan **alguna** de
-  esas tecnologías se resaltan (`border-brand-skills/40`) y el resto se
-  atenúa (`opacity-40 saturate-50`) — **nunca se desmontan** (grilla
-  estable). 0 matches (ej. Docker hoy) muestra un mensaje que adelanta el
-  futuro proyecto del homelab. Estados visuales del nodo: borde sólido =
-  probado por un proyecto (`PROVEN_NODE_IDS`, derivado — nunca a mano),
-  punteado = sin proyecto todavía, candado = prerequisitos apagados (visual
-  nomás, sigue clickeable), relleno `brand-skills` = seleccionado.
+- **`picked` vs `selected`: la distinción que hace congruente al filtro.**
+  `useSkillTree` mantiene DOS conjuntos y hay que respetar cuál se usa para
+  qué:
+  - `picked` = lo clickeado a mano. Es lo **único que filtra**.
+  - `selected` = `picked` + toda su cadena de prerequisitos (clausura sobre
+    `requires`, vía `ANCESTORS`). Es **puramente visual**: enciende el camino
+    en la red, que es la lectura pedagógica ("para React necesitás HTML5 y
+    JavaScript").
+
+  **El bug que esto arregla** (no volver a mezclarlos): antes se filtraba por
+  `selected`, así que un clic en Tailwind encendía `css3`+`html5` y el filtro
+  pasaba a ser "tailwind O css3 O html5" — como casi todo proyecto tiene
+  HTML/CSS, matcheaban todos y el filtro no decía nada. Por eso también se
+  borró `DESCENDANTS` de `skillTree.ts`: quedó huérfano y era justo la pieza
+  que invitaba a re-cablear la cascada al filtro.
+- **El filtro es RESTRICTIVO (AND)**: la ficha matchea si su stack contiene
+  **todas** las tecnologías de `picked`. Sumar tecnologías **achica** el
+  resultado, nunca lo agranda. Las que no matchean se atenúan
+  (`opacity-40 saturate-50`) y las que sí se resaltan
+  (`border-brand-skills/40`) — **nunca se desmontan** (slider estable).
+  Con 0 matches el mensaje se bifurca: con una sola tecnología elegida
+  adelanta el futuro proyecto del homelab; con varias, sugiere sacar alguna
+  (que es lo que suele pasar con AND y pocos proyectos cargados).
+- **Toggle**: un clic agrega/saca de `picked`, nada más. Clickear un nodo que
+  estaba encendido sólo como prerequisito lo **asciende** a elegido (pasa a
+  filtrar); sacar un elegido apaga su cadena salvo lo que siga sosteniendo
+  otro elegido. La clausura se recalcula sola (`useMemo`) — no hay estado
+  paralelo que sincronizar ni cascada que mantener a mano.
+- **Estados visuales del nodo** — son cuatro ejes y conviene no colapsarlos:
+  borde sólido = probado por un proyecto (`PROVEN_NODE_IDS`, derivado —
+  nunca a mano), punteado = sin proyecto todavía, candado = prerequisitos
+  apagados (visual nomás, sigue clickeable), y **tres niveles de encendido**:
+  elegido (relleno fuerte + `ring`, está filtrando), prerequisito (encendido
+  tenue, no filtra) y apagado. Ese nivel intermedio no es decorativo: sin él,
+  ver CSS3 encendido tras elegir Tailwind hace esperar que CSS3 filtre.
 - **Look de grafo, no de tabla**: cada nodo es un **círculo con el label
   debajo** (como una visualización de red/grafos), las aristas son
   **curvas cuadráticas** (control point perpendicular al segmento, signo
@@ -435,33 +459,59 @@ estático del brazo se entiende bien, no hace falta la cámara con zoom).
   aplicada y no shiftee el layout). Cada línea del nombre aparece con
   incandescencia (`textShadow` glow que se apaga) + fade/slide, en orden:
   eyebrow → nombre → medio → apellidos → resto (rol + botones + redes).
-- **Aura**: segunda timeline, pausada, disparada por `triggerOverload()` —
-  `Hero.tsx` la conecta al `onDrop` de `HeroArmVideo`. Anima un halo radial
-  (`lightRef`, `blur-3xl`, expandido más allá del bloque de texto) detrás de
-  todo el texto — `opacity 0→1` + `scale` leve — a la vez que las 5 piezas de
-  texto (eyebrow, nombre, medio, apellidos, resto) brillan juntas con el
-  mismo patrón `textShadow` que usa el reveal, pero simultáneo en vez de
-  escalonado. El `radial-gradient` tiene **dos capas de color**: un núcleo
-  del color de **fondo** (`--color-background`, blanco en claro / casi negro
-  en oscuro) a opacidad ~1 — eso es lo que disipa por completo el
+- **Aura / impacto**: segunda timeline, pausada, disparada por
+  `triggerOverload()` — `Hero.tsx` la conecta al `onDrop` de `HeroArmVideo`.
+  El momento en que el brazo suelta el círculo reparte energía por el bloque,
+  y **cada pieza la recibe distinto** (eso es a propósito, no una
+  inconsistencia):
+
+  | Pieza | Qué hace | Por qué |
+  |---|---|---|
+  | Halo (`lightRef`) | aparece y **queda**, con pulso | tapa el cuadrado del video |
+  | Nombre (3 líneas del `h1`) | chispazo → **queda prendido**, latido en fase con el halo | es el foco de la escena |
+  | Volanta + bloque secundario | chispazo → se apagan | un párrafo entero brillando es ilegible |
+  | Botones GitHub/LinkedIn | **parpadean** y quedan prendidos | la energía "baja" por la página |
+
+  El `radial-gradient` del halo tiene **dos capas de color**: un núcleo del
+  color de **fondo** (`--color-background`, blanco en claro / casi negro en
+  oscuro) a opacidad ~1 — eso es lo que disipa por completo el
   cuadrado+círculo del video (se funde con el fondo real de la página, no
   solo lo tapa con un tono) — rodeado de un halo más suave en
   `--color-brand-primary` (la "energía"). El pulso infinito solo baja la
   opacidad hasta ~0.92, para que el núcleo nunca deje de tapar el video.
-- **A diferencia de un destello puntual, el aura no se apaga sola**: al
-  terminar la entrada, queda encendida con un pulso sutil e infinito
-  (`opacity`/`scale` yoyo, `gsap.to(..., { repeat: -1, yoyo: true })`) —
-  "emana energía" en vez de desvanecerse.
+- **Nada de esto se apaga solo.** El nombre antes hacía `GLOW_FLASH → GLOW_OUT`
+  y a los ~0.7s quedaba únicamente el halo, lo que se leía como que el efecto
+  se cortaba de golpe. Ahora asienta en `GLOW_ON` y late entre `GLOW_ON` y
+  `GLOW_PULSE` con el **mismo** `duration`/`ease` que el pulso del halo
+  (2.2s `sine.inOut`), así respiran juntos y no cada uno por su lado. Las
+  cuatro constantes de glow comparten la forma exacta
+  `0 0 Npx rgb(var(--color-brand-primary) / A)` porque **GSAP interpola
+  strings complejas número a número** — cambiarle la estructura a una rompe
+  la transición.
+- **Botones sociales: se encienden por CLASE, no por estilos inline de GSAP.**
+  La timeline agrega `hero-socket-on` a los `<a>` de `socialsRef`; los
+  keyframes (`hero-socket-flicker`, en `index.css`) hacen el parpadeo de tubo
+  fluorescente arrancando y asientan en el brillo final. Dos detalles que hay
+  que respetar si se toca:
+  - El selector es `a.hero-socket-on` (especificidad 0,1,1) para ganarle a
+    las utilities de Tailwind (0,1,0) **sin** tapar los `hover:` (0,2,0) — si
+    esto se hiciera con `gsap.set`, el estilo inline mataría el hover.
+  - La clase vive en `@layer components`, y Tailwind **purga también esa
+    capa**: el string `hero-socket-on` tiene que seguir apareciendo literal
+    en algún archivo de `content` (hoy, en `useHeroReveal.ts`).
 - **Reset por cambio de tema**: un `useEffect` separado (dependencia
-  `theme`, se salta la primera corrida) apaga el aura de inmediato
-  (fade-out corto) y resetea el flag de disparo cada vez que el tema
-  cambia. Como `HeroArmVideo` se remonta (`key={theme}`) y repite el video
-  desde cero en cada toggle, el aura queda invisible — "como al principio"
-  — hasta que ese video repetido vuelve a soltar el círculo y la reactiva.
+  `theme`, se salta la primera corrida) apaga **todo** lo que quedó
+  encendido — halo, glow del nombre y clase de los botones — y resetea el
+  flag de disparo. Como `HeroArmVideo` se remonta (`key={theme}`) y repite el
+  video desde cero en cada toggle, queda "como al principio" hasta que ese
+  video vuelve a soltar el círculo. Si no se apagaran, el parpadeo no se
+  volvería a ver nunca y el nombre quedaría con el glow del tema anterior.
 - Red de seguridad: si el autoplay se bloquea, `triggerOverload` igual
   dispara a los 7s (el reveal ya no depende de esto).
 - `prefers-reduced-motion`: aplica el estado final del texto de una sola vez
-  (sin glow) y el halo nunca se anima (queda invisible).
+  (sin glow), el halo nunca se anima (queda invisible) y los botones se
+  quedan en su estado normal — sin video no hay historia de energía que
+  contar.
 
 **La "cámara" que sigue la pinza en mobile (`hooks/useArmFollowCam.ts`):**
 - Problema que resuelve: en mobile, `object-cover object-center` sobre un

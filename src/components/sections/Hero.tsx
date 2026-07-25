@@ -28,6 +28,7 @@ export default function Hero({ onReady }: HeroProps) {
   const lastNamesRef = useRef<HTMLSpanElement>(null);
   const restGroupRef = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
+  const socialsRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const readyFiredRef = useRef(false);
 
@@ -44,6 +45,7 @@ export default function Hero({ onReady }: HeroProps) {
     lastNamesRef,
     restGroupRef,
     lightRef,
+    socialsRef,
     theme,
   });
 
@@ -160,7 +162,10 @@ export default function Hero({ onReady }: HeroProps) {
               </a>
             </div>
 
-            <div className="mt-8 flex items-center gap-4">
+            {/* Estos dos se "energizan" (parpadeo y quedan prendidos) cuando
+                el brazo suelta el círculo — useHeroReveal les pone la clase
+                `hero-socket-on` a los <a> de acá adentro. */}
+            <div ref={socialsRef} className="mt-8 flex items-center gap-4">
               <a
                 href={OWNER.github}
                 target="_blank"

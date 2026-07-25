@@ -50,6 +50,9 @@ export const SKILL_NODES: SkillNode[] = [
   { id: "graphql", label: "GraphQL", requires: ["rest"], tier: 4 },
   { id: "postgresql", label: "PostgreSQL", requires: ["nodejs"], tier: 4 },
   { id: "mongodb", label: "MongoDB", requires: ["nodejs"], tier: 4 },
+  // Depende sólo de JavaScript, pero va en el tier 4 para no dejar 6 nodos
+  // en el 3: en mobile cada fase es una fila sin wrap y 6 no entran a 375px.
+  { id: "gsap", label: "GSAP", requires: ["javascript"], tier: 4 },
 ];
 
 export const NODE_BY_ID = new Map(SKILL_NODES.map((n) => [n.id, n]));
@@ -68,11 +71,10 @@ export const TIERS: SkillNode[][] = Array.from({ length: TIER_COUNT }, (_, t) =>
   SKILL_NODES.filter((n) => n.tier === t)
 );
 
-// Clausuras transitivas: todo lo que hay "aguas arriba" (prerequisitos de
-// prerequisitos) y "aguas abajo" (dependientes de dependientes) de cada
-// nodo. Se calculan una vez al cargar el módulo — el árbol es chico y
-// estático. Un ciclo en `requires` colgaría el DFS: el flag `visiting`
-// lo corta y lo denuncia en dev.
+// Clausura transitiva "aguas arriba": todos los prerequisitos de los
+// prerequisitos de cada nodo. Se calcula una vez al cargar el módulo — el
+// árbol es chico y estático. Un ciclo en `requires` colgaría el DFS: el
+// flag `visiting` lo corta y lo denuncia en dev.
 function closure(id: string, edgesOf: (n: SkillNode) => string[]): Set<string> {
   const out = new Set<string>();
   const visiting = new Set<string>();
@@ -101,13 +103,6 @@ function closure(id: string, edgesOf: (n: SkillNode) => string[]): Set<string> {
 
 export const ANCESTORS = new Map(
   SKILL_NODES.map((n) => [n.id, closure(n.id, (node) => node.requires)])
-);
-
-const CHILDREN = new Map<string, string[]>(SKILL_NODES.map((n) => [n.id, []]));
-for (const edge of EDGES) CHILDREN.get(edge.from)?.push(edge.to);
-
-export const DESCENDANTS = new Map(
-  SKILL_NODES.map((n) => [n.id, closure(n.id, (node) => CHILDREN.get(node.id) ?? [])])
 );
 
 // Matching stack → nodo: label y aliases, en minúsculas.

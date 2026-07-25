@@ -21,23 +21,28 @@ const NODE_IDS_BY_PROJECT = new Map(
 );
 
 export default function Projects() {
-  const { selected, toggle, clear } = useSkillTree();
+  const { picked, selected, toggle, clear } = useSkillTree();
 
-  // Filtro ANY: la ficha matchea si alguna de sus tecnologías está
-  // seleccionada. Sin selección no hay filtro (todas normales). Las que no
-  // matchean se atenúan, nunca se desmontan — la grilla queda estable.
+  // Filtro RESTRICTIVO (AND) y sólo sobre lo elegido a mano (`picked`, no
+  // `selected`): la ficha matchea si su stack contiene TODAS las tecnologías
+  // elegidas. Los prerequisitos que se encienden solos en la red no filtran
+  // — si filtraran, elegir Tailwind arrastraría css3+html5 y matchearían
+  // todos los proyectos, que era el bug. Sumar tecnologías achica el
+  // resultado, nunca lo agranda. Las que no matchean se atenúan, nunca se
+  // desmontan — el slider queda estable.
   const filterStates = useMemo(() => {
     const states = new Map<string, PlateFilterState>();
     for (const project of ORDERED_PROJECTS) {
-      if (selected.size === 0) {
+      if (picked.size === 0) {
         states.set(project.id, "none");
       } else {
-        const nodeIds = NODE_IDS_BY_PROJECT.get(project.id) ?? [];
-        states.set(project.id, nodeIds.some((id) => selected.has(id)) ? "match" : "miss");
+        const nodeIds = new Set(NODE_IDS_BY_PROJECT.get(project.id) ?? []);
+        const hasAll = [...picked].every((id) => nodeIds.has(id));
+        states.set(project.id, hasAll ? "match" : "miss");
       }
     }
     return states;
-  }, [selected]);
+  }, [picked]);
 
   const matchedCount = useMemo(
     () => [...filterStates.values()].filter((s) => s === "match").length,
@@ -45,7 +50,7 @@ export default function Projects() {
   );
 
   const { containerRef, registerPlate, index, atStart, atEnd, goTo, next, prev } =
-    useProjectSlider(ORDERED_IDS, filterStates, selected.size > 0);
+    useProjectSlider(ORDERED_IDS, filterStates, picked.size > 0);
 
   return (
     <section id="proyectos" className="section-shell">
@@ -136,11 +141,12 @@ export default function Projects() {
           Seleccioná tecnologías para filtrar los proyectos
         </h3>
         <p className="mt-1 text-sm text-muted">
-          Algunas requieren desbloquear sus fundamentos primero — un clic enciende toda la
-          cadena.
+          Un clic enciende también los fundamentos que esa tecnología necesita, pero el
+          filtro usa sólo lo que elegís: se muestran los proyectos que las usan todas.
         </p>
         <div className="mt-8">
           <SkillTree
+            picked={picked}
             selected={selected}
             matchedCount={matchedCount}
             onToggle={toggle}

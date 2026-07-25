@@ -107,27 +107,33 @@ export default function ProjectPlate({
           slider no salta al navegar. La única variación permitida es
           expandir "Ver más" (acción del usuario, agranda solo esa ficha). */}
 
-      {/* Cajetín: h fija = 1 fila de metadatos + 2 renglones de stack
-          (el stack va SIEMPRE en su propia línea, basis-full; con stacks
-          cortos queda aire — uniforme en todas las fichas). content-start
-          apila las filas arriba en vez de distribuirlas. */}
-      <div
-        className={`flex h-[4.25rem] flex-wrap content-start gap-x-4 gap-y-1.5 overflow-hidden border-b border-border/10 pb-3 text-[11px] uppercase tracking-wide text-muted ${
-          STAMP_LABEL[project.role] ? "pr-24 md:pr-0" : ""
-        }`}
-      >
-        <span>
-          Rol <span className="text-body">{ROLE_LABEL[project.role]}</span>
-        </span>
-        <span>
-          Estado <span className="text-body">{STATUS_LABEL[project.status]}</span>
-        </span>
-        <span>
-          N.º <span className="text-body">{String(index + 1).padStart(2, "0")}</span>
-        </span>
+      {/* Cajetín: h fija, medida contra el PEOR caso real (un stack de 6
+          tecnologías, hoy la UTN) en el ancho más angosto — no calculada a
+          ojo. Mobile: 2 renglones de metadatos + 3 de stack = 116px. Desde
+          md: los metadatos entran en un renglón y el stack en dos = 68px.
+          El hueco para el sello (pr-24) va SÓLO en la fila de metadatos:
+          el sello está pegado arriba a la derecha y no llega a la línea del
+          stack — aplicarlo al cajetín entero le comía 96px de ancho al
+          stack y lo recortaba a mitad de tecnología. */}
+      <div className="flex h-[7.25rem] flex-col gap-1.5 overflow-hidden border-b border-border/10 pb-3 text-[11px] uppercase tracking-wide text-muted md:h-[4.25rem]">
+        <div
+          className={`flex flex-wrap gap-x-4 gap-y-1.5 ${
+            STAMP_LABEL[project.role] ? "pr-24 md:pr-0" : ""
+          }`}
+        >
+          <span>
+            Rol <span className="text-body">{ROLE_LABEL[project.role]}</span>
+          </span>
+          <span>
+            Estado <span className="text-body">{STATUS_LABEL[project.status]}</span>
+          </span>
+          <span>
+            N.º <span className="text-body">{String(index + 1).padStart(2, "0")}</span>
+          </span>
+        </div>
         {/* Tecnologías en el color de la sección — la skill usada se
             resalta a simple vista dentro del cajetín. */}
-        <span className="basis-full">
+        <div>
           Stack{" "}
           {project.stack.map((tech, i) => (
             <span key={tech}>
@@ -135,7 +141,7 @@ export default function ProjectPlate({
               <span className="font-medium text-brand-projects">{tech}</span>
             </span>
           ))}
-        </span>
+        </div>
       </div>
 
       {/* Título: h fija de exactamente 2 renglones (em: escala con el
