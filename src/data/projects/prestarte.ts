@@ -3,9 +3,9 @@ import capture01 from "../../assets/prestarte/prestarte-01.jpg";
 import capture02 from "../../assets/prestarte/prestarte-02.jpg";
 import capture03 from "../../assets/prestarte/prestarte-03.jpg";
 
-// Capturas 1910×943 (browser full-screen) re-escaladas a 1440×711 — la
+// Capturas 1917×953 (browser full-screen) re-escaladas a 1440×716 — la
 // proporción se declara en `aspect` para que el carrusel no las recorte.
-const ASPECT = "1910 / 943";
+const ASPECT = "1917 / 953";
 
 export const prestarte: Project = {
   id: "prestarte",
