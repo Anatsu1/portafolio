@@ -17,42 +17,73 @@ export type SkillNode = {
 /**
  * Árbol de skills curado a mano, con lectura pedagógica (el orden en que
  * realmente se aprenden estas tecnologías): markup → estilo/comportamiento
- * → frameworks/herramientas encima. Rama de infraestructura separada
- * (linux → docker; git → github/cursor) — ahí se enchufará el futuro
- * proyecto del homelab (cómo armé mi servidor/VPS).
+ * → frameworks encima. Ramas separadas para el backend en Python
+ * (python → flask → sqlite) y para el versionado/infra (git → github
+ * actions; docker) — ahí se enchufará el futuro proyecto del VPS.
+ *
+ * **Solo tecnologías que uso de verdad en algún proyecto** (los cargados y
+ * los que faltan cargar — ver `docs/stack-por-proyecto.md`). Nada de relleno:
+ * cada nodo es una casilla que alguien puede clickear esperando ver trabajo
+ * detrás. Los servicios puntuales del VPS (n8n, redis, uptime kuma, ufw…) no
+ * son nodos: se cuentan en el resumen de esa ficha. Las herramientas que no
+ * se "prueban" con un proyecto (editores, Linux) van en `TOOLBOX`, abajo.
  *
  * Agregar una skill = agregar un nodo acá (y nada más: la "prueba" se
  * deriva sola de los `stack` de los proyectos, ver PROVEN_NODE_IDS).
+ *
+ * **Tope de 4 nodos por tier:** en mobile cada fase es una fila sin wrap y
+ * los nodos miden w-16 + gap-2 → 5 nodos son 352px y a 375px hay 327
+ * disponibles, así que la fase se sale de pantalla y desplaza toda la
+ * sección. El `tier` es una pista de layout: si un tier se llena, el nodo
+ * puede bajar al siguiente sin tocar sus `requires` (las aristas cruzan
+ * columnas sin problema).
  */
 export const SKILL_NODES: SkillNode[] = [
   // Tier 0 — fundamentos / raíces
-  { id: "html5", label: "HTML5", requires: [], tier: 0 },
+  { id: "html5", label: "HTML5", requires: [], tier: 0, aliases: ["HTML"] },
+  { id: "python", label: "Python", requires: [], tier: 0 },
   { id: "git", label: "Git", requires: [], tier: 0 },
-  { id: "linux", label: "Linux", requires: [], tier: 0 },
+  { id: "docker", label: "Docker", requires: [], tier: 0 },
   // Tier 1
-  { id: "css3", label: "CSS3", requires: ["html5"], tier: 1 },
-  { id: "javascript", label: "JavaScript", requires: ["html5"], tier: 1 },
-  { id: "github", label: "GitHub", requires: ["git"], tier: 1 },
+  { id: "css3", label: "CSS3", requires: ["html5"], tier: 1, aliases: ["CSS"] },
+  { id: "javascript", label: "JavaScript", requires: ["html5"], tier: 1, aliases: ["JS"] },
+  { id: "flask", label: "Flask", requires: ["python"], tier: 1 },
+  {
+    id: "github-actions",
+    label: "GitHub Actions",
+    requires: ["git"],
+    tier: 1,
+    aliases: ["Git Actions", "GH Actions"],
+  },
   // Tier 2
   { id: "bootstrap", label: "Bootstrap", requires: ["css3"], tier: 2, aliases: ["Bootstrap 5"] },
-  { id: "tailwind", label: "Tailwind CSS", requires: ["css3"], tier: 2 },
-  { id: "typescript", label: "TypeScript", requires: ["javascript"], tier: 2 },
-  { id: "nodejs", label: "Node.js", requires: ["javascript"], tier: 2 },
-  { id: "cursor", label: "Cursor", requires: ["git"], tier: 2 },
+  { id: "tailwind", label: "Tailwind CSS", requires: ["css3"], tier: 2, aliases: ["Tailwind"] },
+  { id: "typescript", label: "TypeScript", requires: ["javascript"], tier: 2, aliases: ["TS"] },
+  { id: "nodejs", label: "Node.js", requires: ["javascript"], tier: 2, aliases: ["Node"] },
   // Tier 3
+  // SQLite depende de Flask (tier 1) pero va acá para no dejar 5 nodos en el
+  // tier 2 — ver el tope de 4 arriba.
+  { id: "sqlite", label: "SQLite", requires: ["flask"], tier: 3 },
   { id: "react", label: "React", requires: ["javascript"], tier: 3 },
-  { id: "vite", label: "Vite", requires: ["javascript"], tier: 3 },
   { id: "express", label: "Express", requires: ["nodejs"], tier: 3 },
-  { id: "rest", label: "REST", requires: ["nodejs"], tier: 3 },
-  { id: "docker", label: "Docker", requires: ["linux"], tier: 3 },
-  // Tier 4
-  { id: "vitest", label: "Vitest", requires: ["vite"], tier: 4 },
-  { id: "graphql", label: "GraphQL", requires: ["rest"], tier: 4 },
-  { id: "postgresql", label: "PostgreSQL", requires: ["nodejs"], tier: 4 },
-  { id: "mongodb", label: "MongoDB", requires: ["nodejs"], tier: 4 },
-  // Depende sólo de JavaScript, pero va en el tier 4 para no dejar 6 nodos
-  // en el 3: en mobile cada fase es una fila sin wrap y 6 no entran a 375px.
-  { id: "gsap", label: "GSAP", requires: ["javascript"], tier: 4 },
+  {
+    id: "postgresql",
+    label: "PostgreSQL",
+    requires: ["nodejs"],
+    tier: 3,
+    aliases: ["Postgres"],
+  },
+];
+
+/**
+ * Herramientas del día a día que NO son nodos del árbol: no se demuestran
+ * con un proyecto (no hay `stack` que las pruebe), así que como filtro
+ * serían una casilla vacía. Van debajo de la red, a modo informativo — un
+ * reclutador igual quiere saber que están. Sumar una es agregar un string.
+ */
+export const TOOLBOX: { group: string; items: string[] }[] = [
+  { group: "Editores e IDE", items: ["VS Code", "Cursor", "IntelliJ IDEA"] },
+  { group: "Sistemas", items: ["Linux"] },
 ];
 
 export const NODE_BY_ID = new Map(SKILL_NODES.map((n) => [n.id, n]));

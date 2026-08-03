@@ -10,21 +10,21 @@ const ASPECT = "1910 / 943";
 
 export const portafolio: Project = {
   id: "portafolio",
-  title: "Este portafolio",
+  title: "Portafolio",
   role: "personal",
   status: "activo",
   featured: false,
   summary:
-    "El sitio que estás viendo. Single-page en React + TypeScript sobre Vite, " +
-    "con modo claro/oscuro resuelto por variables CSS, animación del brazo " +
-    "robótico sincronizada con GSAP y una red de skills que funciona como " +
-    "filtro de estos mismos proyectos. Se despliega solo: cada push a main " +
-    "construye una imagen Docker multi-etapa servida por nginx y la levanta " +
-    "en el VPS.",
-  // GSAP y Docker son lo que este proyecto aporta al árbol que ningún otro
-  // prueba — no están de adorno: la animación del Hero es GSAP y el deploy
-  // real es una imagen Docker ARM64 (ver .github/workflows/deploy.yml).
-  stack: ["React", "TypeScript", "Vite", "Tailwind CSS", "GSAP", "Docker"],
+    "El sitio que estás viendo, hecho como una single page application en " +
+    "React + TypeScript corriendo sobre Vite. El modo claro/oscuro está " +
+    "resuelto con variables CSS + Tailwind, y la animación del hero se armó " +
+    "con Google Flow y se sincroniza con GSAP para una entrada llamativa. " +
+    "La red de skills de esta misma sección funciona como filtro de los " +
+    "proyectos.",
+  // La lista sale de docs/stack-por-proyecto.md. Vite y GSAP se cuentan en
+  // el resumen pero no van acá: el stack alimenta el árbol, y el árbol solo
+  // lleva las tecnologías de esa lista.
+  stack: ["HTML5", "CSS3", "React", "TypeScript", "Tailwind CSS", "Git", "GitHub Actions"],
   links: {
     demo: "https://augustofc.com",
     // Sin repo: hoy es privado. Si se hace público, agregar acá

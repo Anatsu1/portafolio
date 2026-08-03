@@ -8,6 +8,7 @@ import { useProjectSlider } from "../../hooks/useProjectSlider";
 import { Reveal, containerVariants, itemVariants } from "../Reveal";
 import ProjectPlate, { type PlateFilterState } from "./projects/ProjectPlate";
 import SkillTree from "./projects/SkillTree";
+import Toolbox from "./projects/Toolbox";
 
 // Destacados primero (orden estable en el resto).
 const ORDERED_PROJECTS = [...PROJECTS].sort(
@@ -152,6 +153,7 @@ export default function Projects() {
             onToggle={toggle}
             onClear={clear}
           />
+          <Toolbox />
         </div>
       </Reveal>
     </section>

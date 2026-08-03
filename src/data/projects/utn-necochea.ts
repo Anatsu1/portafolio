@@ -22,7 +22,7 @@ export const utnNecochea: Project = {
     "registro y login con captcha, perfiles de alumno y administrador, carga " +
     "de comprobantes de pago y sección institucional. Estuve a cargo del " +
     "frontend y participé en los servicios de backend.",
-  stack: ["HTML5", "CSS3", "JavaScript", "React", "Node.js", "PostgreSQL"],
+  stack: ["HTML5", "CSS3", "React", "Node.js", "Express", "PostgreSQL"],
   links: {
     demo: "https://utnnecochea.vercel.app/",
   },

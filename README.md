@@ -31,9 +31,11 @@ Lo que la hace distinta de una landing estática cualquiera:
   capturas y videos con tira `FIG. 01 / 03`).
 - **Árbol de skills como filtro.** Una red de nodos con prerequisitos
   (`HTML5 → CSS3 → Tailwind`) que filtra las fichas de forma restrictiva (AND).
-  Las skills "probadas" se derivan solas del `stack` de cada proyecto: no hay
-  ninguna lista que mantener a mano. Las aristas SVG se miden del DOM real con
-  `ResizeObserver`, así que quedan bien en cualquier breakpoint.
+  Solo entran tecnologías que se usan de verdad en algún proyecto, y las skills
+  "probadas" se derivan solas del `stack` de cada uno: no hay ninguna lista que
+  mantener a mano. Las aristas SVG se miden del DOM real con `ResizeObserver`,
+  así que quedan bien en cualquier breakpoint. Debajo, una fila informativa
+  de herramientas que no se demuestran con un proyecto (editores, Linux).
 - **Hero con brazo robótico.** Video pre-renderizado a pantalla completa (una
   variante por tema), reveal del texto con GSAP y, en mobile, una cámara virtual
   que hace zoom y sigue la pinza.
@@ -100,14 +102,18 @@ Todo el contenido editorial vive en datos, nunca hardcodeado en un componente.
 |---|---|
 | Cambiar textos, links o navegación | `src/data.ts` |
 | Agregar un proyecto | Archivo nuevo en `src/data/projects/` + una línea en `index.ts`, capturas en `src/assets/<id-del-proyecto>/` |
+| Saber qué tecnología usa cada proyecto | `docs/stack-por-proyecto.md` (fuente de verdad de los `stack` y de los nodos) |
 | Agregar una skill o cambiar prerequisitos | `src/data/skillTree.ts` (`SKILL_NODES`) |
+| Agregar una herramienta informativa (editor, SO) | `src/data/skillTree.ts` (`TOOLBOX`) — no filtra proyectos |
 | Cambiar colores de marca o el tema | `src/index.css` (variables) y `tailwind.config.ts` (tokens) |
 | Cómo se sirve/despliega | `nginx.conf`, `Dockerfile`, `.github/workflows/deploy.yml` |
 
 > [!IMPORTANT]
 > Cada string del `stack` de un proyecto tiene que coincidir con el `label` o un
 > alias de un nodo del árbol de skills. En desarrollo, `resolveStack` avisa por
-> consola si alguno no matchea.
+> consola si alguno no matchea. El árbol tampoco es libre: solo lleva
+> tecnologías de [`docs/stack-por-proyecto.md`](docs/stack-por-proyecto.md), con
+> un máximo de 4 nodos por fase (en mobile cada fase es una fila sin wrap).
 
 Guía completa de arquitectura y decisiones de diseño: [AGENTS.md](AGENTS.md).
 

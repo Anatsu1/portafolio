@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { RotateCcw } from "lucide-react";
 import { PROJECTS } from "../../../data/projects";
-import { PROVEN_NODE_IDS, TIERS } from "../../../data/skillTree";
+import { PROVEN_NODE_IDS, TIER_COUNT, TIERS } from "../../../data/skillTree";
 import { useMeasuredEdges, type MeasuredEdge } from "../../../hooks/useMeasuredEdges";
 import SkillNodeButton from "./SkillNodeButton";
 
@@ -84,7 +84,14 @@ export default function SkillTree({
           </svg>
         )}
 
-        <div className="relative flex flex-col gap-10 md:grid md:grid-cols-5 md:gap-x-4">
+        {/* Las columnas salen de TIER_COUNT, no de una clase fija: sacar o
+            agregar una fase del árbol no deja columnas vacías ni apretadas.
+            Va inline porque Tailwind no puede generar `grid-cols-N` dinámico;
+            en mobile no molesta (ahí el contenedor es flex-col, no grid). */}
+        <div
+          className="relative flex flex-col gap-10 md:grid md:gap-x-4"
+          style={{ gridTemplateColumns: `repeat(${TIER_COUNT}, minmax(0, 1fr))` }}
+        >
           {TIERS.map((tier, t) => (
             <div key={t} className="flex flex-col gap-3 md:gap-4">
               <p className="text-center text-[10px] font-semibold uppercase tracking-widest text-muted">

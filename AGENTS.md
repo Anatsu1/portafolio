@@ -155,15 +155,14 @@ con proyectos reales, no con barras de porcentaje inventadas.
   Los roles "cliente" y "academico" muestran un **sello girado** en la
   esquina de la ficha ("CLIENTE" / "TESIS", `STAMP_LABEL` en
   `ProjectPlate.tsx`); "personal" no lleva sello.
-  **Temporal:** `ejemplo-homelab.ts` y `ejemplo-api.ts` son placeholders
-  para probar el slider/filtro (capturas grises generadas en
-  `assets/ejemplo-*/`) — sus stacks marcan nodos del árbol como
-  "probados" sin proyecto real detrás; reemplazarlos con datos reales o
-  sacarlos antes de deployar.
+  Solo proyectos REALES: un `stack` inventado marca nodos del árbol como
+  "probados" sin trabajo detrás, y en un portafolio de búsqueda laboral eso
+  miente.
   Para sumar un proyecto nuevo: crear su archivo + agregar una línea al
   array en `index.ts`. Cada string de `stack` debe matchear el label o un
   alias de un nodo del árbol de skills (en dev, `resolveStack` avisa por
-  consola si no).
+  consola si no) y salir de `docs/stack-por-proyecto.md`, que es la fuente
+  de verdad de qué usa cada proyecto (cargados y pendientes).
 - **Media** (`ProjectCarousel.tsx`): cada ficha muestra su `media`
   (capturas y/o **videos cortos** de 10-15s navegando el sitio) en un
   carrusel con crossfade (reusa `useCarousel`), auto-avance de 6s y una
@@ -236,9 +235,24 @@ con proyectos reales, no con barras de porcentaje inventadas.
 - **Árbol de skills** (`src/data/skillTree.ts` + `SkillTree.tsx` +
   `useSkillTree`): reemplaza a los chips por ficha y al viejo catálogo de
   "piezas sueltas". Nodos con `requires` (prerequisitos, lectura
-  pedagógica: HTML5 → CSS3/JS → frameworks; rama infra aparte: linux →
-  docker, git → github/cursor), `tier` (columna de layout) y `aliases`
+  pedagógica: HTML5 → CSS3/JS → frameworks; ramas aparte para el backend
+  Python — python → flask → sqlite — y para versionado/infra — git →
+  github actions, docker), `tier` (columna de layout) y `aliases`
   (matching contra `Project.stack`, ej. "Bootstrap 5" → nodo `bootstrap`).
+  - **Solo tecnologías que el usuario usa de verdad**, listadas en
+    `docs/stack-por-proyecto.md` (incluye los proyectos que faltan cargar,
+    Manarem y el VPS). No inventar nodos "porque quedan bien": cada uno es
+    una casilla que alguien clickea esperando ver trabajo detrás. Los
+    servicios puntuales del VPS (n8n, redis, uptime kuma, fail2ban, ufw)
+    quedan fuera del árbol; van en el resumen de esa ficha.
+  - **Tope de 4 nodos por tier**: en mobile cada fase es una fila sin wrap
+    y 5 nodos (w-16 + gap-2 = 352px) no entran en los 327px útiles de un
+    375px. Si un tier se llena, el nodo baja al siguiente sin tocar sus
+    `requires` (las aristas cruzan columnas). Las columnas del grid salen
+    de `TIER_COUNT`, no de una clase fija.
+  - **`TOOLBOX`** (mismo archivo, `Toolbox.tsx`): herramientas que NO se
+    prueban con un proyecto (editores/IDE, Linux). Van debajo de la red
+    como chips inertes — informativas, no filtran nada.
 - **`picked` vs `selected`: la distinción que hace congruente al filtro.**
   `useSkillTree` mantiene DOS conjuntos y hay que respetar cuál se usa para
   qué:
@@ -599,7 +613,9 @@ docker compose pull && docker compose up -d
 | Cambiar la estructura fija (nav, footer, tema)  | `src/components/layout/`, `src/hooks/useTheme.ts`|
 | Agregar/editar una sección de contenido          | `src/components/sections/`                        |
 | Agregar un proyecto nuevo                        | `src/data/projects/` (archivo nuevo + agregarlo a `index.ts`) + capturas en `src/assets/projects/` |
+| Saber qué tecnología usa cada proyecto            | `docs/stack-por-proyecto.md` (fuente de verdad de stacks y nodos) |
 | Agregar una skill al árbol / cambiar prerequisitos | `src/data/skillTree.ts` (SKILL_NODES)          |
+| Agregar una herramienta informativa (editor, SO)  | `src/data/skillTree.ts` (TOOLBOX) — no es filtro |
 | Tocar la ficha de proyecto, el carrusel o el árbol | `src/components/sections/projects/`             |
 | Tocar el video del brazo del Hero                | `src/components/sections/hero/HeroArmVideo.tsx`, assets en `src/assets/arm-*` |
 | Tocar el reveal del texto del Hero o el aura      | `src/hooks/useHeroReveal.ts` |
