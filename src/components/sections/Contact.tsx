@@ -81,7 +81,9 @@ export default function Contact() {
               <span className="rounded-lg bg-brand-primary/15 p-2.5 text-brand-primary">
                 <Mail size={18} />
               </span>
-              {OWNER.email}
+              {/* Excepción al `select-none` global (ver index.css): el correo
+                  es exactamente el dato que se viene a copiar. */}
+              <span className="select-text">{OWNER.email}</span>
             </a>
             <p className="flex items-center gap-3 text-body">
               <span className="rounded-lg bg-brand-primary/15 p-2.5 text-brand-primary">

@@ -1,4 +1,5 @@
 import { PROJECTS } from "./projects";
+import { BRAND_ICONS, type BrandIcon } from "./brandIcons";
 
 export type SkillNode = {
   /** Id estable en kebab-case — clave de `requires` y del matching de stack. */
@@ -15,75 +16,97 @@ export type SkillNode = {
 };
 
 /**
- * Árbol de skills curado a mano, con lectura pedagógica (el orden en que
- * realmente se aprenden estas tecnologías): markup → estilo/comportamiento
- * → frameworks encima. Ramas separadas para el backend en Python
- * (python → flask → sqlite) y para el versionado/infra (git → github
- * actions; docker) — ahí se enchufará el futuro proyecto del VPS.
+ * Mapa de skills, agrupado por familia y con lectura de dependencia (qué
+ * hace falta saber antes de lo que sigue). Seis raíces, una por familia:
  *
- * **Solo tecnologías que uso de verdad en algún proyecto** (los cargados y
- * los que faltan cargar — ver `docs/stack-por-proyecto.md`). Nada de relleno:
- * cada nodo es una casilla que alguien puede clickear esperando ver trabajo
- * detrás. Los servicios puntuales del VPS (n8n, redis, uptime kuma, ufw…) no
- * son nodos: se cuentan en el resumen de esa ficha. Las herramientas que no
- * se "prueban" con un proyecto (editores, Linux) van en `TOOLBOX`, abajo.
+ *   web    → html → css → { bootstrap, tailwind }
+ *   python → flask
+ *   js     → { typescript, react → next, nodejs → express }
+ *   bd     → sql → { postgresql, mysql, sqlite } ; nosql → mongodb
+ *   herram.→ { git → github actions, docker }
  *
- * Agregar una skill = agregar un nodo acá (y nada más: la "prueba" se
- * deriva sola de los `stack` de los proyectos, ver PROVEN_NODE_IDS).
+ * **Los agrupadores son nodos como cualquier otro** (web, bd, sql, nosql,
+ * herramientas): se clickean y encienden su rama, aunque por sí solos no
+ * matcheen ningún proyecto. Organizan la red sin necesitar un tipo de nodo
+ * aparte.
  *
- * **Tope de 4 nodos por tier:** en mobile cada fase es una fila sin wrap y
- * los nodos miden w-16 + gap-2 → 5 nodos son 352px y a 375px hay 327
- * disponibles, así que la fase se sale de pantalla y desplaza toda la
- * sección. El `tier` es una pista de layout: si un tier se llena, el nodo
- * puede bajar al siguiente sin tocar sus `requires` (las aristas cruzan
- * columnas sin problema).
+ * **Ningún nodo se saltea un tier.** El `tier` de cada uno es exactamente su
+ * profundidad, así que toda arista une columnas contiguas. Cuando se usaba
+ * el tier para emparejar columnas (un hijo dos columnas más allá de su
+ * padre) las aristas cruzaban el gráfico entero en diagonal y pasaban por
+ * encima de nodos ajenos. Vale más una columna despareja que ese ruido.
+ *
+ * **El árbol no se limita a lo que ya tiene proyecto.** Un nodo sin `stack`
+ * que lo respalde se dibuja punteado (ver `proven` en SkillNodeButton) y al
+ * filtrarlo no devuelve fichas — es intencional: el mapa muestra el
+ * recorrido completo, no solo lo publicado. La "prueba" se deriva sola de
+ * los `stack` de los proyectos, así que agregar una skill es agregar un
+ * nodo acá y nada más.
+ *
+ * Fuera del árbol quedan: los servicios puntuales del VPS (n8n, redis,
+ * uptime kuma, ufw…), que se cuentan en el resumen de esa ficha, y las
+ * herramientas que no habilitan nada aguas abajo (editores, asistentes de
+ * IA, Linux) — esas van en `TOOLBOX`, abajo.
+ *
+ * El `tier` es solo una pista de layout (la columna en desktop): un nodo
+ * puede bajar de tier sin tocar sus `requires`, porque las aristas se miden
+ * del DOM y cruzan columnas sin problema. Se reparten ~7 por tier para que
+ * las cuatro columnas queden parejas; en mobile cada tier es una fila que
+ * envuelve, así que no hay tope duro de nodos.
  */
+// El orden dentro de cada tier sigue el de los padres en el tier anterior:
+// así los hijos caen enfrente de quien los habilita y las aristas salen
+// cortas y casi horizontales, en vez de cruzarse entre sí.
 export const SKILL_NODES: SkillNode[] = [
-  // Tier 0 — fundamentos / raíces
-  { id: "html5", label: "HTML5", requires: [], tier: 0, aliases: ["HTML"] },
+  // Tier 0 — las cinco familias
+  { id: "web", label: "Web", requires: [], tier: 0 },
   { id: "python", label: "Python", requires: [], tier: 0 },
-  { id: "git", label: "Git", requires: [], tier: 0 },
-  { id: "docker", label: "Docker", requires: [], tier: 0 },
-  // Tier 1
-  { id: "css3", label: "CSS3", requires: ["html5"], tier: 1, aliases: ["CSS"] },
-  { id: "javascript", label: "JavaScript", requires: ["html5"], tier: 1, aliases: ["JS"] },
+  { id: "javascript", label: "JavaScript", requires: [], tier: 0, aliases: ["JS"] },
+  { id: "bd", label: "BD", requires: [], tier: 0, aliases: ["Bases de datos"] },
+  { id: "herramientas", label: "Herramientas", requires: [], tier: 0 },
+  // Tier 1 — primer nivel de cada familia
+  { id: "html5", label: "HTML5", requires: ["web"], tier: 1, aliases: ["HTML"] },
   { id: "flask", label: "Flask", requires: ["python"], tier: 1 },
+  { id: "typescript", label: "TypeScript", requires: ["javascript"], tier: 1, aliases: ["TS"] },
+  { id: "react", label: "React", requires: ["javascript"], tier: 1 },
+  { id: "nodejs", label: "Node.js", requires: ["javascript"], tier: 1, aliases: ["Node"] },
+  { id: "sql", label: "SQL", requires: ["bd"], tier: 1 },
+  { id: "nosql", label: "NoSQL", requires: ["bd"], tier: 1 },
+  { id: "git", label: "Git", requires: ["herramientas"], tier: 1 },
+  { id: "docker", label: "Docker", requires: ["herramientas"], tier: 1 },
+  // Tier 2
+  { id: "css3", label: "CSS3", requires: ["html5"], tier: 2, aliases: ["CSS"] },
+  { id: "next", label: "Next.js", requires: ["react"], tier: 2, aliases: ["Next"] },
+  { id: "express", label: "Express", requires: ["nodejs"], tier: 2 },
+  { id: "postgresql", label: "PostgreSQL", requires: ["sql"], tier: 2, aliases: ["Postgres"] },
+  { id: "mysql", label: "MySQL", requires: ["sql"], tier: 2 },
+  { id: "sqlite", label: "SQLite", requires: ["sql"], tier: 2 },
+  { id: "mongodb", label: "MongoDB", requires: ["nosql"], tier: 2, aliases: ["Mongo"] },
   {
     id: "github-actions",
     label: "GitHub Actions",
     requires: ["git"],
-    tier: 1,
+    tier: 2,
     aliases: ["Git Actions", "GH Actions"],
   },
-  // Tier 2
-  { id: "bootstrap", label: "Bootstrap", requires: ["css3"], tier: 2, aliases: ["Bootstrap 5"] },
-  { id: "tailwind", label: "Tailwind CSS", requires: ["css3"], tier: 2, aliases: ["Tailwind"] },
-  { id: "typescript", label: "TypeScript", requires: ["javascript"], tier: 2, aliases: ["TS"] },
-  { id: "nodejs", label: "Node.js", requires: ["javascript"], tier: 2, aliases: ["Node"] },
-  // Tier 3
-  // SQLite depende de Flask (tier 1) pero va acá para no dejar 5 nodos en el
-  // tier 2 — ver el tope de 4 arriba.
-  { id: "sqlite", label: "SQLite", requires: ["flask"], tier: 3 },
-  { id: "react", label: "React", requires: ["javascript"], tier: 3 },
-  { id: "express", label: "Express", requires: ["nodejs"], tier: 3 },
-  {
-    id: "postgresql",
-    label: "PostgreSQL",
-    requires: ["nodejs"],
-    tier: 3,
-    aliases: ["Postgres"],
-  },
+  // Tier 3 — hojas
+  { id: "bootstrap", label: "Bootstrap", requires: ["css3"], tier: 3, aliases: ["Bootstrap 5"] },
+  { id: "tailwind", label: "Tailwind CSS", requires: ["css3"], tier: 3, aliases: ["Tailwind"] },
 ];
 
 /**
- * Herramientas del día a día que NO son nodos del árbol: no se demuestran
- * con un proyecto (no hay `stack` que las pruebe), así que como filtro
- * serían una casilla vacía. Van debajo de la red, a modo informativo — un
- * reclutador igual quiere saber que están. Sumar una es agregar un string.
+ * Herramientas que se usan todos los días pero no son parte del recorrido
+ * técnico: cambiar de editor no habilita nada aguas abajo. Van debajo de la
+ * red, a modo informativo y sin filtrar. Cada una lleva su marca monocroma
+ * (ver `brandIcons.ts`); sumar una es agregar la entrada acá y su path allá.
  */
-export const TOOLBOX: { group: string; items: string[] }[] = [
-  { group: "Editores e IDE", items: ["VS Code", "Cursor", "IntelliJ IDEA"] },
-  { group: "Sistemas", items: ["Linux"] },
+export const TOOLBOX: { group: string; items: BrandIcon[] }[] = [
+  {
+    group: "Editores e IDE",
+    items: [BRAND_ICONS.vscode, BRAND_ICONS.cursor, BRAND_ICONS.intellij],
+  },
+  { group: "IA", items: [BRAND_ICONS.claudeCode, BRAND_ICONS.opencode] },
+  { group: "Sistemas", items: [BRAND_ICONS.linux] },
 ];
 
 export const NODE_BY_ID = new Map(SKILL_NODES.map((n) => [n.id, n]));
@@ -136,6 +159,40 @@ export const ANCESTORS = new Map(
   SKILL_NODES.map((n) => [n.id, closure(n.id, (node) => node.requires)])
 );
 
+/** Hijos directos: `requires` dado vuelta. */
+const CHILDREN = new Map<string, string[]>();
+for (const node of SKILL_NODES) {
+  for (const req of node.requires) {
+    const list = CHILDREN.get(req);
+    if (list) list.push(node.id);
+    else CHILDREN.set(req, [node.id]);
+  }
+}
+
+/**
+ * Clausura "aguas abajo": todo lo que se apoya en un nodo (sql → postgresql,
+ * mysql, sqlite). **No confundir con `ANCESTORS`**, que va para el otro lado
+ * y es puramente visual — usar los ancestros para filtrar es el viejo bug de
+ * "tailwind O css3 O html5" que matcheaba todo (ver AGENTS.md).
+ */
+export const DESCENDANTS = new Map(
+  SKILL_NODES.map((n) => [n.id, closure(n.id, (node) => CHILDREN.get(node.id) ?? [])])
+);
+
+/**
+ * A qué nodos concretos responde cada filtro: el nodo mismo más su rama
+ * hacia abajo. Así un agrupador como `sql` —que ningún `stack` nombra— deja
+ * de ser una casilla muerta y muestra todo lo que use Postgres, MySQL o
+ * SQLite; y `web` muestra lo que use HTML, CSS, Bootstrap o Tailwind.
+ *
+ * Elegir varios sigue siendo restrictivo (AND) entre nodos, así que sumar
+ * `postgresql` a `sql` **achica** a los proyectos con Postgres: el AND se
+ * aplica entre los nodos elegidos, no dentro del alcance de cada uno.
+ */
+export const FILTER_SCOPE = new Map(
+  SKILL_NODES.map((n) => [n.id, new Set<string>([n.id, ...(DESCENDANTS.get(n.id) ?? [])])])
+);
+
 // Matching stack → nodo: label y aliases, en minúsculas.
 const STACK_LOOKUP = new Map<string, string>();
 for (const node of SKILL_NODES) {
@@ -165,8 +222,20 @@ export function resolveStack(stack: string[]): string[] {
   return ids;
 }
 
-/** Ids de nodos "probados": alguna ficha de proyecto usa esa tecnología. */
-export const PROVEN_NODE_IDS = new Set(PROJECTS.flatMap((p) => resolveStack(p.stack)));
+/**
+ * Ids de nodos "probados" (borde sólido): alguna ficha usa esa tecnología
+ * **o algo de su rama**. Lo segundo importa para los agrupadores: `sql` no
+ * aparece en ningún `stack`, pero filtra y devuelve proyectos, así que
+ * dibujarlo punteado —el signo de "todavía sin proyecto detrás"— sería
+ * contradecir al filtro. `nosql` en cambio sigue punteado, porque su única
+ * rama (MongoDB) no la usa nadie todavía.
+ */
+const DIRECTLY_PROVEN = new Set(PROJECTS.flatMap((p) => resolveStack(p.stack)));
+export const PROVEN_NODE_IDS = new Set(
+  SKILL_NODES.filter((n) =>
+    [...(FILTER_SCOPE.get(n.id) ?? [])].some((id) => DIRECTLY_PROVEN.has(id))
+  ).map((n) => n.id)
+);
 
 /** Qué proyectos prueban cada nodo (para el filtro de fichas). */
 export const PROJECT_IDS_BY_NODE = new Map<string, string[]>();

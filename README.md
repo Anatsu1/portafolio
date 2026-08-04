@@ -87,6 +87,7 @@ src/
   data/
     projects/              Un archivo por proyecto + tipo Project compartido
     skillTree.ts           Nodos del árbol (requires/tier/aliases) y sus derivados
+    brandIcons.ts          Marcas monocromas de las herramientas de TOOLBOX
   hooks/                   Toda la lógica con estado (tema, carruseles, slider, GSAP…)
   assets/                  Videos del brazo + capturas por proyecto
 ```
@@ -104,16 +105,19 @@ Todo el contenido editorial vive en datos, nunca hardcodeado en un componente.
 | Agregar un proyecto | Archivo nuevo en `src/data/projects/` + una línea en `index.ts`, capturas en `src/assets/<id-del-proyecto>/` |
 | Saber qué tecnología usa cada proyecto | `docs/stack-por-proyecto.md` (fuente de verdad de los `stack` y de los nodos) |
 | Agregar una skill o cambiar prerequisitos | `src/data/skillTree.ts` (`SKILL_NODES`) |
-| Agregar una herramienta informativa (editor, SO) | `src/data/skillTree.ts` (`TOOLBOX`) — no filtra proyectos |
+| Agregar una herramienta informativa (editor, SO) | `src/data/skillTree.ts` (`TOOLBOX`) + su marca en `src/data/brandIcons.ts` — no filtra proyectos |
 | Cambiar colores de marca o el tema | `src/index.css` (variables) y `tailwind.config.ts` (tokens) |
+| Permitir copiar un texto nuevo | Clase `select-text` en ese elemento — el sitio va con `select-none` global (`src/index.css`) |
 | Cómo se sirve/despliega | `nginx.conf`, `Dockerfile`, `.github/workflows/deploy.yml` |
 
 > [!IMPORTANT]
 > Cada string del `stack` de un proyecto tiene que coincidir con el `label` o un
 > alias de un nodo del árbol de skills. En desarrollo, `resolveStack` avisa por
-> consola si alguno no matchea. El árbol tampoco es libre: solo lleva
-> tecnologías de [`docs/stack-por-proyecto.md`](docs/stack-por-proyecto.md), con
-> un máximo de 4 nodos por fase (en mobile cada fase es una fila sin wrap).
+> consola si alguno no matchea — ojo con las herramientas de `TOOLBOX`, que no
+> son nodos y por lo tanto no pueden ir en un `stack`. El árbol sí puede tener
+> nodos sin proyecto todavía: se dibujan punteados.
+> [`docs/stack-por-proyecto.md`](docs/stack-por-proyecto.md) define qué queda
+> *probado*, no qué nodos existen.
 
 Guía completa de arquitectura y decisiones de diseño: [AGENTS.md](AGENTS.md).
 

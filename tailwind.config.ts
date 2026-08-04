@@ -42,10 +42,18 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-12px)" },
         },
+        // Respiración de luz de los chips de TOOLBOX. Solo box-shadow: el
+        // borde y el color se dejan a clases, para que el hover pueda
+        // pisarlos (una animación en curso le gana a una declaración suelta).
+        glow: {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgb(var(--color-brand-skills) / 0)" },
+          "50%": { boxShadow: "0 0 14px -2px rgb(var(--color-brand-skills) / 0.4)" },
+        },
       },
       animation: {
         "fade-up": "fade-up .7s ease-out both",
         float: "float 6s ease-in-out infinite",
+        glow: "glow 4s ease-in-out infinite",
       },
     },
   },

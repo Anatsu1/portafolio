@@ -234,25 +234,47 @@ con proyectos reales, no con barras de porcentaje inventadas.
   distinto).
 - **Árbol de skills** (`src/data/skillTree.ts` + `SkillTree.tsx` +
   `useSkillTree`): reemplaza a los chips por ficha y al viejo catálogo de
-  "piezas sueltas". Nodos con `requires` (prerequisitos, lectura
-  pedagógica: HTML5 → CSS3/JS → frameworks; ramas aparte para el backend
-  Python — python → flask → sqlite — y para versionado/infra — git →
-  github actions, docker), `tier` (columna de layout) y `aliases`
-  (matching contra `Project.stack`, ej. "Bootstrap 5" → nodo `bootstrap`).
-  - **Solo tecnologías que el usuario usa de verdad**, listadas en
-    `docs/stack-por-proyecto.md` (incluye los proyectos que faltan cargar,
-    Manarem y el VPS). No inventar nodos "porque quedan bien": cada uno es
-    una casilla que alguien clickea esperando ver trabajo detrás. Los
-    servicios puntuales del VPS (n8n, redis, uptime kuma, fail2ban, ufw)
-    quedan fuera del árbol; van en el resumen de esa ficha.
-  - **Tope de 4 nodos por tier**: en mobile cada fase es una fila sin wrap
-    y 5 nodos (w-16 + gap-2 = 352px) no entran en los 327px útiles de un
-    375px. Si un tier se llena, el nodo baja al siguiente sin tocar sus
-    `requires` (las aristas cruzan columnas). Las columnas del grid salen
-    de `TIER_COUNT`, no de una clase fija.
-  - **`TOOLBOX`** (mismo archivo, `Toolbox.tsx`): herramientas que NO se
-    prueban con un proyecto (editores/IDE, Linux). Van debajo de la red
-    como chips inertes — informativas, no filtran nada.
+  "piezas sueltas". Nodos con `requires` (prerequisitos), `tier` (columna
+  de layout) y `aliases` (matching contra `Project.stack`, ej.
+  "Bootstrap 5" → nodo `bootstrap`). Seis familias como raíz: web, python,
+  javascript, bd, git y herramientas.
+  - **Los agrupadores son nodos comunes** (web, bd, sql, nosql,
+    herramientas): clickeables, encienden su rama, y por sí solos no
+    matchean ningún proyecto. No hay un tipo de nodo aparte.
+  - **Ningún nodo se saltea un tier**: el `tier` es exactamente la
+    profundidad, así toda arista une columnas contiguas. Usar el tier para
+    emparejar columnas (bajar un hijo dos columnas más allá del padre)
+    llenaba el gráfico de diagonales largas que pasaban por encima de
+    nodos ajenos. Dentro de cada tier, el orden sigue el de los padres en
+    el anterior, para que los hijos caigan enfrente de quien los habilita.
+  - **El árbol NO se limita a lo que ya tiene proyecto.** Un nodo sin
+    `stack` que lo respalde se dibuja punteado y al filtrarlo no devuelve
+    fichas: el mapa muestra el recorrido completo. `docs/stack-por-proyecto.md`
+    define qué queda *probado*, no qué nodos existen. Sí quedan fuera los
+    servicios puntuales del VPS (n8n, redis, uptime kuma, fail2ban, ufw):
+    van en el resumen de esa ficha.
+  - **Sin tope de nodos por tier**: en mobile cada fase es una fila que
+    envuelve (`flex-wrap`, ~4 por renglón a 375px). El `tier` solo reparte
+    las columnas de desktop —conviene dejarlas parejas, ~7 cada una— y un
+    nodo puede bajar de tier sin tocar sus `requires` (las aristas se miden
+    del DOM y cruzan columnas). Las columnas del grid salen de
+    `TIER_COUNT`, no de una clase fija.
+  - **`TOOLBOX`** (mismo archivo, `Toolbox.tsx`): herramientas que no
+    habilitan nada aguas abajo (editores/IDE, asistentes de IA, Linux).
+    Van debajo de la red con la marca monocroma de cada una — los paths
+    están en `src/data/brandIcons.ts` y se pintan con `currentColor`, así
+    que sirven en los dos temas sin duplicar assets. Pulsan una luz tenue
+    (`animate-glow`, keyframe en `tailwind.config.ts`) escalonada por
+    índice: sin eso la fila se leía como pie de página. Ojo: si una
+    tecnología está acá, **no** puede ir en el `stack` de un proyecto (no
+    hay nodo que la matchee y `resolveStack` avisa por consola).
+    - **Los chips siguen siendo inertes**; lo clickeable es el rótulo de
+      la categoría, que hace toggle y deja iluminadas sus herramientas.
+      Estado local del componente: es realce visual, no toca el filtro de
+      fichas, así que no tiene por qué vivir en `useSkillTree`.
+    - Encendido y pulso **no conviven**: al iluminarse se saca
+      `animate-glow` y se pone una sombra fija, porque una animación en
+      curso le gana a cualquier declaración suelta de `box-shadow`.
 - **`picked` vs `selected`: la distinción que hace congruente al filtro.**
   `useSkillTree` mantiene DOS conjuntos y hay que respetar cuál se usa para
   qué:
@@ -265,16 +287,24 @@ con proyectos reales, no con barras de porcentaje inventadas.
   **El bug que esto arregla** (no volver a mezclarlos): antes se filtraba por
   `selected`, así que un clic en Tailwind encendía `css3`+`html5` y el filtro
   pasaba a ser "tailwind O css3 O html5" — como casi todo proyecto tiene
-  HTML/CSS, matcheaban todos y el filtro no decía nada. Por eso también se
-  borró `DESCENDANTS` de `skillTree.ts`: quedó huérfano y era justo la pieza
-  que invitaba a re-cablear la cascada al filtro.
-- **El filtro es RESTRICTIVO (AND)**: la ficha matchea si su stack contiene
-  **todas** las tecnologías de `picked`. Sumar tecnologías **achica** el
-  resultado, nunca lo agranda. Las que no matchean se atenúan
+  HTML/CSS, matcheaban todos y el filtro no decía nada.
+
+  **`DESCENDANTS` es la otra dirección y sí se usa** (volvió a
+  `skillTree.ts`, junto con `FILTER_SCOPE`). Ancestros = hacia arriba =
+  visual; descendientes = hacia abajo = filtro. Confundirlos reintroduce el
+  bug de arriba.
+- **El filtro es RESTRICTIVO (AND), y cada elegido se cumple con su rama.**
+  Un elegido lo satisface el nodo mismo o cualquier descendiente
+  (`FILTER_SCOPE` = nodo + `DESCENDANTS`): elegir `sql` muestra lo que use
+  Postgres, MySQL o SQLite, porque ningún `stack` escribe "SQL" y si no los
+  agrupadores eran casillas muertas que devolvían cero. **El AND sigue
+  intacto**: es entre nodos elegidos, no dentro del alcance de cada uno, así
+  que `sql` + `postgresql` achica a los de Postgres. Sumar tecnologías
+  **achica** el resultado, nunca lo agranda. Las que no matchean se atenúan
   (`opacity-40 saturate-50`) y las que sí se resaltan
   (`border-brand-skills/40`) — **nunca se desmontan** (slider estable).
-  Con 0 matches el mensaje se bifurca: con una sola tecnología elegida
-  adelanta el futuro proyecto del homelab; con varias, sugiere sacar alguna
+  Con 0 matches el mensaje se bifurca: con una sola tecnología elegida avisa
+  que todavía no hay proyecto que la use; con varias, sugiere sacar alguna
   (que es lo que suele pasar con AND y pocos proyectos cargados).
 - **Toggle**: un clic agrega/saca de `picked`, nada más. Clickear un nodo que
   estaba encendido sólo como prerequisito lo **asciende** a elegido (pasa a
@@ -282,8 +312,10 @@ con proyectos reales, no con barras de porcentaje inventadas.
   otro elegido. La clausura se recalcula sola (`useMemo`) — no hay estado
   paralelo que sincronizar ni cascada que mantener a mano.
 - **Estados visuales del nodo** — son cuatro ejes y conviene no colapsarlos:
-  borde sólido = probado por un proyecto (`PROVEN_NODE_IDS`, derivado —
-  nunca a mano), punteado = sin proyecto todavía, candado = prerequisitos
+  borde sólido = probado por un proyecto **o por algo de su rama**
+  (`PROVEN_NODE_IDS`, derivado — nunca a mano; lo de la rama mantiene
+  coherentes a los agrupadores, que filtran y devuelven fichas aunque
+  ningún `stack` los nombre), punteado = sin proyecto todavía, candado = prerequisitos
   apagados (visual nomás, sigue clickeable), y **tres niveles de encendido**:
   elegido (relleno fuerte + `ring`, está filtrando), prerequisito (encendido
   tenue, no filtra) y apagado. Ese nivel intermedio no es decorativo: sin él,
@@ -615,7 +647,7 @@ docker compose pull && docker compose up -d
 | Agregar un proyecto nuevo                        | `src/data/projects/` (archivo nuevo + agregarlo a `index.ts`) + capturas en `src/assets/projects/` |
 | Saber qué tecnología usa cada proyecto            | `docs/stack-por-proyecto.md` (fuente de verdad de stacks y nodos) |
 | Agregar una skill al árbol / cambiar prerequisitos | `src/data/skillTree.ts` (SKILL_NODES)          |
-| Agregar una herramienta informativa (editor, SO)  | `src/data/skillTree.ts` (TOOLBOX) — no es filtro |
+| Agregar una herramienta informativa (editor, SO)  | `src/data/skillTree.ts` (TOOLBOX) + su marca en `src/data/brandIcons.ts` — no es filtro ni puede ir en un `stack` |
 | Tocar la ficha de proyecto, el carrusel o el árbol | `src/components/sections/projects/`             |
 | Tocar el video del brazo del Hero                | `src/components/sections/hero/HeroArmVideo.tsx`, assets en `src/assets/arm-*` |
 | Tocar el reveal del texto del Hero o el aura      | `src/hooks/useHeroReveal.ts` |

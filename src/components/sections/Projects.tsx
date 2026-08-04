@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PROJECTS } from "../../data/projects";
-import { resolveStack } from "../../data/skillTree";
+import { FILTER_SCOPE, resolveStack } from "../../data/skillTree";
 import { useSkillTree } from "../../hooks/useSkillTree";
 import { useProjectSlider } from "../../hooks/useProjectSlider";
 import { Reveal, containerVariants, itemVariants } from "../Reveal";
@@ -25,20 +25,29 @@ export default function Projects() {
   const { picked, selected, toggle, clear } = useSkillTree();
 
   // Filtro RESTRICTIVO (AND) y sólo sobre lo elegido a mano (`picked`, no
-  // `selected`): la ficha matchea si su stack contiene TODAS las tecnologías
-  // elegidas. Los prerequisitos que se encienden solos en la red no filtran
-  // — si filtraran, elegir Tailwind arrastraría css3+html5 y matchearían
-  // todos los proyectos, que era el bug. Sumar tecnologías achica el
-  // resultado, nunca lo agranda. Las que no matchean se atenúan, nunca se
-  // desmontan — el slider queda estable.
+  // `selected`): la ficha matchea si cumple TODAS las tecnologías elegidas.
+  // Los prerequisitos que se encienden solos en la red no filtran — si
+  // filtraran, elegir Tailwind arrastraría css3+html5 y matchearían todos
+  // los proyectos, que era el bug.
+  //
+  // Cada elegido se cumple con el nodo mismo o con cualquiera de su rama
+  // hacia abajo (`FILTER_SCOPE`): elegir `sql` muestra lo que use Postgres,
+  // MySQL o SQLite, porque nadie escribe "SQL" en un stack y si no la
+  // casilla no devolvía nada. Ojo que esto NO afloja el AND: sigue siendo
+  // entre nodos elegidos, así que `sql` + `postgresql` achica a los de
+  // Postgres. La rama se recorre hacia ABAJO; hacia arriba (ancestros) es
+  // justo lo que rompía el filtro.
   const filterStates = useMemo(() => {
     const states = new Map<string, PlateFilterState>();
     for (const project of ORDERED_PROJECTS) {
       if (picked.size === 0) {
         states.set(project.id, "none");
       } else {
-        const nodeIds = new Set(NODE_IDS_BY_PROJECT.get(project.id) ?? []);
-        const hasAll = [...picked].every((id) => nodeIds.has(id));
+        const nodeIds = NODE_IDS_BY_PROJECT.get(project.id) ?? [];
+        const hasAll = [...picked].every((id) => {
+          const scope = FILTER_SCOPE.get(id);
+          return scope ? nodeIds.some((nodeId) => scope.has(nodeId)) : false;
+        });
         states.set(project.id, hasAll ? "match" : "miss");
       }
     }

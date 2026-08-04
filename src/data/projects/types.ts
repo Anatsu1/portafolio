@@ -1,5 +1,10 @@
-/** "academico" = trabajos de la carrera (tesis, finales de cursada). */
-export type ProjectRole = "cliente" | "personal" | "academico";
+/**
+ * "formacion" = trabajos de cursos y bootcamps (sello "Certificación").
+ * Los trabajos de la carrera no tienen rol propio: la tesis de la UTN va
+ * como "cliente", porque la universidad hizo de comitente real del sistema
+ * y eso es lo que le dice algo a quien mira el portafolio.
+ */
+export type ProjectRole = "cliente" | "personal" | "formacion";
 /** "preview" = proyecto terminado cuya demo online está en modo estático
  *  (sin backend levantado) hasta volver a montar los servicios. */
 export type ProjectStatus = "activo" | "en-progreso" | "preview";

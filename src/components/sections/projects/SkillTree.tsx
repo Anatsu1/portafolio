@@ -97,7 +97,10 @@ export default function SkillTree({
               <p className="text-center text-[10px] font-semibold uppercase tracking-widest text-muted">
                 Fase {String(t).padStart(2, "0")}
               </p>
-              <div className="flex flex-row justify-center gap-2 md:flex-1 md:flex-col md:items-center md:justify-center md:gap-7">
+              {/* Mobile: fila que envuelve — hay tiers de ~7 nodos y a 375px
+                  entran 4 por renglón; sin wrap la fase se saldría de
+                  pantalla. Desktop: columna, un tier por columna. */}
+              <div className="flex flex-row flex-wrap justify-center gap-x-2 gap-y-4 md:flex-1 md:flex-col md:flex-nowrap md:items-center md:justify-center md:gap-7">
                 {tier.map((node, i) => (
                   <div
                     key={node.id}
@@ -137,7 +140,7 @@ export default function SkillTree({
           <span className="normal-case tracking-normal">
             {picked.size > 1
               ? "Ningún proyecto usa esa combinación completa — probá sacando alguna tecnología."
-              : "Todavía ningún proyecto cargado usa esto — el próximo (cómo armé mi propio servidor) se va a encargar."}
+              : "Todavía ningún proyecto cargado usa esto — hay trabajo en camino."}
           </span>
         )}
         {hasFilter && (

@@ -34,6 +34,25 @@
   body {
     @apply bg-background font-body text-body antialiased transition-colors duration-300;
   }
+  /**
+   * El contenido no se selecciona con el mouse: decisión del dueño del
+   * sitio para que no se copie de un tirón. Es un freno para el arrastre
+   * casual nada más — con devtools, "ver código fuente" o el modo lectura
+   * el texto sigue estando a la vista, así que no cuenten con esto para
+   * proteger nada.
+   *
+   * Excepciones marcadas con `select-text`: el nombre (Hero y footer) y el
+   * correo de contacto, que son justo lo que alguien necesita copiar.
+   */
+  body {
+    @apply select-none;
+  }
+  /* Los campos del formulario tienen que seguir siendo editables. */
+  input,
+  textarea,
+  select {
+    @apply select-text;
+  }
   ::selection {
     @apply bg-brand-primary/40 text-heading;
   }

@@ -5,8 +5,11 @@ export default function Footer() {
   return (
     <footer className="border-t border-border/5 bg-surface">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-6 py-10 md:flex-row md:justify-between md:px-10">
+        {/* Solo el nombre lleva `select-text`, no la línea entera: así al
+            copiarlo no se arrastra el "Portafolio de: Tec." (ver el
+            `select-none` global en index.css). */}
         <p className="font-display font-semibold text-heading">
-          Portafolio de: Tec. {OWNER.name}
+          Portafolio de: Tec. <span className="select-text">{OWNER.name}</span>
         </p>
 
         <ul className="flex flex-wrap justify-center gap-6 text-sm">
@@ -29,7 +32,8 @@ export default function Footer() {
         </div>
       </div>
       <p className="pb-6 text-center text-xs text-muted/70">
-        © {new Date().getFullYear()} {OWNER.name}. Hecho con React, TypeScript y Tailwind CSS.
+        © {new Date().getFullYear()} <span className="select-text">{OWNER.name}</span>. Hecho con
+        React, TypeScript y Tailwind CSS.
       </p>
     </footer>
   );

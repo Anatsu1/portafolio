@@ -9,7 +9,10 @@ const ASPECT = "1910 / 943";
 export const utnNecochea: Project = {
   id: "utn-necochea",
   title: "UTN Extensión Áulica Necochea",
-  role: "academico",
+  // Cliente y no "academico": la universidad hizo de comitente real del
+  // sistema (pidió, revisó y recibió), que es lo que le interesa a alguien
+  // que mira el portafolio — más que el hecho de que fuera una tesis.
+  role: "cliente",
   // El código es privado (repo del equipo) — solo link a la demo. La demo
   // es una preview estática hasta volver a levantar los servicios de
   // backend; cuando eso pase, cambiar status a "activo".

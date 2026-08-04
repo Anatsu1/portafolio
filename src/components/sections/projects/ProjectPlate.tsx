@@ -17,14 +17,16 @@ const STATUS_LABEL: Record<Project["status"], string> = {
 const ROLE_LABEL: Record<Project["role"], string> = {
   cliente: "Cliente",
   personal: "Personal",
-  academico: "Académico",
+  formacion: "Formación",
 };
 
 // Sello girado en la esquina de la ficha (null = sin sello).
+// "Certificación" y no "Curso": suelto, "curso" se lee como "en curso" y
+// daba a entender que el proyecto estaba a medio hacer.
 const STAMP_LABEL: Record<Project["role"], string | null> = {
   cliente: "Cliente",
-  personal: null,
-  academico: "Tesis",
+  personal: "Personal",
+  formacion: "Certificación",
 };
 
 // Marcas de esquina — puro CSS anclado a las 4 esquinas de la propia

@@ -122,9 +122,12 @@ export default function Hero({ onReady }: HeroProps) {
           <p ref={eyebrowRef} className="eyebrow text-brand-primary opacity-0">
             soy
           </p>
+          {/* `select-text`: el sitio entero no se selecciona (ver index.css),
+              pero el nombre sí — es de lo poco que alguien va a querer
+              copiar. */}
           <h1
             aria-label={OWNER.name}
-            className="font-display text-4xl font-extrabold leading-tight text-heading sm:text-5xl lg:text-6xl"
+            className="select-text font-display text-4xl font-extrabold leading-tight text-heading sm:text-5xl lg:text-6xl"
           >
             <span
               ref={firstNameRef}
