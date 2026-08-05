@@ -27,7 +27,7 @@ Lo que la hace distinta de una landing estática cualquiera:
 
 - **Proyectos y skills unificados.** No hay barras de porcentaje: cada
   habilidad se demuestra con un proyecto. Las fichas de proyecto son *planos
-  técnicos* (cajetín de metadatos, sello girado "CLIENTE"/"TESIS", carrusel de
+  técnicos* (cajetín de metadatos, sello "CLIENTE"/"PERSONAL"/"CERTIFICACIÓN", carrusel de
   capturas y videos con tira `FIG. 01 / 03`).
 - **Árbol de skills como filtro.** Una red de nodos con prerequisitos
   (`HTML5 → CSS3 → Tailwind`) que filtra las fichas de forma restrictiva (AND).
@@ -35,7 +35,7 @@ Lo que la hace distinta de una landing estática cualquiera:
   "probadas" se derivan solas del `stack` de cada uno: no hay ninguna lista que
   mantener a mano. Las aristas SVG se miden del DOM real con `ResizeObserver`,
   así que quedan bien en cualquier breakpoint. Debajo, una fila informativa
-  de herramientas que no se demuestran con un proyecto (editores, Linux).
+  de herramientas que no se demuestran con un proyecto (editores, DevOps, Linux).
 - **Hero con brazo robótico.** Video pre-renderizado a pantalla completa (una
   variante por tema), reveal del texto con GSAP y, en mobile, una cámara virtual
   que hace zoom y sigue la pinza.
@@ -86,7 +86,7 @@ src/
       projects/            ProjectPlate, ProjectCarousel, SkillTree, SkillNodeButton
   data/
     projects/              Un archivo por proyecto + tipo Project compartido
-    skillTree.ts           Nodos del árbol (requires/tier/aliases) y sus derivados
+    skillTree.ts           Nodos del árbol (requires/aliases) y sus derivados
     brandIcons.ts          Marcas monocromas de las herramientas de TOOLBOX
   hooks/                   Toda la lógica con estado (tema, carruseles, slider, GSAP…)
   assets/                  Videos del brazo + capturas por proyecto

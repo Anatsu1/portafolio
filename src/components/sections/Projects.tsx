@@ -75,9 +75,14 @@ export default function Projects() {
           siguiente); en lg: entran 2 por vista. Sin scrollbar — se navega
           con la tira de controles de abajo (desplazamiento animado vía
           useProjectSlider) o con swipe/rueda, que siguen funcionando. */}
+      {/* `py-6 -mb-6` con `mt-4`: al scrollear en x, el navegador recorta en
+          y, y sin ese aire el hover de la ficha (lift + sombra) quedaba
+          cortado arriba y abajo. El margen negativo devuelve el espacio
+          para que la separación con los controles no cambie, y el mt-4 +
+          pt-6 suman los 40px que había antes. */}
       <motion.div
         ref={containerRef}
-        className="mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:min-w-[88%] [&>*]:snap-start lg:gap-6 lg:[&>*]:min-w-[calc(50%-0.75rem)]"
+        className="-mb-6 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:min-w-[88%] [&>*]:snap-start lg:gap-6 lg:[&>*]:min-w-[calc(50%-0.75rem)]"
         variants={containerVariants}
         initial="hidden"
         whileInView="show"

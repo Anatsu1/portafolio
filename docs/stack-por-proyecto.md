@@ -25,9 +25,11 @@ Estos cinco prueban las tecnologías concretas del árbol. Los agrupadores
 (web, bd, sql, nosql, herramientas) y lo que todavía no tiene proyecto
 (Next.js, MySQL, MongoDB) se dibujan punteados a propósito.
 
-> Los servicios propios del VPS (n8n, redis, uptime kuma, fail2ban, ufw…) **no**
-> son nodos del árbol: son piezas de esa infraestructura puntual, no skills
-> transferibles que tenga sentido ofrecer como filtro.
+> Los servicios propios del VPS (Traefik, Portainer, n8n, Redis, Uptime Kuma,
+> Cloudflare, Nginx, Fail2Ban, UFW…) **no** son nodos del árbol: son piezas de
+> esa infraestructura puntual, no skills transferibles que tenga sentido
+> ofrecer como filtro. Los más reconocibles se listan como chips en el grupo
+> DevOps de `TOOLBOX`, abajo.
 
 ## Herramientas (informativas, no son filtro)
 
@@ -37,7 +39,8 @@ recorrido. Viven en `TOOLBOX`, en `src/data/skillTree.ts`.
 
 - **Editores e IDE:** VS Code, Cursor, IntelliJ IDEA
 - **IA:** Claude Code, opencode
-- **Sistemas:** Linux
+- **DevOps:** Nginx, Traefik, Cloudflare, Portainer, n8n, Redis, Uptime Kuma
+- **Sistemas:** Linux, Bash
 
 Cada chip lleva la marca monocroma de la herramienta; los paths están en
 `src/data/brandIcons.ts` y se pintan con `currentColor`, así que sirven igual

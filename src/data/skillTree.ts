@@ -5,11 +5,9 @@ export type SkillNode = {
   /** Id estable en kebab-case — clave de `requires` y del matching de stack. */
   id: string;
   label: string;
-  /** Ids de prerequisitos ([] = raíz). Array: soporta multi-padre a futuro. */
+  /** Ids de prerequisitos ([] = raíz). Array: soporta multi-padre a futuro;
+   *  el PRIMERO manda para el layout (ver `LAYOUT_CHILDREN`). */
   requires: string[];
-  /** Columna de layout (0-based). Pista visual — puede ser mayor que la
-   *  mínima necesaria, para balancear columnas. */
-  tier: number;
   /** Strings de `Project.stack` que mapean a este nodo además del label
    *  (ej. "Bootstrap 5" → nodo "bootstrap"). */
   aliases?: string[];
@@ -30,11 +28,11 @@ export type SkillNode = {
  * matcheen ningún proyecto. Organizan la red sin necesitar un tipo de nodo
  * aparte.
  *
- * **Ningún nodo se saltea un tier.** El `tier` de cada uno es exactamente su
- * profundidad, así que toda arista une columnas contiguas. Cuando se usaba
- * el tier para emparejar columnas (un hijo dos columnas más allá de su
- * padre) las aristas cruzaban el gráfico entero en diagonal y pasaban por
- * encima de nodos ajenos. Vale más una columna despareja que ese ruido.
+ * **La columna de cada nodo es su profundidad, y se calcula sola** (`DEPTH`):
+ * ya no hay campo `tier` que mantener a mano ni que se pueda desincronizar.
+ * Como el layout dibuja cada familia en su propia fila (ver SkillTree.tsx),
+ * toda arista une columnas contiguas dentro de una misma rama y ninguna
+ * cruza el gráfico.
  *
  * **El árbol no se limita a lo que ya tiene proyecto.** Un nodo sin `stack`
  * que lo respalde se dibuja punteado (ver `proven` en SkillNodeButton) y al
@@ -47,51 +45,46 @@ export type SkillNode = {
  * uptime kuma, ufw…), que se cuentan en el resumen de esa ficha, y las
  * herramientas que no habilitan nada aguas abajo (editores, asistentes de
  * IA, Linux) — esas van en `TOOLBOX`, abajo.
- *
- * El `tier` es solo una pista de layout (la columna en desktop): un nodo
- * puede bajar de tier sin tocar sus `requires`, porque las aristas se miden
- * del DOM y cruzan columnas sin problema. Se reparten ~7 por tier para que
- * las cuatro columnas queden parejas; en mobile cada tier es una fila que
- * envuelve, así que no hay tope duro de nodos.
  */
-// El orden dentro de cada tier sigue el de los padres en el tier anterior:
-// así los hijos caen enfrente de quien los habilita y las aristas salen
-// cortas y casi horizontales, en vez de cruzarse entre sí.
+// El orden de este array es el que se ve en pantalla: las raíces salen en
+// este orden de arriba hacia abajo (web, python, javascript, bd,
+// herramientas) y los hijos de un mismo padre también. Por eso se declara
+// familia por familia, en el mismo orden en que se dibuja.
 export const SKILL_NODES: SkillNode[] = [
-  // Tier 0 — las cinco familias
-  { id: "web", label: "Web", requires: [], tier: 0 },
-  { id: "python", label: "Python", requires: [], tier: 0 },
-  { id: "javascript", label: "JavaScript", requires: [], tier: 0, aliases: ["JS"] },
-  { id: "bd", label: "BD", requires: [], tier: 0, aliases: ["Bases de datos"] },
-  { id: "herramientas", label: "Herramientas", requires: [], tier: 0 },
-  // Tier 1 — primer nivel de cada familia
-  { id: "html5", label: "HTML5", requires: ["web"], tier: 1, aliases: ["HTML"] },
-  { id: "flask", label: "Flask", requires: ["python"], tier: 1 },
-  { id: "typescript", label: "TypeScript", requires: ["javascript"], tier: 1, aliases: ["TS"] },
-  { id: "react", label: "React", requires: ["javascript"], tier: 1 },
-  { id: "nodejs", label: "Node.js", requires: ["javascript"], tier: 1, aliases: ["Node"] },
-  { id: "sql", label: "SQL", requires: ["bd"], tier: 1 },
-  { id: "nosql", label: "NoSQL", requires: ["bd"], tier: 1 },
-  { id: "git", label: "Git", requires: ["herramientas"], tier: 1 },
-  { id: "docker", label: "Docker", requires: ["herramientas"], tier: 1 },
-  // Tier 2
-  { id: "css3", label: "CSS3", requires: ["html5"], tier: 2, aliases: ["CSS"] },
-  { id: "next", label: "Next.js", requires: ["react"], tier: 2, aliases: ["Next"] },
-  { id: "express", label: "Express", requires: ["nodejs"], tier: 2 },
-  { id: "postgresql", label: "PostgreSQL", requires: ["sql"], tier: 2, aliases: ["Postgres"] },
-  { id: "mysql", label: "MySQL", requires: ["sql"], tier: 2 },
-  { id: "sqlite", label: "SQLite", requires: ["sql"], tier: 2 },
-  { id: "mongodb", label: "MongoDB", requires: ["nosql"], tier: 2, aliases: ["Mongo"] },
+  // Familia web
+  { id: "web", label: "Web", requires: [] },
+  { id: "html5", label: "HTML5", requires: ["web"], aliases: ["HTML"] },
+  { id: "css3", label: "CSS3", requires: ["html5"], aliases: ["CSS"] },
+  { id: "bootstrap", label: "Bootstrap", requires: ["css3"], aliases: ["Bootstrap 5"] },
+  { id: "tailwind", label: "Tailwind CSS", requires: ["css3"], aliases: ["Tailwind"] },
+  // Familia python
+  { id: "python", label: "Python", requires: [] },
+  { id: "flask", label: "Flask", requires: ["python"] },
+  // Familia javascript
+  { id: "javascript", label: "JavaScript", requires: [], aliases: ["JS"] },
+  { id: "typescript", label: "TypeScript", requires: ["javascript"], aliases: ["TS"] },
+  { id: "react", label: "React", requires: ["javascript"] },
+  { id: "next", label: "Next.js", requires: ["react"], aliases: ["Next"] },
+  { id: "nodejs", label: "Node.js", requires: ["javascript"], aliases: ["Node"] },
+  { id: "express", label: "Express", requires: ["nodejs"] },
+  // Familia bases de datos
+  { id: "bd", label: "BD", requires: [], aliases: ["Bases de datos"] },
+  { id: "sql", label: "SQL", requires: ["bd"] },
+  { id: "postgresql", label: "PostgreSQL", requires: ["sql"], aliases: ["Postgres"] },
+  { id: "mysql", label: "MySQL", requires: ["sql"] },
+  { id: "sqlite", label: "SQLite", requires: ["sql"] },
+  { id: "nosql", label: "NoSQL", requires: ["bd"] },
+  { id: "mongodb", label: "MongoDB", requires: ["nosql"], aliases: ["Mongo"] },
+  // Familia herramientas
+  { id: "herramientas", label: "Herramientas", requires: [] },
+  { id: "git", label: "Git", requires: ["herramientas"] },
   {
     id: "github-actions",
     label: "GitHub Actions",
     requires: ["git"],
-    tier: 2,
     aliases: ["Git Actions", "GH Actions"],
   },
-  // Tier 3 — hojas
-  { id: "bootstrap", label: "Bootstrap", requires: ["css3"], tier: 3, aliases: ["Bootstrap 5"] },
-  { id: "tailwind", label: "Tailwind CSS", requires: ["css3"], tier: 3, aliases: ["Tailwind"] },
+  { id: "docker", label: "Docker", requires: ["herramientas"] },
 ];
 
 /**
@@ -99,6 +92,15 @@ export const SKILL_NODES: SkillNode[] = [
  * técnico: cambiar de editor no habilita nada aguas abajo. Van debajo de la
  * red, a modo informativo y sin filtrar. Cada una lleva su marca monocroma
  * (ver `brandIcons.ts`); sumar una es agregar la entrada acá y su path allá.
+ *
+ * **Nada de acá puede aparecer en el `stack` de un proyecto**: no hay nodo
+ * que lo matchee, así que no filtraría y `resolveStack` avisaría por
+ * consola. Por eso Docker, Git y GitHub Actions —que sí están en el stack
+ * del VPS— siguen siendo nodos del árbol y no chips.
+ *
+ * El grupo DevOps son las piezas concretas del VPS (ver ese proyecto): se
+ * nombran en su resumen, pero como chips quedan a la vista de un reclutador
+ * que escanea la sección sin leer la ficha entera.
  */
 export const TOOLBOX: { group: string; items: BrandIcon[] }[] = [
   {
@@ -106,7 +108,19 @@ export const TOOLBOX: { group: string; items: BrandIcon[] }[] = [
     items: [BRAND_ICONS.vscode, BRAND_ICONS.cursor, BRAND_ICONS.intellij],
   },
   { group: "IA", items: [BRAND_ICONS.claudeCode, BRAND_ICONS.opencode] },
-  { group: "Sistemas", items: [BRAND_ICONS.linux] },
+  {
+    group: "DevOps",
+    items: [
+      BRAND_ICONS.nginx,
+      BRAND_ICONS.traefik,
+      BRAND_ICONS.cloudflare,
+      BRAND_ICONS.portainer,
+      BRAND_ICONS.n8n,
+      BRAND_ICONS.redis,
+      BRAND_ICONS.uptimeKuma,
+    ],
+  },
+  { group: "Sistemas", items: [BRAND_ICONS.linux, BRAND_ICONS.bash] },
 ];
 
 export const NODE_BY_ID = new Map(SKILL_NODES.map((n) => [n.id, n]));
@@ -118,12 +132,50 @@ export const EDGES: SkillEdge[] = SKILL_NODES.flatMap((node) =>
   node.requires.map((req) => ({ from: req, to: node.id }))
 );
 
-export const TIER_COUNT = Math.max(...SKILL_NODES.map((n) => n.tier)) + 1;
+/** Raíces (sin prerequisitos): una fila del mapa cada una, en este orden. */
+export const ROOTS = SKILL_NODES.filter((n) => n.requires.length === 0);
 
-/** Nodos agrupados por tier, en orden de declaración. */
-export const TIERS: SkillNode[][] = Array.from({ length: TIER_COUNT }, (_, t) =>
-  SKILL_NODES.filter((n) => n.tier === t)
-);
+/**
+ * Hijos **para dibujar**, agrupados por su primer `requires`. Si algún día
+ * un nodo tiene dos padres, se dibuja una sola vez —colgado del primero— y
+ * la arista al otro padre igual se traza (sale de `EDGES`, que recorre
+ * todos los `requires`). Sin esto el nodo aparecería duplicado y las dos
+ * copias pelearían por el mismo ref de medición.
+ */
+export const LAYOUT_CHILDREN = new Map<string, SkillNode[]>();
+for (const node of SKILL_NODES) {
+  const parent = node.requires[0];
+  if (!parent) continue;
+  const list = LAYOUT_CHILDREN.get(parent);
+  if (list) list.push(node);
+  else LAYOUT_CHILDREN.set(parent, [node]);
+}
+
+/**
+ * Columna de cada nodo = su profundidad en el árbol. Se calcula, no se
+ * declara: antes era un campo `tier` a mano y cualquier descuido dejaba
+ * aristas cruzando el gráfico. El `seen` corta un ciclo en `requires`
+ * (ANCESTORS ya lo denuncia por consola) para no reventar la pila al
+ * cargar el módulo.
+ */
+const DEPTH = new Map<string, number>();
+function depthOf(id: string, seen: Set<string> = new Set()): number {
+  const cached = DEPTH.get(id);
+  if (cached !== undefined) return cached;
+  if (seen.has(id)) return 0;
+  seen.add(id);
+  const node = NODE_BY_ID.get(id);
+  const depth = !node?.requires.length
+    ? 0
+    : Math.max(...node.requires.map((req) => depthOf(req, seen) + 1));
+  seen.delete(id);
+  DEPTH.set(id, depth);
+  return depth;
+}
+for (const node of SKILL_NODES) depthOf(node.id);
+
+/** Cantidad de columnas ("fases") del mapa. */
+export const TIER_COUNT = Math.max(...DEPTH.values()) + 1;
 
 // Clausura transitiva "aguas arriba": todos los prerequisitos de los
 // prerequisitos de cada nodo. Se calcula una vez al cargar el módulo — el

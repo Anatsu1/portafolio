@@ -87,7 +87,7 @@ src/
       projects/
         ProjectPlate.tsx          Ficha técnica (blueprint) de un proyecto — cajetín + capturas + links
         ProjectCarousel.tsx       Carrusel de media (capturas + videos) de la ficha (tira "FIG.")
-        SkillTree.tsx             Red de nodos de skills (tiers + SVG de aristas + línea de resultado)
+        SkillTree.tsx             Red de nodos de skills (una fila por familia + SVG de aristas + línea de resultado)
         SkillNodeButton.tsx       Nodo del árbol (probado/sin probar/locked + elegido/prerequisito/apagado)
       Contact.tsx               Sección "Contacto" (#contacto), dos audiencias (Empresas primero y por defecto)
   data/
@@ -95,7 +95,7 @@ src/
       types.ts                 Tipo Project compartido (id, role, status, featured, stack, links, media[])
       prestarte.ts              Un archivo por proyecto real
       index.ts                  Agrega PROJECTS (las skills probadas se derivan en skillTree.ts)
-    skillTree.ts               Nodos del árbol de skills (requires/tier/aliases) + derivados (aristas, ANCESTORS, resolveStack, PROVEN_NODE_IDS)
+    skillTree.ts               Nodos del árbol de skills (requires/aliases) + derivados (aristas, profundidad, ANCESTORS, resolveStack, PROVEN_NODE_IDS)
   hooks/
     useTheme.tsx             Modo claro/oscuro: contexto (ThemeProvider) + persistencia
     useScrollPosition.ts     Detecta scroll > umbral (usado por Navbar)
@@ -148,13 +148,16 @@ con proyectos reales, no con barras de porcentaje inventadas.
 - **Modelo de datos** (`src/data/projects/`): un archivo por proyecto
   (`prestarte.ts`, `utn-necochea.ts`, etc.) que exporta un objeto `Project`
   (tipo en `types.ts`: `id`, `title`, `role` ("cliente" | "personal" |
-  "academico" — trabajos de la carrera/tesis), `status` ("activo" |
-  "en-progreso" | "preview" — terminado pero con la demo estática hasta
-  volver a levantar el backend), `featured`, `summary`, `stack` (tags
-  atómicos), `links.{demo,repo}`, `media` (array, puede ser vacío)).
-  Los roles "cliente" y "academico" muestran un **sello girado** en la
-  esquina de la ficha ("CLIENTE" / "TESIS", `STAMP_LABEL` en
-  `ProjectPlate.tsx`); "personal" no lleva sello.
+  "formacion"), `status` ("activo" | "en-progreso" | "preview" —
+  terminado pero con la demo estática hasta volver a levantar el
+  backend), `featured`, `summary`, `stack` (tags atómicos),
+  `links.{demo,repo}`, `media` (array, puede ser vacío)).
+  Los tres roles muestran un **sello** en la esquina de la ficha
+  ("CLIENTE" / "PERSONAL" / "CERTIFICACIÓN", `STAMP_LABEL` en
+  `ProjectPlate.tsx`). Va **derecho**, no girado: inclinado se leía como
+  calcomanía y peleaba con la grilla de plano técnico, donde todo está a
+  escuadra. `STAMP_LABEL` es un `Record<Project["role"], …>` a propósito
+  — agregar un rol sin decidir su sello no compila.
   Solo proyectos REALES: un `stack` inventado marca nodos del árbol como
   "probados" sin trabajo detrás, y en un portafolio de búsqueda laboral eso
   miente.
@@ -193,6 +196,14 @@ con proyectos reales, no con barras de porcentaje inventadas.
   - **Full-bleed en mobile**: el marco rompe el padding de la ficha
     (`-mx-6`, sin bordes laterales) — la media va borde a borde; en `md:`
     vuelve al marco con borde redondeado.
+- **Hover de la ficha**: se levanta (`-translate-y-1.5`), se le opaca el
+  fondo, se le aclara el borde y tira una sombra en el color de la sección;
+  las cuatro marcas de esquina se encienden en `brand-projects` vía `group`.
+  Tiene que notarse que la ficha es la unidad con la que se interactúa.
+  **El slider lleva `py-6` con `-mb-6` por esto**: un contenedor que
+  scrollea en x recorta en y (overflow-x auto ⇒ overflow-y auto), y sin ese
+  aire el lift y la sombra quedaban cortados arriba y abajo. Si se toca el
+  hover, revisar que el `py` siga alcanzando.
 - **Fichas = slider horizontal en todas las resoluciones** (`Projects.tsx`):
   scroll-snap nativo (`snap-start`) — en mobile cada ficha es un slide al
   88% del ancho (asoma la siguiente); en `lg:` entran 2 por vista
@@ -234,33 +245,39 @@ con proyectos reales, no con barras de porcentaje inventadas.
   distinto).
 - **Árbol de skills** (`src/data/skillTree.ts` + `SkillTree.tsx` +
   `useSkillTree`): reemplaza a los chips por ficha y al viejo catálogo de
-  "piezas sueltas". Nodos con `requires` (prerequisitos), `tier` (columna
-  de layout) y `aliases` (matching contra `Project.stack`, ej.
-  "Bootstrap 5" → nodo `bootstrap`). Seis familias como raíz: web, python,
-  javascript, bd, git y herramientas.
+  "piezas sueltas". Nodos con `requires` (prerequisitos) y `aliases`
+  (matching contra `Project.stack`, ej. "Bootstrap 5" → nodo `bootstrap`).
+  Cinco familias como raíz: web, python, javascript, bd y herramientas.
   - **Los agrupadores son nodos comunes** (web, bd, sql, nosql,
     herramientas): clickeables, encienden su rama, y por sí solos no
     matchean ningún proyecto. No hay un tipo de nodo aparte.
-  - **Ningún nodo se saltea un tier**: el `tier` es exactamente la
-    profundidad, así toda arista une columnas contiguas. Usar el tier para
-    emparejar columnas (bajar un hijo dos columnas más allá del padre)
-    llenaba el gráfico de diagonales largas que pasaban por encima de
-    nodos ajenos. Dentro de cada tier, el orden sigue el de los padres en
-    el anterior, para que los hijos caigan enfrente de quien los habilita.
+  - **No hay campo `tier`**: la columna de cada nodo es su profundidad y
+    se calcula sola (`DEPTH` → `TIER_COUNT`). Era un número a mano y se
+    desincronizaba; peor, tentaba a bajar un hijo dos columnas más allá
+    del padre "para emparejar columnas", que llenaba el gráfico de
+    diagonales largas por encima de nodos ajenos.
+  - **El orden del array es el orden en pantalla**: las raíces se dibujan
+    de arriba hacia abajo en ese orden, y los hijos de un mismo padre
+    también. Por eso `SKILL_NODES` se declara familia por familia.
+  - **Un nodo con dos padres se dibuja una sola vez**, colgado del
+    primero de sus `requires` (`LAYOUT_CHILDREN`); la arista al otro padre
+    igual se traza, porque `EDGES` recorre todos. Duplicarlo pondría dos
+    elementos peleando por el mismo ref de medición.
   - **El árbol NO se limita a lo que ya tiene proyecto.** Un nodo sin
     `stack` que lo respalde se dibuja punteado y al filtrarlo no devuelve
     fichas: el mapa muestra el recorrido completo. `docs/stack-por-proyecto.md`
     define qué queda *probado*, no qué nodos existen. Sí quedan fuera los
-    servicios puntuales del VPS (n8n, redis, uptime kuma, fail2ban, ufw):
-    van en el resumen de esa ficha.
-  - **Sin tope de nodos por tier**: en mobile cada fase es una fila que
-    envuelve (`flex-wrap`, ~4 por renglón a 375px). El `tier` solo reparte
-    las columnas de desktop —conviene dejarlas parejas, ~7 cada una— y un
-    nodo puede bajar de tier sin tocar sus `requires` (las aristas se miden
-    del DOM y cruzan columnas). Las columnas del grid salen de
-    `TIER_COUNT`, no de una clase fija.
+    servicios puntuales del VPS (Traefik, Portainer, n8n, Redis, Uptime
+    Kuma, Cloudflare, Nginx): van en el resumen de esa ficha y como chips
+    del grupo DevOps de `TOOLBOX`, no como nodos.
+  - **Sumar nodos aprieta el layout ancho**: ahí el mapa mide 12 hojas de
+    ancho (~1100px) y ya casi no sobra. Una hoja más son ~80px; si no
+    entran, hay que bajar el casillero o subir el breakpoint `wide`. Sumar
+    una FASE, en cambio, aprieta el layout angosto (4 columnas × 68px es
+    lo que entra a 375px).
   - **`TOOLBOX`** (mismo archivo, `Toolbox.tsx`): herramientas que no
-    habilitan nada aguas abajo (editores/IDE, asistentes de IA, Linux).
+    habilitan nada aguas abajo (editores/IDE, asistentes de IA, las piezas
+    concretas del VPS y sistemas).
     Van debajo de la red con la marca monocroma de cada una — los paths
     están en `src/data/brandIcons.ts` y se pintan con `currentColor`, así
     que sirven en los dos temas sin duplicar assets. Pulsan una luz tenue
@@ -323,12 +340,33 @@ con proyectos reales, no con barras de porcentaje inventadas.
 - **Look de grafo, no de tabla**: cada nodo es un **círculo con el label
   debajo** (como una visualización de red/grafos), las aristas son
   **curvas cuadráticas** (control point perpendicular al segmento, signo
-  alternado por índice — determinístico) y en desktop las columnas de fase
-  van centradas verticalmente con un stagger horizontal alternado
-  (`±translate-x`) para romper la grilla. En mobile las fases rotan a
-  **filas apiladas** (arriba → abajo), cada una centrada y sin wrap —
-  aristas cortas mayormente verticales (la versión con `flex-wrap`
-  quedaba caótica en el teléfono y se descartó).
+  alternado por índice — determinístico).
+- **Un bloque por familia, siempre; lo que cambia es el sentido** (`Branch`,
+  recursivo: el nodo y pegado a él el bloque de lo que habilita, con
+  `items-center` para centrar al padre contra sus hijos).
+  - **Angosto** (< `wide`): un bloque por **fila**, creciendo a la derecha;
+    las fases son columnas y su rótulo va arriba. Es el único que entra en
+    un teléfono (268px de ancho).
+  - **Ancho** (≥ `wide` = 1200px): un bloque por **columna**, creciendo
+    hacia abajo; las fases son filas y su rótulo va a la izquierda. Mide
+    ~1100×400 en vez de ~270×1050.
+  - Es **el mismo DOM con los ejes dados vuelta** (`flex-row` ↔ `flex-col`),
+    no dos layouts: no hay nodos duplicados peleando por el ref de medición
+    ni un `useMediaQuery` que hidrate distinto.
+  - Todo se alinea porque el paso es **fijo**: casillero del nodo
+    (`SLOT_W`/`SLOT_H`, exportados por `SkillNodeButton`) + `LEVEL_GAP`.
+    El rótulo de fase usa las mismas constantes; si cambia una y la otra
+    no, la grilla se desalinea.
+  - El corte está en 1200px porque recién ahí entran las 12 hojas una al
+    lado de la otra sin que se toquen los labels largos (POSTGRESQL mide
+    ~73px contra un casillero de 68). El mapa ancho además se come el
+    padding lateral de la sección (`wide:-mx-6`): no entra en la columna de
+    texto. Entre 768 y 1199 se ve el layout angosto, que queda angosto en
+    una pantalla grande — es el precio de no tener un tercer arreglo.
+  - Agrupar por **fase** en vez de por familia (lo anterior) dejaba a los
+    hijos lejos del padre: en desktop la línea de CSS3 a sus hojas pasaba
+    por encima de Next.js y en mobile, con ~9 nodos por fase y `flex-wrap`,
+    quedaba una maraña de diagonales cruzando la pantalla.
 - **Las aristas se miden del DOM real** (`useMeasuredEdges`): el SVG de
   fondo conecta **centros medidos** con `getBoundingClientRect` (que
   incluye los transforms del stagger) + ResizeObserver — correcto en todo
@@ -437,7 +475,13 @@ condición de altura conserva el layout mobile (nav hamburguesa, Hero en
 flujo, fichas en snap-carousel), que scrollea sin romperse. Consecuencia de
 ser "raw": Tailwind no lo auto-ordena con los demás screens, así que **no
 usar `md:` y `lg:` sobre la misma propiedad de un mismo elemento** (hoy no
-ocurre en ningún componente). El follow-cam del video
+ocurre en ningún componente).
+
+**Breakpoint `wide` (1200px):** existe sólo para el mapa de skills, que a
+partir de ese ancho se da vuelta (familias en columnas, fases en filas —
+ver "Árbol de skills"). Es un screen normal, no "raw". El mapa usa base +
+`wide:` y **nada de `md:`**, justamente para no caer en el problema de
+orden de arriba: una sola variante por propiedad y no hay ambigüedad. El follow-cam del video
 (`HeroArmVideo.tsx`) sigue chequeando `(max-width: 767px)` a propósito:
 esa decisión es por *ancho* (en apaisado la pantalla es ancha y el recorte
 estático del brazo se entiende bien, no hace falta la cámara con zoom).

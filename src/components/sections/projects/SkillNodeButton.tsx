@@ -1,6 +1,19 @@
 import { Lock } from "lucide-react";
 import type { SkillNode } from "../../../data/skillTree";
 
+/**
+ * Casillero del nodo: medidas **fijas**, no derivadas del contenido. Es lo
+ * que mantiene alineadas las fases sin que ninguna rama sepa de las otras
+ * —la fase N cae siempre en la misma coordenada— y lo que hace previsible
+ * el ancho total del mapa. El alto sólo se fija en `wide`, que es donde las
+ * fases son filas y hay que alinearlas contra el rótulo de la izquierda.
+ *
+ * Las usa también el rótulo de fase en `SkillTree.tsx`: cambiar una medida
+ * acá y no allá desalinea la grilla.
+ */
+export const SLOT_W = "w-16 wide:w-[4.25rem]";
+export const SLOT_H = "wide:h-20";
+
 type SkillNodeButtonProps = {
   node: SkillNode;
   /** Elegido a mano: además de encendido, está filtrando proyectos. */
@@ -66,14 +79,14 @@ export default function SkillNodeButton({
       type="button"
       onClick={() => onToggle(node.id)}
       aria-pressed={picked}
-      className={`group flex w-16 flex-col items-center gap-1.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary md:w-20 ${
+      className={`group flex flex-col items-center gap-1.5 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary ${SLOT_W} ${SLOT_H} ${
         locked && !selected ? "opacity-60" : ""
       }`}
     >
       <span
         ref={(el) => registerRef(node.id, el)}
         aria-hidden
-        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition md:h-11 md:w-11 ${circle}`}
+        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition wide:h-11 wide:w-11 ${circle}`}
       >
         {locked && !selected ? (
           <Lock size={12} className="text-muted" />

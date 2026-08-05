@@ -20,7 +20,9 @@ const ROLE_LABEL: Record<Project["role"], string> = {
   formacion: "Formación",
 };
 
-// Sello girado en la esquina de la ficha (null = sin sello).
+// Sello de la esquina de la ficha (null = sin sello). Va DERECHO: girado
+// se leía como calcomanía y peleaba con la grilla de plano técnico, donde
+// todo está a escuadra.
 // "Certificación" y no "Curso": suelto, "curso" se lee como "en curso" y
 // daba a entender que el proyecto estaba a medio hacer.
 const STAMP_LABEL: Record<Project["role"], string | null> = {
@@ -77,22 +79,28 @@ export default function ProjectPlate({
     return () => observer.disconnect();
   }, [expanded]);
 
+  // El hover levanta la ficha, le sube el relleno y le tira una sombra en el
+  // color de la sección: tiene que notarse que la ficha es la unidad con la
+  // que se interactúa. Ojo, el lift y la sombra necesitan aire vertical en
+  // el slider (`py` compensado con `-mb`, en Projects.tsx): ese contenedor
+  // scrollea en x, así que en y recorta. El `group` es para que las marcas
+  // de esquina se enciendan junto con la ficha.
   return (
     <article
-      className={`relative flex h-full flex-col rounded-sm border bg-surface/60 p-6 transition hover:border-heading/25 md:p-8 ${FILTER_CLASSES[filterState]}`}
+      className={`group relative flex h-full flex-col rounded-sm border bg-surface/60 p-6 transition duration-300 hover:-translate-y-1.5 hover:border-heading/40 hover:bg-surface hover:shadow-[0_14px_40px_-16px_rgb(var(--color-brand-projects)/0.6)] md:p-8 ${FILTER_CLASSES[filterState]}`}
     >
       {CORNERS.map((corner) => (
         <span
           key={corner}
           aria-hidden
-          className={`pointer-events-none absolute h-3 w-3 border-heading/25 ${corner}`}
+          className={`pointer-events-none absolute h-3 w-3 border-heading/25 transition-colors duration-300 group-hover:border-brand-projects ${corner}`}
         />
       ))}
 
       {STAMP_LABEL[project.role] && (
         <div
           aria-hidden
-          className="absolute right-4 top-4 flex -rotate-6 items-center gap-1 rounded-full border-2 border-brand-projects/50 px-2.5 py-1 text-brand-projects md:right-6 md:top-6"
+          className="absolute right-4 top-4 flex items-center gap-1 rounded-full border-2 border-brand-projects/50 px-2.5 py-1 text-brand-projects md:right-6 md:top-6"
         >
           <Stamp size={13} />
           <span className="text-[10px] font-bold uppercase tracking-wider">

@@ -15,6 +15,13 @@ export default {
         // sobre la MISMA propiedad de un mismo elemento (hoy no pasa en
         // ningún componente — verificado por grep).
         md: { raw: "(min-width: 768px) and (min-height: 500px)" },
+        // Punto donde el mapa de skills se da vuelta: familias en columnas
+        // y fases en filas (ver SkillTree.tsx). Recién a partir de acá
+        // entran a lo ancho las 12 hojas del árbol. No lleva condición de
+        // alto —el layout ancho es más BAJO que el angosto— y, como el `md`
+        // de arriba, no se combina con otro breakpoint sobre la misma
+        // propiedad del mismo elemento.
+        wide: "1200px",
       },
       colors: {
         background: "rgb(var(--color-background) / <alpha-value>)",
