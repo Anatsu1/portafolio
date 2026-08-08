@@ -28,7 +28,8 @@ Lo que la hace distinta de una landing estática cualquiera:
 - **Proyectos y skills unificados.** No hay barras de porcentaje: cada
   habilidad se demuestra con un proyecto. Las fichas de proyecto son *planos
   técnicos* (cajetín de metadatos, sello "CLIENTE"/"PERSONAL"/"CERTIFICACIÓN", carrusel de
-  capturas y videos con tira `FIG. 01 / 03`).
+  capturas y videos con tira `FIG. 01 / 03`, que avanza solo bajo demanda:
+  la ficha activa del slider o aquella con el mouse encima).
 - **Árbol de skills como filtro.** Una red de nodos con prerequisitos
   (`HTML5 → CSS3 → Tailwind`) que filtra las fichas de forma restrictiva (AND).
   Solo entran tecnologías que se usan de verdad en algún proyecto, y las skills

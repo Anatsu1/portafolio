@@ -15,10 +15,12 @@ export type SkillNode = {
 
 /**
  * Mapa de skills, agrupado por familia y con lectura de dependencia (qué
- * hace falta saber antes de lo que sigue). Seis raíces, una por familia:
+ * hace falta saber antes de lo que sigue). Siete raíces, una por familia:
  *
  *   web    → html → css → { bootstrap, tailwind }
  *   python → flask
+ *   php
+ *   java   → spring boot
  *   js     → { typescript, react → next, nodejs → express }
  *   bd     → sql → { postgresql, mysql, sqlite } ; nosql → mongodb
  *   herram.→ { git → github actions, docker }
@@ -47,7 +49,7 @@ export type SkillNode = {
  * IA, Linux) — esas van en `TOOLBOX`, abajo.
  */
 // El orden de este array es el que se ve en pantalla: las raíces salen en
-// este orden de arriba hacia abajo (web, python, javascript, bd,
+// este orden de arriba hacia abajo (web, python, php, java, javascript, bd,
 // herramientas) y los hijos de un mismo padre también. Por eso se declara
 // familia por familia, en el mismo orden en que se dibuja.
 export const SKILL_NODES: SkillNode[] = [
@@ -60,6 +62,11 @@ export const SKILL_NODES: SkillNode[] = [
   // Familia python
   { id: "python", label: "Python", requires: [] },
   { id: "flask", label: "Flask", requires: ["python"] },
+  // Familia php
+  { id: "php", label: "PHP", requires: [] },
+  // Familia java
+  { id: "java", label: "Java", requires: [] },
+  { id: "spring-boot", label: "Spring Boot", requires: ["java"], aliases: ["Spring"] },
   // Familia javascript
   { id: "javascript", label: "JavaScript", requires: [], aliases: ["JS"] },
   { id: "typescript", label: "TypeScript", requires: ["javascript"], aliases: ["TS"] },
@@ -71,7 +78,7 @@ export const SKILL_NODES: SkillNode[] = [
   { id: "bd", label: "BD", requires: [], aliases: ["Bases de datos"] },
   { id: "sql", label: "SQL", requires: ["bd"] },
   { id: "postgresql", label: "PostgreSQL", requires: ["sql"], aliases: ["Postgres"] },
-  { id: "mysql", label: "MySQL", requires: ["sql"] },
+  { id: "mysql", label: "MySQL", requires: ["sql"], aliases: ["MariaDB"] },
   { id: "sqlite", label: "SQLite", requires: ["sql"] },
   { id: "nosql", label: "NoSQL", requires: ["bd"] },
   { id: "mongodb", label: "MongoDB", requires: ["nosql"], aliases: ["Mongo"] },

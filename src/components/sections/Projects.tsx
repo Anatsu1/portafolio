@@ -94,10 +94,14 @@ export default function Projects() {
             ref={registerPlate(project.id)}
             variants={itemVariants}
           >
+            {/* `active`: sólo la ficha calzada en el borde izquierdo del
+                slider rota sus capturas sola (ver ProjectCarousel). Con
+                ocho fichas, ocho carruseles girando a la vez era ruido. */}
             <ProjectPlate
               project={project}
               index={i}
               filterState={filterStates.get(project.id)}
+              active={i === index}
             />
           </motion.div>
         ))}

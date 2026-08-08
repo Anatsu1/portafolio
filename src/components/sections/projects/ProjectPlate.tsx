@@ -52,12 +52,15 @@ type ProjectPlateProps = {
   /** N.º del cajetín — puramente decorativo (estética de plano técnico). */
   index: number;
   filterState?: PlateFilterState;
+  /** Indica si esta ficha es la activa del slider horizontal. */
+  active?: boolean;
 };
 
 export default function ProjectPlate({
   project,
   index,
   filterState = "none",
+  active = false,
 }: ProjectPlateProps) {
   // El resumen se recorta a 3 renglones con un "Ver más" en TODAS las
   // resoluciones — así todas las fichas del slider arrancan la media a la
@@ -67,6 +70,9 @@ export default function ProjectPlate({
   const summaryRef = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [clamped, setClamped] = useState(false);
+  // Hover/foco local para habilitar auto-avance del carrusel solo cuando
+  // el usuario interactúa con esta ficha (o si es la activa del slider).
+  const [hovered, setHovered] = useState(false);
 
   useLayoutEffect(() => {
     if (expanded) return;
@@ -88,6 +94,10 @@ export default function ProjectPlate({
   return (
     <article
       className={`group relative flex h-full flex-col rounded-sm border bg-surface/60 p-6 transition duration-300 hover:-translate-y-1.5 hover:border-heading/40 hover:bg-surface hover:shadow-[0_14px_40px_-16px_rgb(var(--color-brand-projects)/0.6)] md:p-8 ${FILTER_CLASSES[filterState]}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
     >
       {CORNERS.map((corner) => (
         <span
@@ -187,7 +197,11 @@ export default function ProjectPlate({
 
       {project.media.length > 0 && (
         <div className="mb-5 mt-5">
-          <ProjectCarousel media={project.media} title={project.title} />
+          <ProjectCarousel
+            media={project.media}
+            title={project.title}
+            autoplay={hovered || active}
+          />
         </div>
       )}
 

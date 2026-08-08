@@ -109,7 +109,7 @@ src/
     useArmFollowCam.ts       Cámara (zoom + pan del video) que sigue la pinza (solo mobile)
   assets/                    Videos del brazo (arm-{light,dark}.mp4) + posters
     prestarte/               Capturas de cada proyecto — una carpeta por proyecto
-    utn-necochea/            (assets/<id-del-proyecto>/, 2-3 capturas que rotan
+    utn-necochea/            (assets/<id-del-proyecto>/, 2-4 capturas que rotan
                              en el carrusel, nombradas <id>-01.jpg, -02…)
 ```
 
@@ -168,13 +168,25 @@ con proyectos reales, no con barras de porcentaje inventadas.
   de verdad de qué usa cada proyecto (cargados y pendientes).
 - **Media** (`ProjectCarousel.tsx`): cada ficha muestra su `media`
   (capturas y/o **videos cortos** de 10-15s navegando el sitio) en un
-  carrusel con crossfade (reusa `useCarousel`), auto-avance de 6s y una
-  tira de controles "FIG. 01 / 03" **debajo** (no flechas superpuestas —
-  taparían UI real). Con 1 ítem no hay controles; con 0 no renderiza nada.
+  carrusel con crossfade (reusa `useCarousel`), auto-avance de 6s **bajo
+  demanda** (ver abajo) y una tira de controles "FIG. 01 / 03" **debajo**
+  (no flechas superpuestas — taparían UI real). Con 1 ítem no hay
+  controles; con 0 no renderiza nada.
   Fit: `object-cover object-top` (el recorte residual come el borde
   inferior, nunca el header del sitio capturado). Videos con la misma
   receta de encode que el brazo (`-an`, h264, ~1-2MB) + `poster`
   obligatorio.
+  - **Auto-avance bajo demanda**: el carrusel rota sus capturas solo si el
+    mouse está encima de la ficha (o algo dentro tiene el foco) o si es la
+    ficha activa del slider. Con ocho fichas cargadas, ocho carruseles
+    rotando a la vez era ruido visual. Se implementó con una prop
+    `autoplay` en `ProjectCarousel`, estado local `hovered` en
+    `ProjectPlate` y `active={i === index}` desde `Projects.tsx` usando el
+    `index` que ya expone `useProjectSlider`. `useCarousel` **no** cambió:
+    ya aceptaba `autoMs = 0` para desactivarse, igual que cuando el slide
+    activo es un video o con `prefers-reduced-motion`. En mobile no hay
+    hover, pero la ficha activa es la que quedó calzada por el scroll-snap:
+    siempre hay exactamente una rotando.
   - **Proporción real con `aspect`**: cada ítem puede declarar su
     aspect-ratio CSS (ej. `"1910 / 943"` para capturas de browser
     full-screen, más anchas que 16:9) y el escenario landscape lo adopta —
@@ -270,8 +282,8 @@ con proyectos reales, no con barras de porcentaje inventadas.
     servicios puntuales del VPS (Traefik, Portainer, n8n, Redis, Uptime
     Kuma, Cloudflare, Nginx): van en el resumen de esa ficha y como chips
     del grupo DevOps de `TOOLBOX`, no como nodos.
-  - **Sumar nodos aprieta el layout ancho**: ahí el mapa mide 12 hojas de
-    ancho (~1100px) y ya casi no sobra. Una hoja más son ~80px; si no
+  - **Sumar nodos aprieta el layout ancho**: ahí el mapa mide 14 hojas de
+    ancho (~1300px) y ya casi no sobra. Una hoja más son ~80px; si no
     entran, hay que bajar el casillero o subir el breakpoint `wide`. Sumar
     una FASE, en cambio, aprieta el layout angosto (4 columnas × 68px es
     lo que entra a 375px).
@@ -347,7 +359,7 @@ con proyectos reales, no con barras de porcentaje inventadas.
   - **Angosto** (< `wide`): un bloque por **fila**, creciendo a la derecha;
     las fases son columnas y su rótulo va arriba. Es el único que entra en
     un teléfono (268px de ancho).
-  - **Ancho** (≥ `wide` = 1200px): un bloque por **columna**, creciendo
+  - **Ancho** (≥ `wide` = 1360px): un bloque por **columna**, creciendo
     hacia abajo; las fases son filas y su rótulo va a la izquierda. Mide
     ~1100×400 en vez de ~270×1050.
   - Es **el mismo DOM con los ejes dados vuelta** (`flex-row` ↔ `flex-col`),
@@ -357,12 +369,18 @@ con proyectos reales, no con barras de porcentaje inventadas.
     (`SLOT_W`/`SLOT_H`, exportados por `SkillNodeButton`) + `LEVEL_GAP`.
     El rótulo de fase usa las mismas constantes; si cambia una y la otra
     no, la grilla se desalinea.
-  - El corte está en 1200px porque recién ahí entran las 12 hojas una al
-    lado de la otra sin que se toquen los labels largos (POSTGRESQL mide
-    ~73px contra un casillero de 68). El mapa ancho además se come el
-    padding lateral de la sección (`wide:-mx-6`): no entra en la columna de
-    texto. Entre 768 y 1199 se ve el layout angosto, que queda angosto en
-    una pantalla grande — es el precio de no tener un tercer arreglo.
+  - El corte está en 1360px porque recién ahí entran las 14 hojas (1280px
+    de árbol) una al lado de la otra sin que se toquen los labels largos
+    (POSTGRESQL mide ~73px contra un casillero de 68). Entre 768 y 1359 se
+    ve el layout angosto, que queda angosto en una pantalla grande — es el
+    precio de no tener un tercer arreglo.
+  - **El mapa ancho no entra en la columna de texto y se centra sobre la
+    pantalla**: `wide:w-max` + `wide:left-1/2` + `wide:-translate-x-1/2`.
+    Antes era un `wide:-mx-6`, que sólo recuperaba el padding propio de la
+    sección: alcanzaba para 12 hojas, pero con 14 el sobrante se iba todo
+    para un lado, el mapa quedaba corrido ~80px a la derecha y a 1400px de
+    viewport **desbordaba la página**. Si se suman hojas, revisar que el
+    ancho del árbol siga entrando en el breakpoint (medirlo, no estimarlo).
   - Agrupar por **fase** en vez de por familia (lo anterior) dejaba a los
     hijos lejos del padre: en desktop la línea de CSS3 a sus hojas pasaba
     por encima de Next.js y en mobile, con ~9 nodos por fase y `flex-wrap`,
@@ -477,7 +495,7 @@ ser "raw": Tailwind no lo auto-ordena con los demás screens, así que **no
 usar `md:` y `lg:` sobre la misma propiedad de un mismo elemento** (hoy no
 ocurre en ningún componente).
 
-**Breakpoint `wide` (1200px):** existe sólo para el mapa de skills, que a
+**Breakpoint `wide` (1360px):** existe sólo para el mapa de skills, que a
 partir de ese ancho se da vuelta (familias en columnas, fases en filas —
 ver "Árbol de skills"). Es un screen normal, no "raw". El mapa usa base +
 `wide:` y **nada de `md:`**, justamente para no caer en el problema de

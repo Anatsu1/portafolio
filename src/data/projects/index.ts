@@ -1,9 +1,12 @@
 import type { Project } from "./types";
 import { prestarte } from "./prestarte";
 import { utnNecochea } from "./utn-necochea";
-import { portafolio } from "./portafolio";
+import { mostrador } from "./mostrador";
 import { manarem } from "./manarem";
+import { beastore } from "./beastore";
+import { sater } from "./sater";
 import { vps } from "./vps";
+import { portafolio } from "./portafolio";
 
 export * from "./types";
 
@@ -13,4 +16,13 @@ export * from "./types";
 // Acá sólo van proyectos REALES: los `ejemplo-*` que había para probar el
 // slider marcaban nodos como probados (Docker, Linux, TypeScript…) sin
 // trabajo detrás, que en un portafolio de búsqueda laboral miente.
-export const PROJECTS: Project[] = [prestarte, utnNecochea, vps, manarem, portafolio];
+export const PROJECTS: Project[] = [
+  prestarte,
+  utnNecochea,
+  mostrador,
+  manarem,
+  beastore,
+  sater,
+  vps,
+  portafolio,
+];

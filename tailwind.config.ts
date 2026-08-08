@@ -17,11 +17,15 @@ export default {
         md: { raw: "(min-width: 768px) and (min-height: 500px)" },
         // Punto donde el mapa de skills se da vuelta: familias en columnas
         // y fases en filas (ver SkillTree.tsx). Recién a partir de acá
-        // entran a lo ancho las 12 hojas del árbol. No lleva condición de
-        // alto —el layout ancho es más BAJO que el angosto— y, como el `md`
-        // de arriba, no se combina con otro breakpoint sobre la misma
-        // propiedad del mismo elemento.
-        wide: "1200px",
+        // entran a lo ancho las 14 hojas del árbol, que miden 1280px: el
+        // corte subió de 1200 a 1360px porque las familias PHP y Java
+        // sumaron una hoja cada una. Los 80px que sobran son el aire a los
+        // costados —el mapa se centra sobre la pantalla, ver SkillTree—,
+        // así que si se suma otra hoja (~80px) hay que subir esto de nuevo.
+        // No lleva condición de alto —el layout ancho es más BAJO que el
+        // angosto— y, como el `md` de arriba, no se combina con otro
+        // breakpoint sobre la misma propiedad del mismo elemento.
+        wide: "1360px",
       },
       colors: {
         background: "rgb(var(--color-background) / <alpha-value>)",

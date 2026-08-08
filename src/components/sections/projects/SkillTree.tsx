@@ -122,8 +122,8 @@ function Branch({ node, depth, picked, selected, onToggle, registerRef }: Branch
  *     que sobra y baja el mapa de ~1100px de alto a ~450.
  *
  * Es el mismo árbol con los ejes dados vuelta (ver `Branch`), no dos
- * layouts. El corte está en 1200px porque recién ahí entran las 12 hojas
- * una al lado de la otra sin que los labels se toquen.
+ * layouts. El corte está en 1360px porque recién ahí entran las 14 hojas
+ * (1280px de árbol) una al lado de la otra sin que los labels se toquen.
  *
  * Antes el layout agrupaba por fase —una columna por fase en desktop, una
  * fila que envolvía en mobile— y los hijos de una familia caían lejos de su
@@ -149,11 +149,18 @@ export default function SkillTree({
 
   return (
     <div>
-      {/* En `wide` el mapa se come el padding lateral de la sección (-mx-6
-          cancela el px-6 justo, y deja 16px cuando corre el px-10 de md):
-          las 12 hojas a lo ancho no entran en la columna de texto. Nunca
-          puede desbordar la página, porque sólo recupera padding propio. */}
-      <div className="wide:-mx-6">
+      {/* En `wide` el mapa (1280px con 14 hojas) no entra en la columna de
+          texto (1152px de `max-w-6xl` menos su padding), así que se sale de
+          ella: `w-max` lo deja medir lo que ocupa y `left-1/2` +
+          `-translate-x-1/2` lo centran sobre el CENTRO de la sección, que
+          es el de la pantalla.
+
+          Antes esto era un `-mx-6`, que sólo devolvía el padding propio:
+          alcanzaba para 12 hojas pero no para 14, y como el sobrante se iba
+          todo para un lado, el mapa quedaba corrido 80px a la derecha y a
+          1400px de viewport desbordaba la página. Centrarlo de verdad es lo
+          que hace que el margen crezca parejo de los dos lados. */}
+      <div className="wide:relative wide:left-1/2 wide:w-max wide:-translate-x-1/2">
         {/* `w-fit` + `mx-auto`: el contenedor mide exactamente lo que ocupa el
             mapa y queda centrado. Importa para la medición de aristas — el SVG
             se dimensiona con esta caja. En `wide` el rótulo de fase pasa de

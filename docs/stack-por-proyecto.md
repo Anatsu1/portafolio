@@ -17,19 +17,27 @@ Todos los proyectos están versionados en repos de Git.
 |---|---|---|
 | **PrestARTE** | HTML, CSS, JavaScript, Bootstrap | todas |
 | **UTN EA Necochea** | HTML, CSS, React, Node, Express, PostgreSQL | todas |
-| **VPS** | Docker, Traefik, Portainer, Cloudflare, Oracle Cloud, GitHub Actions, conexión SSH con restricciones, fail2ban, ufw, Uptime Kuma (monitorización), derivación de servicios → n8n, redis, postgres, web | solo las generales (Docker, Git, GitHub Actions); el resto se cuenta en el resumen de la ficha. **PostgreSQL no va**: acá es un servicio levantado, no un modelo de datos diseñado, y bajo el mismo tag confunde a quien filtra por bases de datos |
+| **Mostrador** | HTML, CSS, JavaScript, PHP 8.1, MariaDB, Apache, Docker Compose, FPDF (remitos en PDF), spreadsheet-reader (importación de Excel) | `HTML5, CSS3, JavaScript, PHP, MySQL, Docker`. Apache, FPDF y el lector de planillas van en el resumen |
 | **Manarem** | HTML, CSS, JavaScript, Python, Flask, SQLite, API de AniList (consumo para anime) | todas menos el consumo de la API, que va en el resumen |
+| **BeaStore** | HTML, CSS, JavaScript, Java 21, Spring Boot 3.3, Spring Data MongoDB, Thymeleaf, Maven | `HTML5, CSS3, JavaScript, Java, Spring Boot, MongoDB`. Thymeleaf y Maven van en el resumen |
+| **SATER** | VB.NET, Windows Forms, .NET Framework 4.5, Access/Jet, SQLite, Visual Studio 2012 | **sólo `SQLite`** |
+| **VPS** | Docker, Traefik, Portainer, Cloudflare, Oracle Cloud, GitHub Actions, conexión SSH con restricciones, fail2ban, ufw, Uptime Kuma (monitorización), derivación de servicios → n8n, redis, postgres, web | solo las generales (Docker, Git, GitHub Actions); el resto se cuenta en el resumen de la ficha. **PostgreSQL no va**: acá es un servicio levantado, no un modelo de datos diseñado, y bajo el mismo tag confunde a quien filtra por bases de datos |
 | **Portafolio** | HTML, CSS, React, TypeScript, Tailwind, Git, GitHub Actions | todas |
 
-Estos cinco prueban las tecnologías concretas del árbol. Los agrupadores
+Estos ocho prueban las tecnologías concretas del árbol. Los agrupadores
 (web, bd, sql, nosql, herramientas) y lo que todavía no tiene proyecto
-(Next.js, MySQL, MongoDB) se dibujan punteados a propósito.
+(Next.js) se dibujan punteados a propósito.
 
 > Los servicios propios del VPS (Traefik, Portainer, n8n, Redis, Uptime Kuma,
 > Cloudflare, Nginx, Fail2Ban, UFW…) **no** son nodos del árbol: son piezas de
 > esa infraestructura puntual, no skills transferibles que tenga sentido
 > ofrecer como filtro. Los más reconocibles se listan como chips en el grupo
 > DevOps de `TOOLBOX`, abajo.
+
+> **Nota sobre SATER**: su `stack` incluye sólo `SQLite` a propósito. VB.NET,
+> Windows Forms y Access no son nodos del árbol porque no son tecnologías
+> que tenga sentido ofrecer como filtro en un portafolio de desarrollo web;
+> se cuentan en el resumen de la ficha, igual que los servicios del VPS.
 
 ## Herramientas (informativas, no son filtro)
 

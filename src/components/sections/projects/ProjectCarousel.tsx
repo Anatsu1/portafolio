@@ -7,6 +7,9 @@ import { useCarousel } from "../../../hooks/useCarousel";
 type ProjectCarouselProps = {
   media: ProjectMedia[];
   title: string;
+  /** Habilita el auto-avance. En false la ficha queda en su captura actual
+   *  y sólo se navega a mano. */
+  autoplay?: boolean;
 };
 
 /**
@@ -33,8 +36,14 @@ type ProjectCarouselProps = {
  * negativos que compensan el `p-6`) — la media gana ~15% de ancho y deja
  * de verse encajonada. Con una sola media no hay controles; sin media no
  * renderiza nada.
+ *
+ * Auto-avance: solo corre cuando `autoplay === true` (hover/foco en la
+ * ficha O ficha activa del slider) Y no hay `prefers-reduced-motion` Y el
+ * slide actual no es un video. El resto del tiempo queda en la primera
+ * captura fija; la navegación manual (chevrons y ticks "FIG.") siempre
+ * funciona.
  */
-export default function ProjectCarousel({ media, title }: ProjectCarouselProps) {
+export default function ProjectCarousel({ media, title, autoplay = false }: ProjectCarouselProps) {
   const reduce = useReducedMotion();
   const videoRefs = useRef(new Map<number, HTMLVideoElement>());
 
@@ -45,10 +54,8 @@ export default function ProjectCarousel({ media, title }: ProjectCarouselProps) 
   // useCarousel se rearma solo.
   const lastIndexRef = useRef(0);
   const activeIsVideo = media[lastIndexRef.current]?.type === "video";
-  const { index, next, prev, goTo } = useCarousel(
-    media.length,
-    reduce || activeIsVideo ? 0 : 6000
-  );
+  const autoMs = autoplay && !reduce && !activeIsVideo ? 6000 : 0;
+  const { index, next, prev, goTo } = useCarousel(media.length, autoMs);
   lastIndexRef.current = index;
 
   useEffect(() => {

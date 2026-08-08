@@ -24,3 +24,6 @@ yarn-error.log*
 .idea
 .DS_Store
 *.local
+
+# workspace de orquestación (opencode)
+agents/
