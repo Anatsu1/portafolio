@@ -129,13 +129,16 @@ src/
 
 ## data.ts — contenido del sitio
 
-- `OWNER`: nombre completo (sin tildes — ver nota de estilo abajo), rol,
-  `codingSince` (año en que empezó a programar; la tira de métricas del Hero
-  calcula los años contra el año actual, así el número no envejece),
-  credencial, qué está estudiando, email, ubicación, links, URL del CV.
-  El `role` habla a las **dos audiencias** del sitio a la vez ("Desarrollador
-  Full Stack" para el reclutador, "sistemas web a medida" para el cliente
-  particular) — si se reescribe, mantener esa doble lectura.
+- `OWNER`: nombre completo (sin tildes — ver nota de estilo abajo), `role`,
+  `tagline`, `codingSince` (año en que empezó a programar; la tira de
+  métricas del Hero calcula los años contra el año actual, así el número no
+  envejece), credencial, qué está estudiando, email, ubicación, links, URL
+  del CV.
+  **`role` y `tagline` son dos renglones a propósito**, uno por audiencia:
+  `role` ("Desarrollador Full Stack + IA") es lo que busca un reclutador y
+  `tagline` ("Soluciones a medida") es lo que busca un cliente particular.
+  Juntos en una sola línea larga no los leía ninguna de las dos. Si se
+  reescriben, mantener esa división.
   **Nota:** email y links de GitHub/LinkedIn son placeholders — hay que
   reemplazarlos por los reales. `cvUrl` apunta a un PDF que todavía no
   existe (no hay carpeta `public/` en el repo); cuando el usuario tenga el
@@ -549,21 +552,25 @@ orden de arriba: una sola variante por propiedad y no hay ambigüedad. El follow
 esa decisión es por *ancho* (en apaisado la pantalla es ancha y el recorte
 estático del brazo se entiende bien, no hace falta la cámara con zoom).
 
-**La tira de métricas (`hero/HeroStats.tsx`):** tres números entre el rol y
-los botones — proyectos, años programando y cuántos son para clientes
-reales. Es la prueba rápida de volumen de trabajo para las **dos audiencias**
-del sitio, antes de que nadie scrollee. Reglas:
+**La tira de métricas (`hero/HeroStats.tsx`):** tres números entre el slogan
+y los botones — proyectos, años programando y tecnologías. Es la prueba
+rápida de volumen de trabajo para las **dos audiencias** del sitio, antes de
+que nadie scrollee. Reglas:
 
-- **Los tres datos son números.** La primera versión tenía un símbolo en el
-  tercero y al lado de los otros dos se leía como un campo vacío.
-- **Nada escrito a mano**: la cantidad sale de `PROJECTS.length`, los de
-  cliente de filtrar por `role === "cliente"` y los años de
+- **Los tres datos son números.** Una versión tuvo un símbolo en el tercero y
+  al lado de los otros dos se leía como un campo vacío.
+- **Nada escrito a mano**: los proyectos salen de `PROJECTS.length`, las
+  tecnologías de `new Set(PROJECTS.flatMap(p => p.stack)).size` y los años de
   `new Date().getFullYear() - OWNER.codingSince`. Sumar un proyecto actualiza
   el Hero solo.
 - El primer dato es un `<a href="#proyectos">`: además de informar, es la
   entrada a la sección (el usuario pidió "un botón o alguna forma de
   presentación de los proyectos" — esto lo resuelve sin sumar otro botón al
   Hero, que ya tiene dos).
+- **Los rótulos nunca se parten** (`whitespace-nowrap`): a 390px hay ~342px
+  útiles y con los rótulos largos en dos renglones las tres columnas quedaban
+  de alturas distintas y la tira se desarmaba. El ajuste a pantalla chica es
+  de tamaño (`text-[9px]` + `tracking-[0.12em]`), no de saltos de línea.
 
 **El video del brazo (`HeroArmVideo`):**
 - Assets en `src/assets/`: `arm-light.mp4` (azul/fondo claro) y
@@ -685,6 +692,33 @@ del sitio, antes de que nadie scrollee. Reglas:
   quedan en su estado normal — sin video no hay historia de energía que
   contar.
 
+**El Hero en celular (mobile-first):** es la vista por la que pasa la mayoría
+de las visitas, y tiene reglas propias:
+
+- **`min-h-[100svh]`, nunca `min-h-screen`.** En Chrome de Android `100vh`
+  mide contra la barra de direcciones **desplegada**: al scrollear el alto
+  cambia y el bloque salta. `svh` usa el viewport chico y queda quieto.
+- **El nombre va en 2 renglones** ("Cesar Augusto" / "Fernandez Carbonell").
+  A `text-4xl` el apellido no entraba en uno solo y el nombre se comía casi
+  medio viewport en 4 renglones. Se resuelve **sólo con CSS**, sin tocar la
+  estructura del `<h1>`: `text-[1.7rem]` en base y el **primer** `<br />` con
+  `hidden sm:inline` (más un `{" "}` antes, porque los spans son
+  `inline-block` y sin el `<br>` quedarían pegados). Los tres `<span>` con
+  sus refs siguen intactos — fusionarlos rompe el reveal de GSAP.
+- **Los dos CTA van lado a lado** (`flex-1 ... md:flex-none`, `text-sm`,
+  `px-4`): apilados a todo el ancho empujaban las redes fuera del fold.
+- **El scrim cambia de sentido con la orientación**, porque cambia dónde está
+  el texto: `bg-gradient-to-b` en mobile (el texto ocupa todo el ancho, así
+  que tapa arriba y deja limpia la franja de abajo) y `md:bg-gradient-to-r`
+  en desktop (el texto vive a la izquierda).
+- **El video sigue siendo el problema abierto.** El clip es 16:9 y la
+  pantalla ~9:19: con `object-cover` se recorta cerca del 70% del ancho del
+  frame. `useArmFollowCam` (abajo) es un parche, no una solución — el
+  encuadre que falta no está en el render. Ver
+  **`docs/video-brazo-vertical.md`**: tiene el prompt de Flow para el clip
+  9:16, la receta de encode, dónde tiene que caer la celda y por qué, y el
+  checklist de qué cambia en el código cuando los assets existan.
+
 **La "cámara" que sigue la pinza en mobile (`hooks/useArmFollowCam.ts`):**
 - Problema que resuelve: en mobile, `object-cover object-center` sobre un
   video 16:9 dentro de una sección `min-h-screen` recorta tanto los costados
@@ -780,6 +814,7 @@ docker compose pull && docker compose up -d
 | Tocar la tira de métricas del Hero                | `src/components/sections/hero/HeroStats.tsx` (los números se derivan; el año de inicio está en `src/data.ts`) |
 | Tocar el splash de entrada (puertas de vault)     | `src/components/layout/PageLoader.tsx`, `src/hooks/usePageLoaderExit.ts` |
 | Tocar la cámara que sigue la pinza en mobile      | `src/hooks/useArmFollowCam.ts` |
+| Generar el video vertical del brazo (9:16)        | `docs/video-brazo-vertical.md` (prompt de Flow, encode y checklist) |
 | Lógica con estado reusable                       | `src/hooks/`                                      |
 | Colores de marca, modo claro/oscuro              | `src/index.css` (variables), `tailwind.config.ts` (tokens) |
 | Clases utilitarias globales (`.card`, etc.)      | `src/index.css`                                    |

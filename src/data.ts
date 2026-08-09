@@ -1,7 +1,12 @@
 export const OWNER = {
   name: "Cesar Augusto Fernandez Carbonell",
   shortName: "Cesar Fernandez",
-  role: "Desarrollador Full Stack — sistemas web a medida e IA",
+  // Dos renglones a propósito: `role` es lo que busca un reclutador y
+  // `tagline` es lo que busca un cliente particular. Separados, cada
+  // audiencia encuentra lo suyo de un vistazo; juntos en una sola línea
+  // larga no los leía ninguna de las dos.
+  role: "Desarrollador Full Stack + IA",
+  tagline: "Soluciones a medida",
   /** Año en que empecé a programar (16 años). La tira de métricas del Hero
    *  calcula los años de experiencia contra el año actual, así no queda un
    *  número escrito a mano que envejece solo. */

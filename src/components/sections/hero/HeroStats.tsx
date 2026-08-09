@@ -13,42 +13,44 @@ export default function HeroStats() {
   const years = new Date().getFullYear() - OWNER.codingSince;
   const projects = String(PROJECTS.length).padStart(2, "0");
   // Los tres datos son números por algo: uno solo que fuera un símbolo o una
-  // frase se leía como un campo vacío al lado de los otros dos. Cuántos son
-  // para clientes reales sale del `role` de cada proyecto, así que sube solo
-  // al cargar el próximo trabajo pago.
-  const clients = String(
-    PROJECTS.filter((project) => project.role === "cliente").length
-  ).padStart(2, "0");
+  // frase se leía como un campo vacío al lado de los otros dos. Las
+  // tecnologías se cuentan sobre los `stack` reales (sin repetir), así que
+  // el número es exactamente el que el visitante puede auditar en el mapa
+  // de skills de más abajo — y sube solo al cargar el próximo proyecto.
+  const technologies = new Set(PROJECTS.flatMap((project) => project.stack)).size;
 
   return (
     <div className="mt-6 flex divide-x divide-border/15">
+      {/* whitespace-nowrap: a 390px la tira tiene ~342px útiles y los rótulos
+          largos partidos dejaban columnas de alturas distintas; el ajuste
+          tiene que ser de tamaño y no de saltos de línea. */}
       <a
         href="#proyectos"
-        className="group flex flex-col gap-1 pr-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+        className="group flex flex-col gap-1 pr-3.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary md:pr-5"
       >
-        <span className="font-display text-2xl font-bold text-brand-primary md:text-3xl">
+        <span className="font-display text-xl font-bold text-brand-primary md:text-3xl">
           {projects}
         </span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted transition group-hover:text-brand-primary">
+        <span className="whitespace-nowrap text-[9px] uppercase tracking-[0.12em] text-muted transition group-hover:text-brand-primary md:text-[10px] md:tracking-[0.2em]">
           Proyectos
         </span>
       </a>
 
-      <div className="flex flex-col gap-1 px-5">
-        <span className="font-display text-2xl font-bold text-heading md:text-3xl">
+      <div className="flex flex-col gap-1 px-3.5 md:px-5">
+        <span className="font-display text-xl font-bold text-heading md:text-3xl">
           +{years}
         </span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
+        <span className="whitespace-nowrap text-[9px] uppercase tracking-[0.12em] text-muted md:text-[10px] md:tracking-[0.2em]">
           Años programando
         </span>
       </div>
 
-      <div className="flex flex-col gap-1 pl-5">
-        <span className="font-display text-2xl font-bold text-heading md:text-3xl">
-          {clients}
+      <div className="flex flex-col gap-1 pl-3.5 md:pl-5">
+        <span className="font-display text-xl font-bold text-heading md:text-3xl">
+          {technologies}
         </span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
-          Para clientes
+        <span className="whitespace-nowrap text-[9px] uppercase tracking-[0.12em] text-muted md:text-[10px] md:tracking-[0.2em]">
+          Tecnologías
         </span>
       </div>
     </div>

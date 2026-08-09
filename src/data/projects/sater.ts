@@ -15,7 +15,10 @@ const ASPECT = "1440 / 711";
 export const sater: Project = {
   id: "sater",
   title: "SATER — Asesor de energía solar",
-  role: "formacion",
+  // "personal" y no "formacion": el sello de `formacion` dice "Certificación"
+  // y esto no salió de un curso con certificado, fue un trabajo de escuela
+  // que encaré por mi cuenta.
+  role: "personal",
   status: "activo",
   featured: false,
   summary:

@@ -63,11 +63,14 @@ export default function Hero({ onReady }: HeroProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // min-h-[100svh] en vez de min-h-screen: en Chrome de Android `100vh`
+  // mide contra la barra de direcciones desplegada, así que al scrollear
+  // el alto cambia y el bloque salta. svh usa el viewport chico y no se mueve.
   return (
     <section
       id="inicio"
       ref={sectionRef}
-      className="relative min-h-screen overflow-hidden border-b-2 border-border/30 pt-24 md:pt-0"
+      className="relative min-h-[100svh] overflow-hidden border-b-2 border-border/30 pt-20 md:pt-0"
     >
       {/* Video del brazo, a pantalla completa detrás del contenido (en desktop
           el brazo "entrega" el círculo y ahí aparece el nombre). En mobile,
@@ -78,12 +81,17 @@ export default function Hero({ onReady }: HeroProps) {
         <HeroArmVideo onDrop={triggerOverload} onReady={handleVideoReady} />
       </div>
 
-      {/* Scrim: aclara/oscurece el lado izquierdo (según tema) para que el texto
-          sea legible sobre el video. En mobile es más fuerte (el texto va sobre
-          el video recortado); en desktop más suave, dejando ver el brazo. */}
+      {/* Scrim: aclara/oscurece el fondo (según tema) para que el texto sea
+          legible sobre el video. El sentido del degradado cambia con la
+          orientación, porque cambia dónde está el texto: en mobile ocupa
+          todo el ancho, así que el scrim baja de arriba hacia abajo y deja
+          limpia la franja de abajo (ahí es donde va a vivir la máquina en el
+          render vertical — ver docs/video-brazo-vertical.md); en desktop el
+          texto vive a la izquierda y el degradado va de izquierda a derecha,
+          más suave, dejando ver el brazo. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent md:via-background/25"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-background/85 to-transparent md:bg-gradient-to-r md:via-background/25"
       />
 
       {/* Sin mx-auto/max-w-6xl ni items-center: esos dos centran en base al
@@ -96,8 +104,9 @@ export default function Hero({ onReady }: HeroProps) {
           texto quede siempre en el mismo lugar relativo al cuadrado, sea
           cual sea la resolución (antes: en pantallas grandes el texto
           quedaba desfasado a la derecha y más abajo del cuadrado). En mobile
-          sigue en flujo normal (pt-24 en la section) — el video ahí usa
-          cámara propia (useArmFollowCam), no este recorte estático. */}
+          sigue en flujo normal (pt-20 en la section) — el video ahí usa
+          cámara propia (useArmFollowCam), que es un parche hasta que exista
+          el render vertical (ver docs/video-brazo-vertical.md). */}
       <div className="relative z-10 w-full px-6 md:absolute md:inset-x-0 md:top-[calc(50vh-18vw)] md:pl-[14vw] md:pr-10">
         <div className="relative max-w-xl">
           {/* Aura detrás del bloque de texto: se activa (y queda encendida,
@@ -128,7 +137,7 @@ export default function Hero({ onReady }: HeroProps) {
               copiar. */}
           <h1
             aria-label={OWNER.name}
-            className="select-text font-display text-4xl font-extrabold leading-tight text-heading sm:text-5xl lg:text-6xl"
+            className="select-text font-display text-[1.7rem] font-extrabold leading-tight text-heading sm:text-5xl lg:text-6xl"
           >
             <span
               ref={firstNameRef}
@@ -137,7 +146,10 @@ export default function Hero({ onReady }: HeroProps) {
             >
               {firstName}
             </span>
-            <br />
+            {" "}
+            {/* El corte en 2 renglones es condicional: en mobile el nombre en
+                4 renglones se comía casi medio viewport. */}
+            <br className="hidden sm:inline" />
             <span ref={middleNameRef} aria-hidden="true" className={NAME_GRADIENT}>
               {middleName}
             </span>
@@ -149,20 +161,29 @@ export default function Hero({ onReady }: HeroProps) {
 
           <div ref={restGroupRef} className="translate-y-2 opacity-0">
             <p className="mt-4 max-w-xl text-lg text-body">{OWNER.role}</p>
+            {/* El gancho comercial va en el color de marca y en el mismo
+                lenguaje que la volanta "soy": encierra al nombre entre dos
+                líneas cortas y no compite con el rol de arriba. */}
+            <p className="mt-1 text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary">
+              {OWNER.tagline}
+            </p>
 
             <HeroStats />
 
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+            {/* En mobile los dos botones apilados a todo el ancho empujaban
+                las redes fuera del fold; lado a lado y más chicos entran los
+                dos y queda aire. */}
+            <div className="mt-7 flex items-stretch gap-3 md:mt-8 md:flex-wrap md:items-center md:gap-4">
               <a
                 href="#contacto"
-                className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3 font-semibold text-on-brand transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-semibold text-on-brand transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary md:flex-none md:px-6 md:text-base"
               >
                 <Mail size={18} /> Contáctame
               </a>
               <a
                 href={OWNER.cvUrl}
                 download
-                className="inline-flex items-center gap-2 rounded-xl border border-border/10 bg-background/40 px-6 py-3 font-semibold text-body backdrop-blur transition hover:border-brand-primary/60 hover:text-brand-primary"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border/10 bg-background/40 px-4 py-3 text-sm font-semibold text-body backdrop-blur transition hover:border-brand-primary/60 hover:text-brand-primary md:flex-none md:px-6 md:text-base"
               >
                 <Download size={18} /> Descargar CV
               </a>
@@ -198,7 +219,7 @@ export default function Hero({ onReady }: HeroProps) {
       <a
         href="#sobre-mi"
         aria-label="Ir a la sección Sobre mí"
-        className="group absolute bottom-14 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-brand-primary transition hover:opacity-80"
+        className="group absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-brand-primary transition hover:opacity-80 md:bottom-14"
       >
         <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">
           Sobre mí
