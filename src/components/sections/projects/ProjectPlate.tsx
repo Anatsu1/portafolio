@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { ExternalLink, Github, Stamp } from "lucide-react";
 import type { Project } from "../../../data/projects";
+import { useHasHover } from "../../../hooks/useHasHover";
 import ProjectCarousel from "./ProjectCarousel";
 
 /** Estado de la ficha respecto del filtro de la red de skills:
@@ -12,12 +13,6 @@ const STATUS_LABEL: Record<Project["status"], string> = {
   activo: "Activo",
   "en-progreso": "En progreso",
   preview: "Preview",
-};
-
-const ROLE_LABEL: Record<Project["role"], string> = {
-  cliente: "Cliente",
-  personal: "Personal",
-  formacion: "Formación",
 };
 
 // Sello de la esquina de la ficha (null = sin sello). Va DERECHO: girado
@@ -49,16 +44,15 @@ const FILTER_CLASSES: Record<PlateFilterState, string> = {
 
 type ProjectPlateProps = {
   project: Project;
-  /** N.º del cajetín — puramente decorativo (estética de plano técnico). */
-  index: number;
   filterState?: PlateFilterState;
-  /** Indica si esta ficha es la activa del slider horizontal. */
+  /** Indica si esta ficha es la activa del slider horizontal. Sin mouse
+   *  (teléfono) es lo que enciende el auto-avance del carrusel, porque ahí
+   *  no existe el hover y el scroll-snap siempre deja una ficha calzada. */
   active?: boolean;
 };
 
 export default function ProjectPlate({
   project,
-  index,
   filterState = "none",
   active = false,
 }: ProjectPlateProps) {
@@ -70,9 +64,11 @@ export default function ProjectPlate({
   const summaryRef = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [clamped, setClamped] = useState(false);
-  // Hover/foco local para habilitar auto-avance del carrusel solo cuando
-  // el usuario interactúa con esta ficha (o si es la activa del slider).
+  // Hover/foco local para habilitar auto-avance del carrusel solo cuando el
+  // usuario interactúa con esta ficha. Con mouse manda esto; sin mouse
+  // (teléfono) manda la ficha activa del slider (no hay hover ahí).
   const [hovered, setHovered] = useState(false);
+  const hasHover = useHasHover();
 
   useLayoutEffect(() => {
     if (expanded) return;
@@ -129,26 +125,21 @@ export default function ProjectPlate({
 
       {/* Cajetín: h fija, medida contra el PEOR caso real (un stack de 6
           tecnologías, hoy la UTN) en el ancho más angosto — no calculada a
-          ojo. Mobile: 2 renglones de metadatos + 3 de stack = 116px. Desde
-          md: los metadatos entran en un renglón y el stack en dos = 68px.
+          ojo. Mobile: 1 renglón de metadatos + 3 de stack = 100px. Desde
+          md: los metadatos en un renglón y el stack en dos = 68px. El rol
+          ya no va acá (lo dice el sello de la esquina), solo el estado.
           El hueco para el sello (pr-24) va SÓLO en la fila de metadatos:
           el sello está pegado arriba a la derecha y no llega a la línea del
           stack — aplicarlo al cajetín entero le comía 96px de ancho al
           stack y lo recortaba a mitad de tecnología. */}
-      <div className="flex h-[7.25rem] flex-col gap-1.5 overflow-hidden border-b border-border/10 pb-3 text-[11px] uppercase tracking-wide text-muted md:h-[4.25rem]">
+      <div className="flex h-[6.25rem] flex-col gap-1.5 overflow-hidden border-b border-border/10 pb-3 text-[11px] uppercase tracking-wide text-muted md:h-[4.25rem]">
         <div
           className={`flex flex-wrap gap-x-4 gap-y-1.5 ${
             STAMP_LABEL[project.role] ? "pr-24 md:pr-0" : ""
           }`}
         >
           <span>
-            Rol <span className="text-body">{ROLE_LABEL[project.role]}</span>
-          </span>
-          <span>
             Estado <span className="text-body">{STATUS_LABEL[project.status]}</span>
-          </span>
-          <span>
-            N.º <span className="text-body">{String(index + 1).padStart(2, "0")}</span>
           </span>
         </div>
         {/* Tecnologías en el color de la sección — la skill usada se
@@ -200,7 +191,7 @@ export default function ProjectPlate({
           <ProjectCarousel
             media={project.media}
             title={project.title}
-            autoplay={hovered || active}
+            autoplay={hasHover ? hovered : active}
           />
         </div>
       )}

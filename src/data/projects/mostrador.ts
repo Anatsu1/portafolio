@@ -9,10 +9,9 @@ import capture04 from "../../assets/mostrador/mostrador-04.jpg";
 // cliente real se retiraron del repositorio (queda una demo con datos
 // ficticios, empaquetada con Docker Compose).
 //
-// Capturas 1440×900 nativas del README del proyecto (la del catálogo venía
-// 1440×935 y se recortó desde arriba, como hace el carrusel con su
-// `object-top`), a JPEG q88.
-const ASPECT = "1440 / 900";
+// Capturas 1440×711, recortadas desde arriba para que todos los proyectos
+// del sitio compartan la misma proporción y las fichas midan igual.
+const ASPECT = "1440 / 711";
 
 export const mostrador: Project = {
   id: "mostrador",
@@ -21,16 +20,15 @@ export const mostrador: Project = {
   status: "activo",
   featured: false,
   summary:
-    "Sistema de gestión para el mostrador de una ferretería, desarrollado " +
-    "para un cliente real en 2024 junto a otro programador: catálogo con " +
-    "control de stock mínimo, ventas con carrito y búsqueda en vivo, remito " +
-    "en PDF, cuenta corriente de clientes con el precio del día de la venta " +
-    "al lado del actual, importación masiva desde Excel y tres roles de " +
-    "acceso. Está escrito en PHP plano sobre MySQL, sin framework: cada " +
-    "pantalla renderiza su propio HTML y consulta la base directamente, y el " +
-    "buscador actualiza resultados sin recargar. El repositorio se publica " +
-    "como demo con datos ficticios, empaquetado con Docker Compose para " +
-    "levantarlo con un comando.",
+    "Sistema de gestión para una ferretería, desarrollado a pedido de un " +
+    "cliente real junto a otro programador. Centraliza todo el mostrador en " +
+    "un solo lugar: catálogo con control de stock, ventas con carrito y " +
+    "búsqueda en vivo, remitos en PDF, cuenta corriente de clientes y carga " +
+    "masiva de productos desde Excel, con tres niveles de acceso según el " +
+    "puesto. Está pensado para un negocio que venía llevando las cuentas en " +
+    "papel y planillas sueltas, y para que cualquier empleado pueda usarlo " +
+    "sin capacitación previa. El repositorio se publica como demo con datos " +
+    "ficticios y se levanta con un solo comando.",
   stack: ["HTML5", "CSS3", "JavaScript", "PHP", "MySQL", "Docker"],
   links: {
     repo: "https://github.com/Anatsu1/sistema-ferreteria",

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { ArrowDown, Download, Github, Linkedin, Mail } from "lucide-react";
 import { OWNER } from "../../data";
 import HeroArmVideo from "./hero/HeroArmVideo";
+import HeroStats from "./hero/HeroStats";
 import { useHeroReveal } from "../../hooks/useHeroReveal";
 import { useTheme } from "../../hooks/useTheme";
 
@@ -149,10 +150,12 @@ export default function Hero({ onReady }: HeroProps) {
           <div ref={restGroupRef} className="translate-y-2 opacity-0">
             <p className="mt-4 max-w-xl text-lg text-body">{OWNER.role}</p>
 
+            <HeroStats />
+
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <a
                 href="#contacto"
-                className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3 font-semibold text-white transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3 font-semibold text-on-brand transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
               >
                 <Mail size={18} /> Contáctame
               </a>

@@ -34,6 +34,7 @@ export default {
         heading: "rgb(var(--color-heading) / <alpha-value>)",
         body: "rgb(var(--color-body) / <alpha-value>)",
         muted: "rgb(var(--color-muted) / <alpha-value>)",
+        "on-brand": "rgb(var(--color-on-brand) / <alpha-value>)",
         brand: {
           primary: "rgb(var(--color-brand-primary) / <alpha-value>)",
           projects: "rgb(var(--color-brand-projects) / <alpha-value>)",

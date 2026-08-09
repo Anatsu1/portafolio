@@ -82,6 +82,7 @@ src/
       Hero.tsx                 Sección inicial (#inicio): nombre + video del brazo
       hero/
         HeroArmVideo.tsx         Video del brazo (claro/oscuro según tema, presentacional)
+        HeroStats.tsx            Tira de métricas (proyectos / años / para clientes), derivadas de los datos
       About.tsx                 Sección "Sobre mí" (#sobre-mi)
       Projects.tsx              Sección "Proyectos" (#proyectos): fichas + árbol de skills (filtro)
       projects/
@@ -101,6 +102,7 @@ src/
     useScrollPosition.ts     Detecta scroll > umbral (usado por Navbar)
     useContactForm.ts        Estado del form de contacto + submit por mailto
     useCarousel.ts           Estado de carrusel genérico (About + capturas de proyectos)
+    useHasHover.ts           ¿El dispositivo tiene mouse? (matchMedia "(hover: hover)")
     useSkillTree.ts          Selección del árbol: `picked` (filtra) vs `selected` (= picked + prerequisitos, sólo visual)
     useMeasuredEdges.ts      Mide centros reales de los nodos para las aristas SVG (ResizeObserver)
     useProjectSlider.ts      Slider de fichas: next/prev/goTo animados, índice desde el scroll real, focus del filtro
@@ -128,7 +130,12 @@ src/
 ## data.ts — contenido del sitio
 
 - `OWNER`: nombre completo (sin tildes — ver nota de estilo abajo), rol,
+  `codingSince` (año en que empezó a programar; la tira de métricas del Hero
+  calcula los años contra el año actual, así el número no envejece),
   credencial, qué está estudiando, email, ubicación, links, URL del CV.
+  El `role` habla a las **dos audiencias** del sitio a la vez ("Desarrollador
+  Full Stack" para el reclutador, "sistemas web a medida" para el cliente
+  particular) — si se reescribe, mantener esa doble lectura.
   **Nota:** email y links de GitHub/LinkedIn son placeholders — hay que
   reemplazarlos por los reales. `cvUrl` apunta a un PDF que todavía no
   existe (no hay carpeta `public/` en el repo); cuando el usuario tenga el
@@ -158,6 +165,9 @@ con proyectos reales, no con barras de porcentaje inventadas.
   calcomanía y peleaba con la grilla de plano técnico, donde todo está a
   escuadra. `STAMP_LABEL` es un `Record<Project["role"], …>` a propósito
   — agregar un rol sin decidir su sello no compila.
+  **El cajetín NO repite el rol**: el sello ya lo dice, y tenerlo dos veces
+  en la misma ficha era ruido. Tampoco lleva un `N.º` de ficha (era
+  decorativo y no aportaba nada). Quedan sólo `ESTADO` y `STACK`.
   Solo proyectos REALES: un `stack` inventado marca nodos del árbol como
   "probados" sin trabajo detrás, y en un portafolio de búsqueda laboral eso
   miente.
@@ -176,25 +186,40 @@ con proyectos reales, no con barras de porcentaje inventadas.
   inferior, nunca el header del sitio capturado). Videos con la misma
   receta de encode que el brazo (`-an`, h264, ~1-2MB) + `poster`
   obligatorio.
-  - **Auto-avance bajo demanda**: el carrusel rota sus capturas solo si el
-    mouse está encima de la ficha (o algo dentro tiene el foco) o si es la
-    ficha activa del slider. Con ocho fichas cargadas, ocho carruseles
-    rotando a la vez era ruido visual. Se implementó con una prop
-    `autoplay` en `ProjectCarousel`, estado local `hovered` en
-    `ProjectPlate` y `active={i === index}` desde `Projects.tsx` usando el
-    `index` que ya expone `useProjectSlider`. `useCarousel` **no** cambió:
-    ya aceptaba `autoMs = 0` para desactivarse, igual que cuando el slide
-    activo es un video o con `prefers-reduced-motion`. En mobile no hay
-    hover, pero la ficha activa es la que quedó calzada por el scroll-snap:
-    siempre hay exactamente una rotando.
+  - **Auto-avance sólo con el mouse encima**: el carrusel rota sus capturas
+    únicamente mientras el mouse está sobre la ficha (o algo dentro tiene el
+    foco), y **vuelve a la primera captura** 2,5s después de salir
+    (`RESET_DELAY_MS` en `ProjectCarousel`). Con ocho fichas cargadas, ocho
+    carruseles rotando a la vez era ruido visual; y volver al inicio deja
+    todas las fichas mostrando su captura de portada, que es la elegida para
+    presentar el proyecto.
+    Se implementó con una prop `autoplay` en `ProjectCarousel` y estado local
+    `hovered` en `ProjectPlate`. `useCarousel` **no** cambió: ya aceptaba
+    `autoMs = 0` para desactivarse, igual que cuando el slide activo es un
+    video o con `prefers-reduced-motion`.
+    **En teléfonos no hay hover**, así que ahí manda `active={i === index}`
+    (la ficha que el scroll-snap dejó calzada, con el `index` que ya expone
+    `useProjectSlider`): siempre hay exactamente una rotando. Cuál de las dos
+    reglas se aplica lo decide `useHasHover` (`matchMedia("(hover: hover)")`),
+    y no un breakpoint: la pregunta es si hay mouse, no cuán ancha es la
+    pantalla — un tablet con teclado tiene mouse y una notebook táctil
+    angosta también. El hook arranca en `false` (lo conservador: nada
+    rotando) y se corrige en su efecto.
   - **Proporción real con `aspect`**: cada ítem puede declarar su
     aspect-ratio CSS (ej. `"1910 / 943"` para capturas de browser
     full-screen, más anchas que 16:9) y el escenario landscape lo adopta —
     la captura se ve completa, sin recorte lateral. Sin `aspect`, 16:9.
     Toda la media landscape de un proyecto debe compartir proporción (el
     escenario es uno solo: usa la del primer ítem). Las capturas se
-    re-escalan a 1440 de ancho (JPEG q88) conservando su proporción y van
-    en `assets/<id-del-proyecto>/`.
+    re-escalan a 1440 de ancho (JPEG q88) y van en
+    `assets/<id-del-proyecto>/`.
+    **Además, todos los proyectos comparten la misma proporción entre sí**
+    (~1440×711, o sea ~2.02:1): si una ficha trae capturas más altas, su
+    escenario crece y esa ficha se ve distinta de las demás. Cuando la
+    captura original no tiene esa proporción se **recorta desde arriba**
+    (`magick foto.jpg -gravity North -crop 1440x711+0+0 +repage -quality 88 foto.jpg`),
+    que es el mismo recorte que haría el carrusel con su `object-top`. Pasó
+    con Mostrador, BeaStore y SATER, que venían 1440×900 y 1440×863.
   - **Videos**: mudos, loop, `preload="metadata"`. Solo el slide activo
     reproduce (el resto se pausa — batería/datos) y el auto-avance se
     suspende mientras un video está activo (no se corta a los 6s; se
@@ -239,9 +264,9 @@ con proyectos reales, no con barras de porcentaje inventadas.
   extra corría todo lo de abajo; lección de esta iteración). Así imagen,
   título y texto caen a la MISMA altura en todas las fichas y el slider
   no salta al navegar (pedido explícito del usuario). Zonas: cajetín
-  `h-[4.25rem] content-start` (1 fila de metadatos + 2 renglones de
-  stack; el STACK siempre en su propia línea, `basis-full`, y `pr-24` si
-  hay sello); título `h-[2.8em] leading-[1.4]` (exactamente 2 renglones —
+  `h-[6.25rem] md:h-[4.25rem]` (1 fila de metadatos + 3 renglones de stack
+  en mobile, 1 + 2 desde `md:`; el STACK siempre en su propia línea, y
+  `pr-24` si hay sello); título `h-[2.8em] leading-[1.4]` (exactamente 2 renglones —
   `text-lg` en mobile para que títulos largos entren en 2); resumen
   `h-[4.875em]` + `line-clamp-3` (exactamente 3 renglones) con botón
   "Ver más / Ver menos" en un **slot fijo `h-5`** (aparece solo si el
@@ -419,18 +444,38 @@ al toggle (p. ej. `HeroArmVideo` cambia el clip claro/oscuro).
   `border`, `heading`, `body`, `muted`. Cada uno es
   `rgb(var(--color-x) / <alpha-value>)`, así que los modificadores de
   opacidad (`bg-surface/70`, `border-border/5`) siguen funcionando.
+  **Los neutros no son grises puros**: están teñidos hacia el color del
+  modo (azul en claro, verde en oscuro), para que la página se lea como un
+  sistema de un solo color y no como acentos pegados sobre gris.
+- **La paleta es monocromática por modo** (decisión explícita del usuario):
+  en claro sólo entran **azul, celeste, negro y blanco**; en oscuro sólo
+  **verde, negro y blanco**. Los tres slots de marca son **tonalidades del
+  mismo color**, no colores distintos. Si hace falta un cuarto acento, se
+  saca del mismo rango — nunca un rojo, un naranja ni un violeta.
 - **Colores de marca**, uno por "slot" semántico (no por sección fija — el
   nombre del token es el rol, no el color literal, porque el color
   *cambia* entre modo claro y oscuro):
 
   | Token | Slot | Claro | Oscuro |
   |---|---|---|---|
-  | `brand-primary` | Hero, Navbar, Contacto | azul `#2563eb` | verde `#22c55e` |
-  | `brand-projects` | Cromado de la ficha de proyecto (eyebrow, sello, link demo) | rojo `#dc2626` | naranja `#f97316` |
-  | `brand-skills` | Anotaciones de stack en la ficha + catálogo de piezas sueltas | amarillo `#eab308` | violeta `#8b5cf6` |
+  | `brand-primary` | Hero, Navbar, Contacto | azul royal `#2563eb` | verde `#22c55e` |
+  | `brand-projects` | Cromado de la ficha de proyecto (eyebrow, sello, link demo) | celeste `#0369a1` | verde agua `#34d399` |
+  | `brand-skills` | Anotaciones de stack en la ficha + catálogo de piezas sueltas | celeste profundo `#0e7490` | lima `#a3e635` |
+  | `on-brand` | Texto que va **encima** de un fondo `brand-primary` | blanco | casi negro `#050c07` |
 
-  (El brazo/cinta ya no es un SVG themeable: es un video pre-renderizado con
-  la paleta quemada — `arm-light` usa azul, `arm-dark` usa verde. Ver abajo.)
+  **`brand-primary` NO se puede cambiar en ninguno de los dos modos**: el
+  brazo/cinta es un video pre-renderizado con la paleta quemada
+  (`arm-light` azul, `arm-dark` verde) y el aura del Hero tiene que coincidir
+  con el color del círculo que el brazo suelta. Cambiarlo desincroniza la
+  animación entera. Los otros dos slots sí son libres, dentro del rango del
+  modo.
+
+  **`on-brand` existe por contraste, no por estética**: un `text-white`
+  sobre el verde `#22c55e` del modo oscuro da 1.9:1 y es ilegible. Todo
+  `bg-brand-primary` lleva `text-on-brand`, nunca `text-white`.
+  Al elegir tonos, `brand-projects` y `brand-skills` van en texto chico
+  (rótulos de 10-11px del cajetín y del Toolbox): tienen que pasar ≥4.5:1
+  contra el fondo de su modo.
 
   Si el usuario pide cambiar "el color de X", primero identificá a qué
   **slot** semántico pertenece X (no asumas que el nombre del token
@@ -504,6 +549,22 @@ orden de arriba: una sola variante por propiedad y no hay ambigüedad. El follow
 esa decisión es por *ancho* (en apaisado la pantalla es ancha y el recorte
 estático del brazo se entiende bien, no hace falta la cámara con zoom).
 
+**La tira de métricas (`hero/HeroStats.tsx`):** tres números entre el rol y
+los botones — proyectos, años programando y cuántos son para clientes
+reales. Es la prueba rápida de volumen de trabajo para las **dos audiencias**
+del sitio, antes de que nadie scrollee. Reglas:
+
+- **Los tres datos son números.** La primera versión tenía un símbolo en el
+  tercero y al lado de los otros dos se leía como un campo vacío.
+- **Nada escrito a mano**: la cantidad sale de `PROJECTS.length`, los de
+  cliente de filtrar por `role === "cliente"` y los años de
+  `new Date().getFullYear() - OWNER.codingSince`. Sumar un proyecto actualiza
+  el Hero solo.
+- El primer dato es un `<a href="#proyectos">`: además de informar, es la
+  entrada a la sección (el usuario pidió "un botón o alguna forma de
+  presentación de los proyectos" — esto lo resuelve sin sumar otro botón al
+  Hero, que ya tiene dos).
+
 **El video del brazo (`HeroArmVideo`):**
 - Assets en `src/assets/`: `arm-light.mp4` (azul/fondo claro) y
   `arm-dark.mp4` (verde/fondo oscuro), ambos 1080p, más
@@ -566,7 +627,10 @@ estático del brazo se entiende bien, no hace falta la cámara con zoom).
   de reproducir espera `document.fonts.ready` (para que Sora ya esté
   aplicada y no shiftee el layout). Cada línea del nombre aparece con
   incandescencia (`textShadow` glow que se apaga) + fade/slide, en orden:
-  eyebrow → nombre → medio → apellidos → resto (rol + botones + redes).
+  eyebrow → nombre → medio → apellidos → resto (rol + métricas + botones +
+  redes). Ese "resto" es **un solo `<div ref={restGroupRef}>`**: lo que se
+  agregue al Hero tiene que ir adentro o queda invisible para siempre
+  (arranca en `opacity-0` y sólo la timeline lo prende).
 - **Aura / impacto**: segunda timeline, pausada, disparada por
   `triggerOverload()` — `Hero.tsx` la conecta al `onDrop` de `HeroArmVideo`.
   El momento en que el brazo suelta el círculo reparte energía por el bloque,
@@ -713,6 +777,7 @@ docker compose pull && docker compose up -d
 | Tocar la ficha de proyecto, el carrusel o el árbol | `src/components/sections/projects/`             |
 | Tocar el video del brazo del Hero                | `src/components/sections/hero/HeroArmVideo.tsx`, assets en `src/assets/arm-*` |
 | Tocar el reveal del texto del Hero o el aura      | `src/hooks/useHeroReveal.ts` |
+| Tocar la tira de métricas del Hero                | `src/components/sections/hero/HeroStats.tsx` (los números se derivan; el año de inicio está en `src/data.ts`) |
 | Tocar el splash de entrada (puertas de vault)     | `src/components/layout/PageLoader.tsx`, `src/hooks/usePageLoaderExit.ts` |
 | Tocar la cámara que sigue la pinza en mobile      | `src/hooks/useArmFollowCam.ts` |
 | Lógica con estado reusable                       | `src/hooks/`                                      |

@@ -7,10 +7,9 @@ import capture04 from "../../assets/beastore/beastore-04.jpg";
 // No hay demo online porque necesita una instancia de MongoDB propia; se
 // corre en local con `./mvnw spring-boot:run`.
 //
-// Capturas de página completa a 2880 de ancho (retina), re-escaladas a 1440
-// y recortadas a 900 de alto desde arriba —cada pantalla tenía un alto
-// distinto y el escenario del carrusel usa una sola proporción—, a JPEG q88.
-const ASPECT = "1440 / 900";
+// Capturas 1440×711, recortadas desde arriba para que todos los proyectos
+// del sitio compartan la misma proporción y las fichas midan igual.
+const ASPECT = "1440 / 711";
 
 export const beastore: Project = {
   id: "beastore",
@@ -19,17 +18,14 @@ export const beastore: Project = {
   status: "activo",
   featured: false,
   summary:
-    "Panel de administración de un catálogo de productos electrónicos, " +
-    "hecho como práctica de Java del lado del servidor: alta, listado, " +
-    "edición y baja contra MongoDB, con subida de fotos al disco y el nombre " +
-    "del archivo saneado, validación en el servidor con el error debajo del " +
-    "campo que lo causó, y una etiqueta de estante que se arma en vivo " +
-    "mientras se carga el producto. Corre sobre Spring Boot con Thymeleaf y " +
-    "la interfaz está escrita a mano, sin framework de CSS ni de JavaScript. " +
-    "Al retomarlo aparecieron varios errores del código original —las fotos " +
-    "nunca se servían, las validaciones no se ejecutaban y las credenciales " +
-    "de la base estaban en el repositorio— que quedaron documentados y " +
-    "corregidos.",
+    "Panel de administración de un catálogo de productos electrónicos, hecho " +
+    "como demo de mi trabajo del lado del servidor con Java. Permite dar de " +
+    "alta, listar, editar y eliminar productos con sus fotos, valida los " +
+    "datos antes de guardarlos y arma en vivo la etiqueta de estante de cada " +
+    "artículo mientras se carga. Está construido sobre Spring Boot y MongoDB " +
+    "para mostrar cómo resuelvo un CRUD completo contra una base no " +
+    "relacional, con la interfaz escrita a mano, sin frameworks de CSS ni de " +
+    "JavaScript.",
   stack: ["HTML5", "CSS3", "JavaScript", "Java", "Spring Boot", "MongoDB"],
   links: {
     repo: "https://github.com/Anatsu1/store-mongodb",

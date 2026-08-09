@@ -2,7 +2,7 @@
   <img src="public/favicon.svg" alt="" width="72" height="72">
   <h1>augustofc_dev — Portafolio</h1>
   <p>
-    Sitio personal de <strong>Cesar Augusto Fernandez Carbonell</strong>, desarrollador Full Stack + IA.<br>
+    Sitio personal de <strong>Cesar Augusto Fernandez Carbonell</strong>, desarrollador Full Stack — sistemas web a medida e IA.<br>
     React + Vite + TypeScript + Tailwind, servido como estáticos por nginx en un contenedor Docker.
   </p>
   <p>
@@ -28,8 +28,9 @@ Lo que la hace distinta de una landing estática cualquiera:
 - **Proyectos y skills unificados.** No hay barras de porcentaje: cada
   habilidad se demuestra con un proyecto. Las fichas de proyecto son *planos
   técnicos* (cajetín de metadatos, sello "CLIENTE"/"PERSONAL"/"CERTIFICACIÓN", carrusel de
-  capturas y videos con tira `FIG. 01 / 03`, que avanza solo bajo demanda:
-  la ficha activa del slider o aquella con el mouse encima).
+  capturas y videos con tira `FIG. 01 / 03`, que avanza solo mientras el mouse
+  está sobre la ficha y vuelve a la primera captura al salir — en teléfonos,
+  donde no hay hover, rota la ficha que el scroll-snap dejó calzada).
 - **Árbol de skills como filtro.** Una red de nodos con prerequisitos
   (`HTML5 → CSS3 → Tailwind`) que filtra las fichas de forma restrictiva (AND).
   Solo entran tecnologías que se usan de verdad en algún proyecto, y las skills

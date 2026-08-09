@@ -94,12 +94,13 @@ export default function Projects() {
             ref={registerPlate(project.id)}
             variants={itemVariants}
           >
-            {/* `active`: sólo la ficha calzada en el borde izquierdo del
-                slider rota sus capturas sola (ver ProjectCarousel). Con
-                ocho fichas, ocho carruseles girando a la vez era ruido. */}
+            {/* `active`: sólo sirve en mobile, donde no hay hover — la ficha
+                que el scroll-snap dejó calzada es la que rota sus capturas
+                sola. Con mouse manda el hover de la ficha (ver
+                ProjectCarousel). Con ocho fichas, ocho carruseles girando a
+                la vez era ruido. */}
             <ProjectPlate
               project={project}
-              index={i}
               filterState={filterStates.get(project.id)}
               active={i === index}
             />

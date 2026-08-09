@@ -1,7 +1,11 @@
 export const OWNER = {
   name: "Cesar Augusto Fernandez Carbonell",
   shortName: "Cesar Fernandez",
-  role: "Desarrollador Full Stack + IA",
+  role: "Desarrollador Full Stack — sistemas web a medida e IA",
+  /** Año en que empecé a programar (16 años). La tira de métricas del Hero
+   *  calcula los años de experiencia contra el año actual, así no queda un
+   *  número escrito a mano que envejece solo. */
+  codingSince: 2021,
   credential: "Técnico universitario en Programación",
   currentlyStudying: "Licenciatura en Inteligencia Artificial",
   email: "contacto@augustofc.com",

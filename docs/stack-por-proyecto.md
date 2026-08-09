@@ -17,9 +17,9 @@ Todos los proyectos están versionados en repos de Git.
 |---|---|---|
 | **PrestARTE** | HTML, CSS, JavaScript, Bootstrap | todas |
 | **UTN EA Necochea** | HTML, CSS, React, Node, Express, PostgreSQL | todas |
-| **Mostrador** | HTML, CSS, JavaScript, PHP 8.1, MariaDB, Apache, Docker Compose, FPDF (remitos en PDF), spreadsheet-reader (importación de Excel) | `HTML5, CSS3, JavaScript, PHP, MySQL, Docker`. Apache, FPDF y el lector de planillas van en el resumen |
+| **Mostrador** | HTML, CSS, JavaScript, PHP 8.1, MariaDB, Apache, Docker Compose, FPDF (remitos en PDF), spreadsheet-reader (importación de Excel) | `HTML5, CSS3, JavaScript, PHP, MySQL, Docker`. Apache, FPDF y el lector de planillas quedan fuera: el resumen de la ficha es comercial, no una lista de dependencias |
 | **Manarem** | HTML, CSS, JavaScript, Python, Flask, SQLite, API de AniList (consumo para anime) | todas menos el consumo de la API, que va en el resumen |
-| **BeaStore** | HTML, CSS, JavaScript, Java 21, Spring Boot 3.3, Spring Data MongoDB, Thymeleaf, Maven | `HTML5, CSS3, JavaScript, Java, Spring Boot, MongoDB`. Thymeleaf y Maven van en el resumen |
+| **BeaStore** | HTML, CSS, JavaScript, Java 21, Spring Boot 3.3, Spring Data MongoDB, Thymeleaf, Maven | `HTML5, CSS3, JavaScript, Java, Spring Boot, MongoDB`. Thymeleaf y Maven quedan fuera, por lo mismo que en Mostrador |
 | **SATER** | VB.NET, Windows Forms, .NET Framework 4.5, Access/Jet, SQLite, Visual Studio 2012 | **sólo `SQLite`** |
 | **VPS** | Docker, Traefik, Portainer, Cloudflare, Oracle Cloud, GitHub Actions, conexión SSH con restricciones, fail2ban, ufw, Uptime Kuma (monitorización), derivación de servicios → n8n, redis, postgres, web | solo las generales (Docker, Git, GitHub Actions); el resto se cuenta en el resumen de la ficha. **PostgreSQL no va**: acá es un servicio levantado, no un modelo de datos diseñado, y bajo el mismo tag confunde a quien filtra por bases de datos |
 | **Portafolio** | HTML, CSS, React, TypeScript, Tailwind, Git, GitHub Actions | todas |
@@ -37,7 +37,15 @@ Estos ocho prueban las tecnologías concretas del árbol. Los agrupadores
 > **Nota sobre SATER**: su `stack` incluye sólo `SQLite` a propósito. VB.NET,
 > Windows Forms y Access no son nodos del árbol porque no son tecnologías
 > que tenga sentido ofrecer como filtro en un portafolio de desarrollo web;
-> se cuentan en el resumen de la ficha, igual que los servicios del VPS.
+> VB.NET se nombra en el resumen de la ficha, igual que pasa con los
+> servicios del VPS.
+
+> **Los resúmenes de las fichas no son listas de tecnologías.** Dicen qué es
+> el sistema, para quién y por qué existe — este es un portafolio de
+> presentación, y quien lo lee decide en tres renglones (que es lo que se ve
+> antes del "Ver más"). En particular: **nada de enumerar bugs, fallas o
+> "problemas del código original"**, ni siquiera para mostrar que se
+> arreglaron. Eso vive en el README del repositorio de cada proyecto.
 
 ## Herramientas (informativas, no son filtro)
 

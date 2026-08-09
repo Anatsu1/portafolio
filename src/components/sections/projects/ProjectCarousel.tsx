@@ -4,6 +4,11 @@ import { useReducedMotion } from "motion/react";
 import type { ProjectMedia } from "../../../data/projects";
 import { useCarousel } from "../../../hooks/useCarousel";
 
+// Al salir el mouse, el carrusel vuelve a la primera captura. La espera es
+// para no rebobinar de golpe si el usuario apenas pasó por encima o si está
+// yendo hacia los controles "FIG." de abajo.
+const RESET_DELAY_MS = 2500;
+
 type ProjectCarouselProps = {
   media: ProjectMedia[];
   title: string;
@@ -37,11 +42,11 @@ type ProjectCarouselProps = {
  * de verse encajonada. Con una sola media no hay controles; sin media no
  * renderiza nada.
  *
- * Auto-avance: solo corre cuando `autoplay === true` (hover/foco en la
- * ficha O ficha activa del slider) Y no hay `prefers-reduced-motion` Y el
- * slide actual no es un video. El resto del tiempo queda en la primera
- * captura fija; la navegación manual (chevrons y ticks "FIG.") siempre
- * funciona.
+ * Auto-avance: corre sólo con el mouse encima de la ficha (o el foco dentro),
+ * y al salir vuelve a la primera captura pasados 2,5s. Además se suspende
+ * con `prefers-reduced-motion` o si el slide actual es un video. El resto
+ * del tiempo queda en la primera captura fija; la navegación manual
+ * (chevrons y ticks "FIG.") siempre funciona.
  */
 export default function ProjectCarousel({ media, title, autoplay = false }: ProjectCarouselProps) {
   const reduce = useReducedMotion();
@@ -57,6 +62,12 @@ export default function ProjectCarousel({ media, title, autoplay = false }: Proj
   const autoMs = autoplay && !reduce && !activeIsVideo ? 6000 : 0;
   const { index, next, prev, goTo } = useCarousel(media.length, autoMs);
   lastIndexRef.current = index;
+
+  useEffect(() => {
+    if (autoplay) return;
+    const id = window.setTimeout(() => goTo(0), RESET_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [autoplay, goTo]);
 
   useEffect(() => {
     if (reduce) return;

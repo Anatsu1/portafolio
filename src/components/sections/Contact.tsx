@@ -58,7 +58,7 @@ export default function Contact() {
             onClick={() => setAudience(key)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               audience === key
-                ? "bg-brand-primary text-white"
+                ? "bg-brand-primary text-on-brand"
                 : "text-muted hover:text-body"
             }`}
           >
@@ -131,7 +131,7 @@ export default function Contact() {
           </label>
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3 font-semibold text-white transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3 font-semibold text-on-brand transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           >
             <Send size={17} /> Enviar mensaje
           </button>
