@@ -20,7 +20,7 @@ export default function HeroStats() {
   const technologies = new Set(PROJECTS.flatMap((project) => project.stack)).size;
 
   return (
-    <div className="mt-6 flex divide-x divide-border/15">
+    <div className="mt-8 flex divide-x divide-border/15 md:mt-6">
       {/* whitespace-nowrap: a 390px la tira tiene ~342px útiles y los rótulos
           largos partidos dejaban columnas de alturas distintas; el ajuste
           tiene que ser de tamaño y no de saltos de línea. */}

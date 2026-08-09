@@ -70,7 +70,7 @@ export default function Hero({ onReady }: HeroProps) {
     <section
       id="inicio"
       ref={sectionRef}
-      className="relative min-h-[100svh] overflow-hidden border-b-2 border-border/30 pt-20 md:pt-0"
+      className="relative flex min-h-[100svh] flex-col overflow-hidden border-b-2 border-border/30 pt-20 md:block md:pt-0"
     >
       {/* Video del brazo, a pantalla completa detrás del contenido (en desktop
           el brazo "entrega" el círculo y ahí aparece el nombre). En mobile,
@@ -91,7 +91,7 @@ export default function Hero({ onReady }: HeroProps) {
           más suave, dejando ver el brazo. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-background/85 to-transparent md:bg-gradient-to-r md:via-background/25"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-background/90 to-transparent md:bg-gradient-to-r md:via-background/25"
       />
 
       {/* Sin mx-auto/max-w-6xl ni items-center: esos dos centran en base al
@@ -106,9 +106,21 @@ export default function Hero({ onReady }: HeroProps) {
           quedaba desfasado a la derecha y más abajo del cuadrado). En mobile
           sigue en flujo normal (pt-20 en la section) — el video ahí usa
           cámara propia (useArmFollowCam), que es un parche hasta que exista
-          el render vertical (ver docs/video-brazo-vertical.md). */}
-      <div className="relative z-10 w-full px-6 md:absolute md:inset-x-0 md:top-[calc(50vh-18vw)] md:pl-[14vw] md:pr-10">
-        <div className="relative max-w-xl">
+          el render vertical (ver docs/video-brazo-vertical.md).
+
+          En mobile además `flex-1 items-center` reparte el bloque en el alto
+          que sobra debajo del nav, en vez de apilarlo pegado arriba y dejar
+          una franja muerta abajo. Va con flex y no con paddings a mano
+          justamente para que se acomode solo en teléfonos de distinto alto,
+          que es donde una medida fija siempre queda mal en alguno.
+
+          El `pb-32` corre ese centro hacia arriba a propósito: centrado a
+          secas, en un teléfono corto el texto llegaba al 85% del alto y
+          tapaba la cinta del video. Con esos 128px reservados el bloque
+          queda entre el ~20% y el ~73% en cualquier alto, y el último cuarto
+          es la franja donde se ve la máquina. */}
+      <div className="relative z-10 flex w-full flex-1 items-center px-6 pb-32 md:absolute md:block md:inset-x-0 md:top-[calc(50vh-18vw)] md:pb-0 md:pl-[14vw] md:pr-10">
+        <div className="relative w-full max-w-xl md:w-auto">
           {/* Aura detrás del bloque de texto: se activa (y queda encendida,
               con un pulso suave) cuando el brazo suelta el círculo. Núcleo
               del color de fondo (blanco en claro, casi negro en oscuro) para
@@ -160,11 +172,11 @@ export default function Hero({ onReady }: HeroProps) {
           </h1>
 
           <div ref={restGroupRef} className="translate-y-2 opacity-0">
-            <p className="mt-4 max-w-xl text-lg text-body">{OWNER.role}</p>
+            <p className="mt-6 max-w-xl text-lg text-body md:mt-4">{OWNER.role}</p>
             {/* El gancho comercial va en el color de marca y en el mismo
                 lenguaje que la volanta "soy": encierra al nombre entre dos
                 líneas cortas y no compite con el rol de arriba. */}
-            <p className="mt-1 text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary">
+            <p className="mt-1.5 text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary md:mt-1">
               {OWNER.tagline}
             </p>
 
@@ -173,17 +185,17 @@ export default function Hero({ onReady }: HeroProps) {
             {/* En mobile los dos botones apilados a todo el ancho empujaban
                 las redes fuera del fold; lado a lado y más chicos entran los
                 dos y queda aire. */}
-            <div className="mt-7 flex items-stretch gap-3 md:mt-8 md:flex-wrap md:items-center md:gap-4">
+            <div className="mt-9 flex items-stretch gap-3 md:mt-8 md:flex-wrap md:items-center md:gap-4">
               <a
                 href="#contacto"
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-3 text-sm font-semibold text-on-brand transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary md:flex-none md:px-6 md:text-base"
+                className="inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-brand-primary px-4 py-3 text-sm font-semibold text-on-brand transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary md:flex-none md:px-6 md:text-base"
               >
                 <Mail size={18} /> Contáctame
               </a>
               <a
                 href={OWNER.cvUrl}
                 download
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border/10 bg-background/40 px-4 py-3 text-sm font-semibold text-body backdrop-blur transition hover:border-brand-primary/60 hover:text-brand-primary md:flex-none md:px-6 md:text-base"
+                className="inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-border/10 bg-background/40 px-4 py-3 text-sm font-semibold text-body backdrop-blur transition hover:border-brand-primary/60 hover:text-brand-primary md:flex-none md:px-6 md:text-base"
               >
                 <Download size={18} /> Descargar CV
               </a>
@@ -192,7 +204,7 @@ export default function Hero({ onReady }: HeroProps) {
             {/* Estos dos se "energizan" (parpadeo y quedan prendidos) cuando
                 el brazo suelta el círculo — useHeroReveal les pone la clase
                 `hero-socket-on` a los <a> de acá adentro. */}
-            <div ref={socialsRef} className="mt-8 flex items-center gap-4">
+            <div ref={socialsRef} className="mt-9 flex items-center gap-4 md:mt-8">
               <a
                 href={OWNER.github}
                 target="_blank"

@@ -706,7 +706,23 @@ de las visitas, y tiene reglas propias:
   `inline-block` y sin el `<br>` quedarían pegados). Los tres `<span>` con
   sus refs siguen intactos — fusionarlos rompe el reveal de GSAP.
 - **Los dos CTA van lado a lado** (`flex-1 ... md:flex-none`, `text-sm`,
-  `px-4`): apilados a todo el ancho empujaban las redes fuera del fold.
+  `px-4`, `whitespace-nowrap`): apilados a todo el ancho empujaban las redes
+  fuera del fold, y sin el `nowrap` "Descargar CV" partía en dos renglones a
+  360px y los dejaba de alturas distintas.
+- **El bloque se reparte en el alto, no se apila arriba.** La `<section>` es
+  `flex flex-col` y el contenedor del texto `flex-1 items-center`, así que el
+  bloque se centra en el alto que sobra debajo del nav. **Con un `pb-32` que
+  corre ese centro hacia arriba**: centrado a secas, en un teléfono corto
+  (360×740) el texto llegaba al 85% y tapaba la cinta del video. Con esos
+  128px reservados queda entre el ~20% y el ~73% en cualquier alto, y el
+  último cuarto es la franja donde se ve la máquina.
+  Va con flex y **no con paddings a mano** justamente porque los altos de
+  teléfono van de 640 a 930+: una medida fija queda mal en alguno. Medido en
+  360×740, 390×844, 412×915 y 430×932.
+  Las dos versiones anteriores fallaron por los dos extremos opuestos —
+  primero todo pegado arriba con una franja muerta abajo, después todo
+  estirado y encimado con el brazo. El equilibrio es *repartir* el bloque
+  reservando la franja de la máquina, no estirarlo.
 - **El scrim cambia de sentido con la orientación**, porque cambia dónde está
   el texto: `bg-gradient-to-b` en mobile (el texto ocupa todo el ancho, así
   que tapa arriba y deja limpia la franja de abajo) y `md:bg-gradient-to-r`
