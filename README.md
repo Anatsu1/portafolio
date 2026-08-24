@@ -142,8 +142,8 @@ El servicio **no se construye en el servidor**. Un push a `main` dispara todo:
 push a main
     │
 GitHub Actions (.github/workflows/deploy.yml)
-    │  1. build de la imagen Docker
-    │  2. cross-build ARM64 (QEMU + Buildx — el VPS es ARM)
+    │  1. npm ci + vite build, nativos en el runner (amd64)
+    │  2. el dist entra en una imagen ARM64 de nginx — el VPS es ARM
     │  3. push a ghcr.io/anatsu1/portfolio:latest
     ▼
 SSH al VPS (usuario deploy)
@@ -165,6 +165,25 @@ Deploy manual, si hiciera falta:
 cd /srv/infrastructure/portfolio
 docker compose pull && docker compose up -d
 ```
+
+> [!IMPORTANT]
+> Las imágenes base del `Dockerfile` van **pineadas por digest**, y el build de
+> Node corre con `--platform=$BUILDPLATFORM`, o sea nativo en el runner. Las dos
+> cosas arreglan el mismo incidente: el 2026-08-21 Docker republicó
+> `node:22-alpine`, el Node nuevo usaba instrucciones que QEMU en modo usuario no
+> implementa, y `npm ci` moría con `illegal instruction`. El deploy quedó roto 15
+> días sin que cambiara una línea del repo. El `dist` de Vite son estáticos
+> iguales en cualquier arquitectura, así que emular Node nunca hizo falta.
+>
+> Para subir una base, resolvé el digest del índice multi-arch y reemplazalo:
+>
+> ```bash
+> docker buildx imagetools inspect node:22-alpine | head -2
+> ```
+>
+> Tiene que ser el digest del **índice** (`amd64` + `arm64`), no el de un
+> manifest de una sola arquitectura: si pineás uno solo, falla la etapa que
+> necesita la otra.
 
 > [!NOTE]
 > El tag `latest` es una excepción deliberada a la política de versiones fijas:
