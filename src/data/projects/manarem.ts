@@ -11,8 +11,9 @@ export const manarem: Project = {
   id: "manarem",
   title: "Manarem",
   role: "formacion",
-  // El frontend está completo y navegable, pero la demo corre con datos mock
-  // hasta volver a levantar la API. Cuando el backend esté online: "activo".
+  // El frontend está completo y navegable, y la API ya está terminada y
+  // probada, pero la demo corre con datos mock hasta publicarla en el VPS.
+  // Cuando el backend esté online: "activo".
   status: "preview",
   featured: false,
   summary:
@@ -21,9 +22,23 @@ export const manarem: Project = {
     "enlazan directo a dónde verlos y leerlos, sección de música, foro con " +
     "temas y respuestas, y cuentas de usuario con registro y login. Los datos " +
     "de series salen de la API de AniList. El frontend es HTML, CSS y " +
-    "JavaScript vanilla —sin framework ni build step— y detrás hay una API " +
-    "REST en Flask sobre SQLite, con las contraseñas hasheadas.",
-  stack: ["HTML5", "CSS3", "JavaScript", "Python", "Flask", "SQLite"],
+    "JavaScript vanilla —sin framework ni build step—, pensado para servirse " +
+    "estático. Detrás hay una API REST en Flask que corre indistintamente " +
+    "sobre PostgreSQL o SQLite: el esquema y las consultas son los mismos y se " +
+    "elige el motor con una variable de entorno, así el repositorio se clona y " +
+    "arranca sin instalar nada. La API está preparada para vivir expuesta en " +
+    "un VPS chico —contraseñas hasheadas con pbkdf2, sesiones que vencen, " +
+    "límites de tamaño y de frecuencia por IP, y cupos por tabla— y se " +
+    "despliega con gunicorn detrás de un proxy inverso.",
+  stack: [
+    "HTML5",
+    "CSS3",
+    "JavaScript",
+    "Python",
+    "Flask",
+    "PostgreSQL",
+    "SQLite",
+  ],
   links: {
     demo: "https://manarem.vercel.app/",
     repo: "https://github.com/Anatsu1/manarem",
