@@ -24,7 +24,7 @@ export const portafolio: Project = {
   // La lista sale de docs/stack-por-proyecto.md. Vite y GSAP se cuentan en
   // el resumen pero no van acá: el stack alimenta el árbol, y el árbol solo
   // lleva las tecnologías de esa lista.
-  stack: ["HTML5", "CSS3", "React", "TypeScript", "Tailwind CSS", "Git", "GitHub Actions"],
+  stack: ["HTML5", "CSS3", "React", "TypeScript", "Tailwind CSS", "Git", "Docker", "GitHub Actions"],
   links: {
     demo: "https://augustofc.com",
     // Sin repo: hoy es privado. Si se hace público, agregar acá
