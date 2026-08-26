@@ -63,3 +63,31 @@ Cada chip lleva la marca monocroma de la herramienta; los paths están en
 en tema claro y oscuro. Docker, Git y GitHub Actions **sí** son nodos del
 árbol (rama `herramientas`), porque hay proyectos que los prueban y tiene
 sentido filtrar por ellos.
+
+## Pendiente: Docker y GitHub Actions faltan en dos fichas
+
+Detectado el 2026-08-26 al agregarle esos dos tags a Manarem. Los tres
+proyectos que despliegan por pipeline tienen Dockerfile **y** workflow, pero
+sólo Manarem los declara:
+
+| Proyecto | Dockerfile | Workflow | Declara hoy | Falta |
+|---|---|---|---|---|
+| Manarem | sí | sí | Docker, GitHub Actions | — |
+| Portafolio | sí (raíz) | sí (`.github/workflows/deploy.yml`) | sólo GitHub Actions | **Docker** |
+| UTN EA Necochea | sí (`prog/backend/`) | sí (`.github/workflows/backend.yml`) | ninguno | **Docker y GitHub Actions** |
+
+**Criterio: agregar, no sacar.** `Git` está a propósito sólo en Portafolio y
+VPS porque lo usan todos y no distingue nada. Docker y GitHub Actions **no** son
+universales acá — BeaStore, PrestARTE y SATER no tienen CI/CD — así que
+marcarlos en los tres que sí despliegan contenedores por pipeline es
+información útil para quien filtra, que es para lo que sirve el `stack`.
+
+Los cambios concretos:
+
+- `src/data/projects/portafolio.ts` → agregar `"Docker"` al `stack`.
+- `src/data/projects/utn-necochea.ts` → agregar `"Docker"` y `"GitHub Actions"`.
+- Actualizar la columna *Tecnologías* de esas dos filas en la tabla de arriba,
+  que tampoco los menciona.
+
+Después: `npx tsc --noEmit` para confirmar que los tags matchean nodos del
+árbol (`docker` y `github-actions` existen, verificado).
