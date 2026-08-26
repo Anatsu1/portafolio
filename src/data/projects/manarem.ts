@@ -11,10 +11,7 @@ export const manarem: Project = {
   id: "manarem",
   title: "Manarem",
   role: "formacion",
-  // El frontend está completo y navegable, y la API ya está terminada y
-  // probada, pero la demo corre con datos mock hasta publicarla en el VPS.
-  // Cuando el backend esté online: "activo".
-  status: "preview",
+  status: "activo",
   featured: false,
   summary:
     "Trabajo grupal del curso Codo a Codo (Argentina, 2024): plataforma para " +
@@ -22,14 +19,14 @@ export const manarem: Project = {
     "enlazan directo a dónde verlos y leerlos, sección de música, foro con " +
     "temas y respuestas, y cuentas de usuario con registro y login. Los datos " +
     "de series salen de la API de AniList. El frontend es HTML, CSS y " +
-    "JavaScript vanilla —sin framework ni build step—, pensado para servirse " +
-    "estático. Detrás hay una API REST en Flask que corre indistintamente " +
-    "sobre PostgreSQL o SQLite: el esquema y las consultas son los mismos y se " +
-    "elige el motor con una variable de entorno, así el repositorio se clona y " +
-    "arranca sin instalar nada. La API está preparada para vivir expuesta en " +
-    "un VPS chico —contraseñas hasheadas con pbkdf2, sesiones que vencen, " +
-    "límites de tamaño y de frecuencia por IP, y cupos por tabla— y se " +
-    "despliega con gunicorn detrás de un proxy inverso.",
+    "JavaScript vanilla —sin framework ni build step—, servido estático en " +
+    "Vercel, que reenvía las llamadas a una API REST en Flask sobre " +
+    "PostgreSQL: el navegador habla siempre con un mismo origen, sin CORS ni " +
+    "contenido mixto. La API corre en mi VPS como contenedor detrás de " +
+    "Traefik y se despliega sola en cada push, con la imagen ARM64 construida " +
+    "en GitHub Actions. Está pensada para vivir expuesta: contraseñas " +
+    "hasheadas con pbkdf2, sesiones que vencen, límites de tamaño y de " +
+    "frecuencia por IP, y cupos por tabla.",
   stack: [
     "HTML5",
     "CSS3",
@@ -37,7 +34,8 @@ export const manarem: Project = {
     "Python",
     "Flask",
     "PostgreSQL",
-    "SQLite",
+    "Docker",
+    "GitHub Actions",
   ],
   links: {
     demo: "https://manarem.vercel.app/",
