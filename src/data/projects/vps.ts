@@ -25,8 +25,8 @@ export const vps: Project = {
     "capas: primero el sistema endurecido —SSH con restricciones, UFW, " +
     "Fail2Ban y actualizaciones desatendidas—, después Docker y Docker " +
     "Compose como infraestructura como código. Traefik es el único " +
-    "contenedor expuesto y enruta por dominio; ningún servicio publica " +
-    "puertos, todo viaja por una red interna de Docker, y Cloudflare pone " +
+    "contenedor web expuesto y enruta por dominio; ningún servicio web " +
+    "publica puertos, todo viaja por una red interna de Docker, y Cloudflare pone " +
     "DNS, CDN, SSL y WAF por delante. Encima corren servicios compartidos " +
     "(PostgreSQL y Redis), administración y monitoreo (Portainer, Uptime " +
     "Kuma) y automatizaciones con n8n. El despliegue es CI/CD: push a " +

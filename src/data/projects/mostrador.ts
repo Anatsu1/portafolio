@@ -23,8 +23,9 @@ export const mostrador: Project = {
     "Sistema de gestión para una ferretería, desarrollado a pedido de un " +
     "cliente real junto a otro programador. Centraliza todo el mostrador en " +
     "un solo lugar: catálogo con control de stock, ventas con carrito y " +
-    "búsqueda en vivo, remitos en PDF, cuenta corriente de clientes y carga " +
-    "masiva de productos desde Excel, con tres niveles de acceso según el " +
+    "búsqueda en vivo, remitos en PDF, cuenta corriente de clientes e " +
+    "importación desde Excel de más de 3.000 productos, con tres niveles de " +
+    "acceso según el " +
     "puesto. Está pensado para un negocio que venía llevando las cuentas en " +
     "papel y planillas sueltas, y para que cualquier empleado pueda usarlo " +
     "sin capacitación previa. El repositorio se publica como demo con datos " +

@@ -7,10 +7,12 @@ export const OWNER = {
   // larga no los leía ninguna de las dos.
   role: "Desarrollador Full Stack + IA",
   tagline: "Soluciones a medida",
-  /** Año en que empecé a programar (16 años). La tira de métricas del Hero
-   *  calcula los años de experiencia contra el año actual, así no queda un
-   *  número escrito a mano que envejece solo. */
-  codingSince: 2021,
+  /** Año en que empecé a programar: 4.º año de la secundaria técnica (2016-2022),
+   *  con C y algoritmos. Coincide con el inicio del freelance en noviembre de 2019,
+   *  así que el sitio, el CV y LinkedIn cuentan los mismos años. La tira de métricas
+   *  del Hero los calcula contra el año actual, así no queda un número escrito a
+   *  mano que envejece solo. */
+  codingSince: 2019,
   credential: "Técnico universitario en Programación",
   currentlyStudying: "Licenciatura en Inteligencia Artificial",
   email: "contacto@augustofc.com",
