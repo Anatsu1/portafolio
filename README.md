@@ -197,3 +197,9 @@ docker compose pull && docker compose up -d
 - Email: contacto@augustofc.com
 - LinkedIn: [cesar-augusto-fernandez-carbonell](https://www.linkedin.com/in/cesar-augusto-fernandez-carbonell/)
 - GitHub: [@Anatsu1](https://github.com/Anatsu1)
+
+## Licencia
+
+El código es [MIT](LICENSE): se puede leer, copiar y adaptar. El contenido no entra en
+esa licencia — los textos, las capturas de los proyectos, los videos del brazo, la foto y
+el CV son míos y no se reutilizan sin permiso.
