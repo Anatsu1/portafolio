@@ -1,8 +1,8 @@
-import { forwardRef, useMemo, useState } from "react";
-import { useGLTF } from "@react-three/drei";
+import { forwardRef, useMemo, useState, type MutableRefObject } from "react";
+import { Html } from "@react-three/drei";
 import * as THREE from "three";
 
-export const BOX_URL = "/models/caja.glb";
+import CargoBoxModel from "./CargoBoxModel";
 
 // El modelo mide ~1,9 de lado; escalado a ~0,5 cabe entre los dedos cerrados.
 export const BOX_SCALE = 0.26;
@@ -45,6 +45,8 @@ type CargoBoxProps = {
   /** Está en la plataforma de entrega (resaltada). */
   selected?: boolean;
   onSelect?: () => void;
+  /** Apertura de la tapa (0 cerrada, 1 abierta); la mueve el controlador. */
+  openRef: MutableRefObject<number>;
   position?: [number, number, number];
   rotationY?: number;
 };
@@ -55,11 +57,9 @@ type CargoBoxProps = {
  * posición inicial es solo el punto de partida.
  */
 const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
-  { label, glow, selected = false, onSelect, position, rotationY = 0 },
+  { label, glow, selected = false, onSelect, openRef, position, rotationY = 0 },
   ref
 ) {
-  const { scene } = useGLTF(BOX_URL);
-  const model = useMemo(() => scene.clone(true), [scene]);
   const texture = useMemo(() => makeLabelTexture(label), [label]);
   const [hovered, setHovered] = useState(false);
   const lit = hovered || selected;
@@ -84,7 +84,15 @@ const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
         document.body.style.cursor = "";
       }}
     >
-      <primitive object={model} />
+      <CargoBoxModel openRef={openRef} glow={glow} />
+      {/* Rótulo legible: la placa del modelo es chica a esta distancia */}
+      {!selected && (
+        <Html position={[0, 1.35, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+          <span className="whitespace-nowrap rounded border border-white/20 bg-black/65 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur">
+            {label}
+          </span>
+        </Html>
+      )}
       {/* Aro de luz sobre el piso: avisa que la caja se puede elegir */}
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.84, 0]} visible={lit}>
         <ringGeometry args={[1.25, 1.45, 48]} />
@@ -100,4 +108,3 @@ const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
 
 export default CargoBox;
 
-useGLTF.preload(BOX_URL);

@@ -1,8 +1,9 @@
 /** Entornos elegibles de la celda. El render de cada uno vive en CellEnvironment. */
-export type EnvId = "planta" | "pradera" | "linea";
+export type EnvId = "linea" | "bosque";
+
+export const DEFAULT_ENV: EnvId = "linea";
 
 export const ENVIRONMENTS: readonly { id: EnvId; label: string }[] = [
-  { id: "planta", label: "Planta" },
-  { id: "pradera", label: "Pradera" },
   { id: "linea", label: "Línea de montaje" },
+  { id: "bosque", label: "Bosque" },
 ] as const;

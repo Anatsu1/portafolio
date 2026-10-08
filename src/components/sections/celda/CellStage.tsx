@@ -7,7 +7,7 @@ import {
   type CellCommands,
   type CellMode,
 } from "../../../hooks/useCellController";
-import type { MutableRefObject } from "react";
+import { useRef, type MutableRefObject } from "react";
 import { BOX_HALF_H, cartesian, facingOutward, slotOf } from "./cellLayout";
 
 type CellStageProps = {
@@ -17,18 +17,23 @@ type CellStageProps = {
   showing: number | null;
   commandsRef: MutableRefObject<CellCommands | null>;
   onShowing: (index: number | null) => void;
+  onDelivered: (index: number | null) => void;
   /** Se llama al elegir una caja con el mouse. */
   onPick: (index: number) => void;
 };
 
 /** Lo que se mueve dentro del Canvas: el brazo, las cajas y la plataforma. */
-export default function CellStage({ active, mode, glow, showing, commandsRef, onShowing, onPick }: CellStageProps) {
+export default function CellStage({ active, mode, glow, showing, commandsRef, onShowing, onDelivered, onPick }: CellStageProps) {
+  // Una apertura de tapa (0..1) por caja: el controlador la anima y cada caja la lee.
+  const openRefs = useRef<MutableRefObject<number>[]>(CELL_BOXES.map(() => ({ current: 0 })));
   const { poseRef, boxRefs } = useCellController({
     count: CELL_BOXES.length,
     active,
     mode,
     onShowing,
+    onDelivered,
     commandsRef,
+    openRefs: openRefs.current,
   });
 
   return (
@@ -45,6 +50,7 @@ export default function CellStage({ active, mode, glow, showing, commandsRef, on
             }}
             label={box.label}
             glow={glow}
+            openRef={openRefs.current[i]}
             selected={showing === i}
             onSelect={() => onPick(i)}
             position={cartesian(slot, BOX_HALF_H)}

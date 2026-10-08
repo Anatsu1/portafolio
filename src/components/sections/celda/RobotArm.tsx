@@ -2,9 +2,11 @@ import { useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import type { Group } from "three";
+import RobotBase, { RobotTurret } from "./RobotBase";
 
 /**
- * Brazo ensamblado con sus modelos de Meshy. Cada articulación es un <group>
+ * Brazo ensamblado con sus modelos de Meshy (pedestal y torreta son
+ * procedurales, ver RobotBase.tsx). Cada articulación es un <group>
  * con la rotación en su propio eje, y los modelos cuelgan de él desplazados
  * para que su pivote caiga en el origen del grupo. Las constantes de abajo
  * son medidas reales de cada modelo (render ortográfico con grilla); si se
@@ -15,7 +17,6 @@ import type { Group } from "three";
  */
 
 const URL = {
-  base: "/models/base.glb",
   segmento: "/models/segmento.glb",
   cuerpo: "/models/cuerpo.glb",
   dedo: "/models/dedo.glb",
@@ -66,7 +67,6 @@ type RobotArmProps = {
 };
 
 export default function RobotArm({ poseRef }: RobotArmProps) {
-  const base = useClone(URL.base);
   const seg1 = useClone(URL.segmento);
   const seg2 = useClone(URL.segmento);
   const body = useClone(URL.cuerpo);
@@ -88,27 +88,21 @@ export default function RobotArm({ poseRef }: RobotArmProps) {
     if (elbowRef.current) elbowRef.current.rotation.z = pose.elbow;
     // La muñeca compensa hombro + codo para que la garra cuelgue siempre vertical.
     if (wristRef.current) wristRef.current.rotation.z = -(pose.shoulder + pose.elbow);
-    if (fingerRRef.current) fingerRRef.current.rotation.z = -open;
-    if (fingerLRef.current) fingerLRef.current.rotation.z = open;
+    // Abrir = el dedo derecho gira hacia +Z (antihorario) y se aleja del centro; el izquierdo, al revés.
+    if (fingerRRef.current) fingerRRef.current.rotation.z = open;
+    if (fingerLRef.current) fingerLRef.current.rotation.z = -open;
   });
 
   return (
     <group>
       {/* Base fija: el piso está en y = 0 */}
       <group position={[0, BASE_HALF_H * BASE_SCALE, 0]} scale={BASE_SCALE}>
-        <primitive object={base} />
+        <RobotBase />
       </group>
 
       <group ref={yawRef} position={[0, BASE_TOP, 0]}>
-        {/* Torreta del hombro (primitiva: une la base con el primer segmento) */}
-        <mesh position={[0, 0.1, 0]}>
-          <cylinderGeometry args={[0.27, 0.3, 0.2, 40]} />
-          <meshStandardMaterial color="#2b3135" metalness={0.65} roughness={0.55} />
-        </mesh>
-        <mesh position={[0, 0.215, 0]}>
-          <cylinderGeometry args={[0.31, 0.31, 0.03, 40]} />
-          <meshStandardMaterial color="#d9a400" metalness={0.5} roughness={0.5} />
-        </mesh>
+        {/* Torreta giratoria: plato + horquilla del hombro (procedural) */}
+        <RobotTurret />
 
         <group ref={shoulderRef} position={[0, SHOULDER_Y - BASE_TOP, 0]}>
           <group position={[SEG_PIVOT * SEG1_SCALE, 0, 0]} scale={SEG1_SCALE}>

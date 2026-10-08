@@ -31,3 +31,18 @@ export function cartesian({ phi, r }: Polar, y: number): [number, number, number
 export function facingOutward(phi: number) {
   return phi + Math.PI / 2;
 }
+
+/** Posición de la cámara (también la usa la caja para girar de frente). */
+export const CAMERA_POS = { x: 1.4, y: 3.9, z: 7.4 };
+export const CAMERA_TARGET = { x: 0.1, y: 1.15, z: 0.6 };
+
+/** Yaw con el que la placa (que mira a +Z) queda de frente a la cámara desde (x, z). */
+export function facingCamera(x: number, z: number) {
+  return Math.atan2(CAMERA_POS.x - x, CAMERA_POS.z - z);
+}
+
+/** Cuánto crece la caja al mostrarse en la plataforma ("giro grande"). */
+export const SHOWCASE_SCALE = 2.4;
+
+/** Segundos que el panel queda abierto en automático (el visitante puede frenarlo). */
+export const HOLD_AUTO_S = 8;

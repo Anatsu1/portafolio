@@ -6,6 +6,7 @@ import { FILTER_SCOPE, resolveStack } from "../../data/skillTree";
 import { useSkillTree } from "../../hooks/useSkillTree";
 import { useProjectSlider } from "../../hooks/useProjectSlider";
 import { Reveal, containerVariants, itemVariants } from "../Reveal";
+import SectionHeading from "../SectionHeading";
 import ProjectPlate, { type PlateFilterState } from "./projects/ProjectPlate";
 import SkillTree from "./projects/SkillTree";
 import Toolbox from "./projects/Toolbox";
@@ -64,10 +65,12 @@ export default function Projects() {
 
   return (
     <section id="proyectos" className="section-shell">
-      <Reveal>
-        <p className="eyebrow text-brand-projects">Proyectos</p>
-        <h2 className="section-title">Trabajos y las skills detrás de cada uno</h2>
-      </Reveal>
+      <SectionHeading
+        index="04"
+        eyebrow="Proyectos"
+        title="Trabajos y las skills detrás de cada uno"
+        accent="text-brand-projects"
+      />
 
       {/* Slider horizontal con scroll-snap nativo en TODAS las resoluciones
           (la sección mide siempre lo mismo, sumen los proyectos que sumen):

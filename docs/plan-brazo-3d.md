@@ -32,6 +32,70 @@ navegador).
 - Contenido editorial en `src/data/`, no hardcodeado en componentes.
 - Nombre sin tildes en `OWNER.name` (decisión de estilo).
 
+## Corrección de rumbo (2026-10-08, tarde) — manda sobre lo anterior
+
+- **El Hero se queda como estaba** (video del brazo + nombre). La celda 3D NO lo
+  reemplaza: es la sección siguiente, el **Laboratorio** ("línea de ensamblaje"
+  interactiva). Una complementa a la otra: presentación arriba, parte
+  interactiva abajo. El Hero lo anuncia con un aviso ("Probá el laboratorio").
+- El video del Hero **no arranca** mientras se cargan los modelos 3D: espera a
+  que se abran las puertas del vault (`PageLoader`), que ahora muestra el
+  avance real de la descarga (`useCellPreload`) y se abre cuando la escena ya
+  dibujó su primer cuadro. En una PC lenta no se pierde la animación.
+- Entornos: se sacó "Planta". Por defecto **Línea de montaje**; el segundo es
+  un **Bosque genérico y lindo** (no pinos). Modelos gratis CC0 de Kenney
+  (Factory Kit y Nature Kit) como material, créditos en `docs/creditos-3d.md`.
+- La **base del brazo** (Meshy) quedó fea (chapa arrugada): se rehace como
+  geometría procedural limpia (`RobotBase` + `RobotTurret`, esta última gira
+  con el yaw).
+- La caja **se abre** al quedar en la plataforma y se cierra antes de volver
+  (tapa articulada, `CargoBoxModel`).
+- Pendiente: **vista móvil** (hoy en teléfonos no se monta la celda y el Hero
+  queda recortado). Ver propuesta en la bitácora.
+
+## Estado al publicar en main (2026-10-08)
+
+Publicado como **preview**: el laboratorio 3D y las secciones nuevas están en
+`main`; lo pendiente se hace caso a caso.
+
+Hecho:
+- Hero intacto + aviso al laboratorio; el video del Hero espera a que se abran
+  las puertas del vault (el loader muestra el avance real de los modelos).
+- Laboratorio: brazo con IK, modo automático/manual, paneles laterales con el
+  CV, caja que se abre en la plataforma, rótulos, dos entornos (línea de
+  montaje por defecto y bosque), base y torreta procedurales, velocidad
+  uniforme (×1,25).
+- Secciones con animación de scroll: encabezados numerados con revelado por
+  palabras (`SectionHeading`), banda en bucle (`MarqueeBand`), Trayectoria con
+  columna que se dibuja con el scroll (`Trayectoria`), nav con "Trayectoria".
+- Pruebas (Playwright headless, a mano; el repo no tiene suite): estrés del
+  controlador, móvil/reduced-motion, tema, teclado, modelo roto, puerta del
+  Hero, build de producción. Todo sin errores.
+
+**Pendiente (anotado para retomar):**
+1. **Vista móvil**: no se monta la celda y el Hero queda recortado. Propuesta:
+   laboratorio 2D en SVG con la misma IK (estilo plano técnico) o carga opt-in
+   del 3D (~9 MB). Esperando decisión del usuario.
+2. **Rendimiento real**: no se pudo medir fps (solo render por software). La
+   escena suma ~0,5–1 M triángulos y ~190 draw calls: validar en una GPU
+   integrada y, si hace falta, bajar calidad (DPR, LOD de cajas, menos
+   instancias del bosque).
+3. Verificar en **Chrome real** (la extensión Chrome MCP no estuvo disponible).
+4. Agarre: revisar a ojo con la GPU real que la garra abra al bajar y no
+   atraviese la caja (corregido por cálculo, no visto en movimiento).
+5. Pulido: la base se ve "nueva" junto a las piezas de Meshy (más desgaste /
+   nervios); piezas de Kenney redondeadas (selladora grande, escáner de un solo
+   poste); flores/rocas del bosque low-poly vs. árboles texturados; brazo
+   inspector de la línea sin verificar sus ejes; primer tirón al abrir la
+   primera tapa (recompilación de shaders por la luz interior).
+6. Laboratorio: buscador por palabra y Lab de iconos con red neuronal (fases
+   6–7, sin empezar). Arrastrar la pinza con el mouse (opcional).
+7. Rediseño más a fondo de Proyectos/Contacto con ideas de dataconale.com
+   (hoy solo se animaron encabezados; faltan contadores, flip de credencial,
+   scroll horizontal, etc.).
+8. Los modelos `.glb` no llevan hash en el nombre: si se regeneran, renombrar o
+   limpiar caché (nginx los cachea 30 días).
+
 ## Decisiones ya tomadas
 
 | Tema | Decisión |
@@ -169,24 +233,32 @@ Cualquier interacción del visitante pasa a `manual`; 8 s sin tocar vuelve a
 - Hoy en manual la caja espera 4 s en la plataforma; en la fase 4 espera hasta
   que se cierre el panel.
 
-### Fase 4 — Paneles laterales
-- [ ] `SidePanel` estilo HUD (barra de progreso, título, contenido).
-- [ ] Contenido por sección desde `data/cell.ts` + enlaces a las secciones
-  reales (`#proyectos`, `#contacto`).
-- [ ] La caja Proyectos abre el árbol de skills / filtro.
-- [ ] Teclado: Esc cierra, flechas navegan, Tab accesible.
-- [ ] Botón "Saltar al contenido".
+### Fase 4 — Paneles laterales (hecha)
+- [x] `SidePanel` estilo HUD: kicker, título, cuenta regresiva (solo en
+  automático; se frena con hover/foco), cierre con X y Esc, botón al pie que
+  enlaza a la sección real. Entra/sale con `motion` (respeta reduced-motion).
+- [x] Contenido desde `data/cell.ts` (sale del CV y de la marca personal; lo
+  estudiado se declara "en curso"). Proyectos y Contacto se arman desde
+  `PROJECTS` y `OWNER`, sin duplicar datos.
+- [x] La escena se corre a la izquierda cuando el panel está abierto
+  (`ViewShift`, `camera.setViewOffset`).
+- [x] La caja se agranda y gira de frente a la cámara sobre la plataforma
+  ("giro grande"), mientras el brazo se aparta.
+- [x] Rótulos HTML sobre las cajas (drei `Html`), aro de luz al hover.
+- [x] "Saltar al contenido" y botones de caja como alternativa de teclado.
 
-### Fase 3b — Calidad de modelos y entornos (pedido del usuario)
-- [x] Modelos regenerados con mucho más detalle (ver arriba).
-- [x] Barra de carga de modelos (`useProgress`).
-- [x] Tres entornos elegibles (`CellEnvironment.tsx`, texturas procedurales sin
-  descargar nada): Planta (nave industrial), Pradera (cielo procedural; de día
-  en tema claro y atardecer en oscuro) y Línea de montaje (planta + cinta
-  transportadora animada con cajas y pórtico).
-- [ ] Rótulos HTML sobre las cajas y "giro grande" de la caja en la plataforma
-  (la caja se agranda y gira de frente a la cámara mientras se muestra su panel).
-- [ ] Mejoras de animación (suavizados, anticipación, sombras).
+### Controlador: máquina de estados (rehecho tras pruebas de estrés)
+Cada tarea de caja = fases `ir` → `espera` → `volver`, cada una en su propio
+tramo GSAP (antes era una sola línea de tiempo con pausas por posición, y con
+cuadros lentos el cabezal se pasaba del punto de espera y el panel quedaba
+trabado). En manual la espera dura hasta cerrar el panel; en automático corre
+una cuenta de 8 s que se frena mientras se lee. Solo vale el último pedido del
+visitante (no se acumula una cola) y se apura lo que queda de la tarea.
+- Pruebas de estrés (headless con `?nolag`, solo desarrollo): ráfaga de clics,
+  Esc repetido, cambios de modo/entorno/tema en movimiento, salir y volver a
+  pantalla, hover que congela la cuenta, teclado, móvil y reduced-motion. Sin
+  errores de consola.
+- `window.__cellDebug()` (solo DEV) devuelve el estado interno del controlador.
 
 ### Fase 5 — Integración con el sitio
 - [ ] Decidir si la celda reemplaza el video del Hero en desktop (con
@@ -194,6 +266,12 @@ Cualquier interacción del visitante pasa a `manual`; 8 s sin tocar vuelve a
 - [ ] Sincronizar con `PageLoader` (puertas de vault).
 - [ ] Revisar mobile: fallback o versión simplificada (sin IK manual).
 - [ ] Accesibilidad: `aria`, `prefers-reduced-motion`, foco.
+
+### Fase 5b — Rediseño de las secciones (después del brazo)
+- [ ] Revisar https://dataconale.com/ (referencia que eligió el usuario) para
+  sacar ideas de cómo se muestra la información, el diseño y las
+  animaciones de scroll, y aplicarlas a las secciones (Sobre mí, Proyectos,
+  Contacto) para que acompañen al nuevo Hero.
 
 ### Fase 6 — Buscador por palabra (Lab nivel 1)
 - [ ] Input con fuzzy match sobre nodos y alias de `skillTree.ts`.
@@ -239,5 +317,9 @@ los navegadores actuales.
 ## Bitácora
 
 - 2026-10-08: plan creado; modelos listos; rama `dev`.
+- 2026-10-08 (tarde): corrección de rumbo (ver arriba). Móvil: propuesta de
+  laboratorio 2D (SVG con la misma IK, estilo plano técnico del Hero, tocar una
+  caja abre un panel inferior) liviano y compatible con cualquier teléfono; o
+  carga opt-in del 3D ("tocar para cargar, 9 MB"). A decidir con el usuario.
 - 2026-10-08: fase 1 lista. Medidas de pivotes en `RobotArm.tsx`. Las escalas
   elegidas: base 0,8; segmento 1 = 1,0; segmento 2 = 0,85; garra 0,4; caja 0,26.

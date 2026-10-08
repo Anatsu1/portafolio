@@ -1,13 +1,17 @@
-import { lazy, Suspense, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useRef, useState } from "react";
+import { AnimatePresence } from "motion/react";
 import { useTheme } from "../../hooks/useTheme";
-import { useCellSupport } from "../../hooks/useCellSupport";
 import { useInViewport } from "../../hooks/useInViewport";
-import { Reveal } from "../Reveal";
+import SectionHeading from "../SectionHeading";
 import CellControls from "./celda/CellControls";
-import type { EnvId } from "./celda/environments";
+import SidePanel from "./celda/SidePanel";
+import CellErrorBoundary from "./celda/CellErrorBoundary";
+import { DEFAULT_ENV, type EnvId } from "./celda/environments";
 import type { CellCommands, CellMode } from "../../hooks/useCellController";
 
-// three + los modelos solo se descargan cuando la sección se acerca al viewport.
+// El chunk con three y la escena es lazy: no entra al paquete principal. En
+// escritorio arranca a cargarse al abrir la página (ver `useCellPreload`), así
+// que el loader del vault espera a que esté listo.
 const CellScene = lazy(() => import("./celda/CellScene"));
 
 /**
@@ -16,14 +20,28 @@ const CellScene = lazy(() => import("./celda/CellScene"));
  * WebGL o con `prefers-reduced-motion` no se monta y el resto del sitio sigue
  * igual (el nav y los botones del Hero llegan a todo sin pasar por acá).
  */
-export default function Celda() {
+type CeldaProps = {
+  /** ¿Corresponde mostrar la celda 3D? (escritorio, WebGL, sin movimiento reducido) */
+  supported: boolean;
+  /** La escena cargó sus modelos y dibujó su primer cuadro. */
+  onReady?: () => void;
+};
+
+export default function Celda({ supported, onReady }: CeldaProps) {
   const { theme } = useTheme();
-  const supported = useCellSupport();
-  const { ref, visible, everSeen } = useInViewport<HTMLDivElement>();
-  const [env, setEnv] = useState<EnvId>("planta");
+  const { ref, visible } = useInViewport<HTMLDivElement>();
+  const [env, setEnv] = useState<EnvId>(DEFAULT_ENV);
   const [mode, setMode] = useState<CellMode>("auto");
   const [showing, setShowing] = useState<number | null>(null);
+  const [delivered, setDelivered] = useState<number | null>(null);
+  const [failed, setFailed] = useState(false);
   const commandsRef = useRef<CellCommands | null>(null);
+  const handleFailure = useCallback(() => {
+    setFailed(true);
+    onReady?.(); // que el loader del vault no espere una escena que no va a llegar
+  }, [onReady]);
+  const closePanel = useCallback(() => commandsRef.current?.release(), []);
+  const setReading = useCallback((reading: boolean) => commandsRef.current?.holdPause(reading), []);
 
   // Elegir una caja (clic o botón) pasa a manual: el visitante tomó el control.
   const pick = (index: number) => {
@@ -31,25 +49,23 @@ export default function Celda() {
     commandsRef.current?.show(index);
   };
 
-  if (!supported) return null;
+  if (!supported || failed) return null;
 
   return (
     <section id="celda" className="section-shell">
-      <Reveal>
-        <p className="eyebrow">Celda de carga</p>
-        <h2 className="section-title">Mi portafolio, en un brazo robótico</h2>
-        <p className="mt-3 max-w-2xl text-body">
-          Cada caja es una parte de mi trabajo. Mirá cómo las mueve el brazo
-          o tomá el control.
-        </p>
-      </Reveal>
+      <SectionHeading
+        index="01"
+        eyebrow="Laboratorio"
+        title="Mi portafolio, en una línea de ensamblaje"
+        subtitle="Cada caja es una parte de mi trabajo. Mirá cómo las mueve el brazo o tomá el control y probalo vos."
+      />
 
       <div
         ref={ref}
         className="relative mt-10 h-[min(70vh,640px)] min-h-[420px] overflow-hidden rounded-2xl border border-border/10 bg-surface/60"
       >
-        {everSeen && (
-          <Suspense
+        <CellErrorBoundary onError={handleFailure}>
+        <Suspense
             fallback={
               <div className="flex h-full items-center justify-center text-sm uppercase tracking-[0.2em] text-muted">
                 Cargando celda…
@@ -59,15 +75,29 @@ export default function Celda() {
             <CellScene
               theme={theme}
               active={visible}
+              onReady={onReady}
               env={env}
               mode={mode}
+              panelOpen={delivered !== null}
               showing={showing}
               commandsRef={commandsRef}
               onShowing={setShowing}
+              onDelivered={setDelivered}
               onPick={pick}
             />
-          </Suspense>
-        )}
+        </Suspense>
+        </CellErrorBoundary>
+        <AnimatePresence>
+          {delivered !== null && (
+            <SidePanel
+              key={delivered}
+              index={delivered}
+              auto={mode === "auto"}
+              onClose={closePanel}
+              onReading={setReading}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       <CellControls env={env} onEnvChange={setEnv} mode={mode} onModeChange={setMode} showing={showing} onShow={pick} />

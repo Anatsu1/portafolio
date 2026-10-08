@@ -26,6 +26,13 @@ type HeroArmVideoProps = {
    * sin caché.
    */
   onReady?: () => void;
+  /**
+   * Visto bueno para reproducir. El video se baja y queda listo, pero no
+   * arranca hasta que esto pasa a `true` (cuando se abren las puertas del
+   * vault): así en una PC lenta, que tarda más en cargar los modelos 3D, no se
+   * pierde la animación del brazo bajo la pantalla de carga.
+   */
+  play?: boolean;
   className?: string;
 };
 
@@ -42,12 +49,14 @@ type HeroArmVideoProps = {
  * pinza en vez de mostrar el recorte estático de `object-cover` — si no,
  * el gesto del brazo no se entiende en pantallas angostas.
  */
-export default function HeroArmVideo({ onDrop, onReady, className }: HeroArmVideoProps) {
+export default function HeroArmVideo({ onDrop, onReady, play = true, className }: HeroArmVideoProps) {
   const { theme } = useTheme();
   const src = ARM[theme];
   const videoRef = useRef<HTMLVideoElement>(null);
   const firedDropRef = useRef(false);
   const firedReadyRef = useRef(false);
+  const bufferedRef = useRef(false); // el video ya tiene buffer para reproducir de corrido
+  const playRef = useRef(play);
 
   const reduceMotion = useMemo(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -64,12 +73,26 @@ export default function HeroArmVideo({ onDrop, onReady, className }: HeroArmVide
     resetKey: theme,
   });
 
+  // Arranca la reproducción solo cuando hay buffer Y se dio el visto bueno.
+  const tryPlay = () => {
+    if (!playRef.current || !bufferedRef.current) return;
+    videoRef.current?.play().catch(() => {});
+    startFollowCam();
+  };
+
   // El video se remonta (key={theme}) y repite la animación en cada cambio
   // de tema — "desarma" el drop para que el aura (useHeroReveal) pueda
   // reactivarse en cada ciclo, no solo la primera vez.
   useEffect(() => {
     firedDropRef.current = false;
+    bufferedRef.current = false;
   }, [theme]);
+
+  useEffect(() => {
+    playRef.current = play;
+    tryPlay();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [play]);
 
   const fireDrop = () => {
     if (firedDropRef.current) return;
@@ -87,10 +110,10 @@ export default function HeroArmVideo({ onDrop, onReady, className }: HeroArmVide
     if (e.currentTarget.currentTime >= DROP_TIME) fireDrop();
   };
 
-  const handleCanPlayThrough = (e: SyntheticEvent<HTMLVideoElement>) => {
-    e.currentTarget.play().catch(() => {});
-    startFollowCam();
+  const handleCanPlayThrough = () => {
+    bufferedRef.current = true;
     fireReady();
+    tryPlay();
   };
 
   const handleError = () => {
