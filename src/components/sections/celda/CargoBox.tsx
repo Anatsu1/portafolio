@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { forwardRef, useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -44,14 +44,21 @@ type CargoBoxProps = {
   rotationY?: number;
 };
 
-/** Caja de carga con su placa rotulada. El origen está en el centro de la caja. */
-export default function CargoBox({ label, position, rotationY = 0 }: CargoBoxProps) {
+/**
+ * Caja de carga con su placa rotulada. El origen está en el centro de la caja.
+ * El controlador mueve el grupo por la ref (no por props), así que la
+ * posición inicial es solo el punto de partida.
+ */
+const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
+  { label, position, rotationY = 0 },
+  ref
+) {
   const { scene } = useGLTF(BOX_URL);
   const model = useMemo(() => scene.clone(true), [scene]);
   const texture = useMemo(() => makeLabelTexture(label), [label]);
 
   return (
-    <group position={position} rotation-y={rotationY} scale={BOX_SCALE}>
+    <group ref={ref} position={position} rotation-y={rotationY} scale={BOX_SCALE}>
       <primitive object={model} />
       <mesh position={[PLATE.x, PLATE.y, PLATE.z]}>
         <planeGeometry args={[PLATE.w, PLATE.h]} />
@@ -59,6 +66,8 @@ export default function CargoBox({ label, position, rotationY = 0 }: CargoBoxPro
       </mesh>
     </group>
   );
-}
+});
+
+export default CargoBox;
 
 useGLTF.preload(BOX_URL);

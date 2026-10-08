@@ -81,12 +81,13 @@ src/
       CellFloor.tsx            Piso, plataforma de ENTREGA, estantes
       SidePanel.tsx            Panel lateral (fase 4)
       CellControls.tsx         Botones Auto/Manual, Saltar contenido (fase 3-4)
+      kinematics.ts            IK pura (fase 2)
+      cellLayout.ts            Arco de cajas y plataforma de entrega
   data/
     cell.ts                    Cajas: id, label, sección destino, contenido del panel
   hooks/
     useCellSupport.ts          ¿Hay WebGL, mouse, reduced-motion? (decide 3D vs fallback)
-    useArmKinematics.ts        IK 2 segmentos + yaw (puro, sin three) (fase 2)
-    useCellController.ts       Máquina de estados: idle/auto/manual, cola de tareas (fase 2-3)
+    useCellController.ts       Línea de tiempo GSAP + IK por frame; estados auto/manual (fase 2-3)
 public/models/                 *.glb
 docs/plan-brazo-3d.md          Este archivo
 ```
@@ -139,9 +140,17 @@ Cualquier interacción del visitante pasa a `manual`; 8 s sin tocar vuelve a
   gzip en chunk lazy.
 
 ### Fase 2 — Cinemática y animación
-- [ ] `useArmKinematics` (IK pura, con tests rápidos en consola).
-- [ ] Animación de agarrar/mover/soltar con GSAP (ya instalado).
-- [ ] Apertura/cierre de dedos.
+- [x] IK analítica en `celda/kinematics.ts` (función pura: 2 segmentos + yaw,
+  "codo arriba"). Se resuelve en polares (`phi`, `r`, `y`) alrededor de la base.
+- [x] `hooks/useCellController.ts`: línea de tiempo GSAP que mueve el
+  objetivo; la IK lo traduce a ángulos en cada `useFrame`; la caja agarrada
+  sigue al objetivo.
+- [x] Ciclo automático por caja: ir al lugar, bajar, cerrar garra, subir,
+  girar a la plataforma ENTREGA, soltar, pausa (acá irá el panel) y
+  traerla de vuelta. Se pausa fuera de pantalla.
+- [x] `cellLayout.ts` (arco de cajas y plataforma) y `DeliveryPad.tsx`.
+- Medida clave: `TOOL_DROP = 1,12` (muñeca a centro de las almohadillas).
+- Verificado con una secuencia de capturas headless del ciclo completo.
 
 ### Fase 3 — Modo auto y manual
 - [ ] `useCellController` (máquina de estados + cola).
