@@ -5,6 +5,7 @@ import Footer from "./components/layout/Footer";
 import PageLoader from "./components/layout/PageLoader";
 import ScrollProgress from "./components/layout/ScrollProgress";
 import Hero from "./components/sections/Hero";
+import Celda from "./components/sections/Celda";
 import About from "./components/sections/About";
 import Projects from "./components/sections/Projects";
 import Contact from "./components/sections/Contact";
@@ -19,6 +20,7 @@ export default function App() {
       <Navbar />
       <main>
         <Hero onReady={() => setHeroReady(true)} />
+        <Celda />
         <About />
         <Projects />
         <Contact />
