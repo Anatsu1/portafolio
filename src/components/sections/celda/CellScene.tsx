@@ -1,15 +1,22 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer } from "@react-three/drei";
+import type { MutableRefObject } from "react";
 import CellStage from "./CellStage";
+import type { CellCommands, CellMode } from "../../../hooks/useCellController";
 import { ARC_RADIUS } from "./cellLayout";
 
 type CellSceneProps = {
   theme: "light" | "dark";
   active: boolean;
+  mode: CellMode;
+  showing: number | null;
+  commandsRef: MutableRefObject<CellCommands | null>;
+  onShowing: (index: number | null) => void;
+  onPick: (index: number) => void;
 };
 
-export default function CellScene({ theme, active }: CellSceneProps) {
+export default function CellScene({ theme, active, mode, showing, commandsRef, onShowing, onPick }: CellSceneProps) {
   const rim = theme === "dark" ? "#34d399" : "#3b82f6";
 
   return (
@@ -31,7 +38,15 @@ export default function CellScene({ theme, active }: CellSceneProps) {
         <directionalLight position={[4, 7, 5]} intensity={1.6} />
         <directionalLight position={[-5, 3, -4]} intensity={1.4} color={rim} />
 
-        <CellStage active={active} />
+        <CellStage
+          active={active}
+          mode={mode}
+          glow={rim}
+          showing={showing}
+          commandsRef={commandsRef}
+          onShowing={onShowing}
+          onPick={onPick}
+        />
 
         {/* Plataforma de la celda */}
         <mesh rotation-x={-Math.PI / 2} position={[0, -0.01, 0]}>

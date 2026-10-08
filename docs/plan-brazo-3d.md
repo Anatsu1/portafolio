@@ -153,10 +153,17 @@ Cualquier interacción del visitante pasa a `manual`; 8 s sin tocar vuelve a
 - Verificado con una secuencia de capturas headless del ciclo completo.
 
 ### Fase 3 — Modo auto y manual
-- [ ] `useCellController` (máquina de estados + cola).
-- [ ] Click en caja → el brazo la trae (manual).
-- [ ] Opcional: arrastrar la pinza con el mouse.
-- [ ] Cursor y hover sobre cajas (resaltado con emissive).
+- [x] `useCellController` con cola de tareas ("mostrar caja N"): en automático
+  encadena las cajas; en manual solo responde a pedidos y vuelve a una pose de
+  espera. Si el visitante elige durante una tarea, esa se apura (`timeScale`).
+- [x] Clic sobre una caja o botón de la fila inferior (alternativa accesible)
+  pasa a manual y trae esa caja.
+- [x] `CellControls`: selector Automático/Manual, botones por caja, "Saltar al
+  contenido".
+- [x] Aro de luz bajo la caja en hover y mientras se muestra; cursor pointer.
+- [ ] Opcional: arrastrar la pinza con el mouse (se decide al ver el resto).
+- Hoy en manual la caja espera 4 s en la plataforma; en la fase 4 espera hasta
+  que se cierre el panel.
 
 ### Fase 4 — Paneles laterales
 - [ ] `SidePanel` estilo HUD (barra de progreso, título, contenido).

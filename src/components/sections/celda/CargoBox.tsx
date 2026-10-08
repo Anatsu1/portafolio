@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react";
+import { forwardRef, useMemo, useState } from "react";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -40,6 +40,11 @@ function makeLabelTexture(label: string) {
 
 type CargoBoxProps = {
   label: string;
+  /** Color del resplandor del piso (hover / seleccionada). */
+  glow: string;
+  /** Está en la plataforma de entrega (resaltada). */
+  selected?: boolean;
+  onSelect?: () => void;
   position?: [number, number, number];
   rotationY?: number;
 };
@@ -50,16 +55,41 @@ type CargoBoxProps = {
  * posición inicial es solo el punto de partida.
  */
 const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
-  { label, position, rotationY = 0 },
+  { label, glow, selected = false, onSelect, position, rotationY = 0 },
   ref
 ) {
   const { scene } = useGLTF(BOX_URL);
   const model = useMemo(() => scene.clone(true), [scene]);
   const texture = useMemo(() => makeLabelTexture(label), [label]);
+  const [hovered, setHovered] = useState(false);
+  const lit = hovered || selected;
 
   return (
-    <group ref={ref} position={position} rotation-y={rotationY} scale={BOX_SCALE}>
+    <group
+      ref={ref}
+      position={position}
+      rotation-y={rotationY}
+      scale={BOX_SCALE}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect?.();
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.style.cursor = "";
+      }}
+    >
       <primitive object={model} />
+      {/* Aro de luz sobre el piso: avisa que la caja se puede elegir */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.84, 0]} visible={lit}>
+        <ringGeometry args={[1.25, 1.45, 48]} />
+        <meshBasicMaterial color={glow} transparent opacity={0.9} depthWrite={false} />
+      </mesh>
       <mesh position={[PLATE.x, PLATE.y, PLATE.z]}>
         <planeGeometry args={[PLATE.w, PLATE.h]} />
         <meshStandardMaterial map={texture} metalness={0.6} roughness={0.45} />

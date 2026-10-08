@@ -1,8 +1,10 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import { useTheme } from "../../hooks/useTheme";
 import { useCellSupport } from "../../hooks/useCellSupport";
 import { useInViewport } from "../../hooks/useInViewport";
 import { Reveal } from "../Reveal";
+import CellControls from "./celda/CellControls";
+import type { CellCommands, CellMode } from "../../hooks/useCellController";
 
 // three + los modelos solo se descargan cuando la sección se acerca al viewport.
 const CellScene = lazy(() => import("./celda/CellScene"));
@@ -17,6 +19,15 @@ export default function Celda() {
   const { theme } = useTheme();
   const supported = useCellSupport();
   const { ref, visible, everSeen } = useInViewport<HTMLDivElement>();
+  const [mode, setMode] = useState<CellMode>("auto");
+  const [showing, setShowing] = useState<number | null>(null);
+  const commandsRef = useRef<CellCommands | null>(null);
+
+  // Elegir una caja (clic o botón) pasa a manual: el visitante tomó el control.
+  const pick = (index: number) => {
+    setMode("manual");
+    commandsRef.current?.show(index);
+  };
 
   if (!supported) return null;
 
@@ -43,10 +54,27 @@ export default function Celda() {
               </div>
             }
           >
-            <CellScene theme={theme} active={visible} />
+            <CellScene
+              theme={theme}
+              active={visible}
+              mode={mode}
+              showing={showing}
+              commandsRef={commandsRef}
+              onShowing={setShowing}
+              onPick={pick}
+            />
           </Suspense>
         )}
       </div>
+
+      <CellControls mode={mode} onModeChange={setMode} showing={showing} onShow={pick} />
+
+      <a
+        href="#proyectos"
+        className="mt-4 inline-block text-sm font-semibold text-brand-primary underline-offset-4 hover:underline"
+      >
+        Saltar al contenido ↓
+      </a>
     </section>
   );
 }
