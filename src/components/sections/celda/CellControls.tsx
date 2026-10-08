@@ -1,7 +1,10 @@
 import { CELL_BOXES } from "../../../data/cell";
 import type { CellMode } from "../../../hooks/useCellController";
+import { ENVIRONMENTS, type EnvId } from "./environments";
 
 type CellControlsProps = {
+  env: EnvId;
+  onEnvChange: (env: EnvId) => void;
   mode: CellMode;
   onModeChange: (mode: CellMode) => void;
   showing: number | null;
@@ -19,9 +22,29 @@ const MODES: { id: CellMode; label: string }[] = [
  * pantalla) al clic directo sobre las cajas, y sirven igual con el modo
  * automático encendido: elegir una pasa a manual.
  */
-export default function CellControls({ mode, onModeChange, showing, onShow }: CellControlsProps) {
+export default function CellControls({ env, onEnvChange, mode, onModeChange, showing, onShow }: CellControlsProps) {
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+      <div
+        role="group"
+        aria-label="Entorno"
+        className="inline-flex rounded-lg border border-border/10 bg-surface/70 p-1 text-sm"
+      >
+        {ENVIRONMENTS.map((e) => (
+          <button
+            key={e.id}
+            type="button"
+            aria-pressed={env === e.id}
+            onClick={() => onEnvChange(e.id)}
+            className={`rounded-md px-3 py-1.5 font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${
+              env === e.id ? "bg-heading/90 text-background" : "text-muted hover:text-heading"
+            }`}
+          >
+            {e.label}
+          </button>
+        ))}
+      </div>
       <div
         role="group"
         aria-label="Modo del brazo"
@@ -42,6 +65,7 @@ export default function CellControls({ mode, onModeChange, showing, onShow }: Ce
             {m.label}
           </button>
         ))}
+      </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Elegir caja">

@@ -58,8 +58,12 @@ Origen: Meshy (imagen → 3D, textura PBR), optimizados con `gltf-transform`
 | `dedo.glb` | ~430 | 9,8k | 1,24 × 1,90 × 0,41 | Z (agujero de pivote arriba) |
 | `caja.glb` | ~470 | 20,0k | 1,90 × 1,70 × 1,83 | — |
 
-Total ~2,4 MB. Escena: base + 2 segmentos + cuerpo + 2 dedos + 5 cajas ≈
-~150k triángulos con instancias. Presupuesto: < 200k tris, < 3 MB de modelos.
+**Actualización (feedback del usuario):** la primera tanda estaba demasiado
+reducida (~7 % de los triángulos, texturas de 1024) y se veía pobre de cerca.
+Segunda tanda, en `public/models/`: texturas 2048 (caja 1536), meshopt nivel
+alto. Base ~69k tris, segmento ~42k, cuerpo ~80k, dedo ~49k, caja ~26k.
+Total ~8,8 MB y ~460k triángulos en escena (con 2 segmentos, 2 dedos y 5
+cajas). Se muestra una barra de carga mientras bajan. Es lazy y solo desktop.
 
 Todos los materiales son metal puro (`metallic = 1`): **sin mapa de entorno
 se ven casi negros**. Hace falta `Environment` procedural (Lightformers, sin
@@ -172,6 +176,17 @@ Cualquier interacción del visitante pasa a `manual`; 8 s sin tocar vuelve a
 - [ ] La caja Proyectos abre el árbol de skills / filtro.
 - [ ] Teclado: Esc cierra, flechas navegan, Tab accesible.
 - [ ] Botón "Saltar al contenido".
+
+### Fase 3b — Calidad de modelos y entornos (pedido del usuario)
+- [x] Modelos regenerados con mucho más detalle (ver arriba).
+- [x] Barra de carga de modelos (`useProgress`).
+- [x] Tres entornos elegibles (`CellEnvironment.tsx`, texturas procedurales sin
+  descargar nada): Planta (nave industrial), Pradera (cielo procedural; de día
+  en tema claro y atardecer en oscuro) y Línea de montaje (planta + cinta
+  transportadora animada con cajas y pórtico).
+- [ ] Rótulos HTML sobre las cajas y "giro grande" de la caja en la plataforma
+  (la caja se agranda y gira de frente a la cámara mientras se muestra su panel).
+- [ ] Mejoras de animación (suavizados, anticipación, sombras).
 
 ### Fase 5 — Integración con el sitio
 - [ ] Decidir si la celda reemplaza el video del Hero en desktop (con
