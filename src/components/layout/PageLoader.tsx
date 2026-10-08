@@ -4,6 +4,8 @@ import { usePageLoaderExit } from "../../hooks/usePageLoaderExit";
 
 type PageLoaderProps = {
   visible: boolean;
+  /** 0..1: avance real de lo que se está cargando (modelos 3D incluidos). */
+  progress?: number;
 };
 
 const RIVETS = Array.from({ length: 8 });
@@ -11,7 +13,10 @@ const RIVETS = Array.from({ length: 8 });
 /**
  * Splash de entrada estilo puerta de refugio/vault: tapa toda la página
  * (Navbar incluido) mientras el Hero no está listo — texto revelado y video
- * con buffer suficiente para arrancar sin trabarse (ver `Hero`/`onReady`).
+ * con buffer suficiente para arrancar sin trabarse (ver `Hero`/`onReady`) — y,
+ * en escritorio, mientras se descargan los modelos 3D de la celda y la escena
+ * dibuja su primer cuadro (ver `useCellPreload`): las puertas se abren cuando
+ * todo está cargado, así la pantalla de carga muestra un avance real.
  * Se muestra siempre, no solo en conexiones lentas: en visitas repetidas
  * con todo cacheado dura un instante, en la primera carga sin caché lo que
  * tarde el video en bufferear.
@@ -23,7 +28,7 @@ const RIVETS = Array.from({ length: 8 });
  * Tonos neutros (`heading`/`muted`/`border`), no colores de marca: mismo
  * look en claro/oscuro, sin adelantar la paleta de ninguna sección.
  */
-export default function PageLoader({ visible }: PageLoaderProps) {
+export default function PageLoader({ visible, progress }: PageLoaderProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const gearsRef = useRef<HTMLDivElement>(null);
   const lockRef = useRef<HTMLDivElement>(null);
@@ -108,6 +113,19 @@ export default function PageLoader({ visible }: PageLoaderProps) {
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">
           Cargando<span className="animate-pulse">…</span>
         </p>
+        {progress !== undefined && (
+          <div className="flex flex-col items-center gap-2" aria-hidden>
+            <div className="h-0.5 w-44 overflow-hidden rounded-full bg-border/15">
+              <div
+                className="h-full origin-left bg-heading/70 transition-[width] duration-300"
+                style={{ width: `${Math.round(Math.min(1, progress) * 100)}%` }}
+              />
+            </div>
+            <p className="text-[11px] tabular-nums tracking-[0.2em] text-muted">
+              {Math.round(Math.min(1, progress) * 100)} %
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -16,12 +16,17 @@ const NAME_GRADIENT =
   "inline-block translate-y-2 bg-gradient-to-r from-brand-primary to-brand-primary/70 bg-clip-text pb-[0.15em] text-transparent opacity-0";
 
 type HeroProps = {
-  /** Se llama una vez, cuando el video está listo y el reveal del texto ya
-   *  arrancó — `App.tsx` la usa para apagar el `PageLoader` de toda la página. */
+  /** Se llama una vez, cuando el video ya tiene buffer para reproducir — `App.tsx`
+   *  la usa (junto con la carga de los modelos 3D) para abrir el `PageLoader`. */
   onReady?: () => void;
+  /** Visto bueno para arrancar: cuando se abren las puertas del vault empiezan el
+   *  video del brazo y el reveal del texto. Antes queda todo quieto bajo el loader. */
+  go?: boolean;
+  /** ¿Está disponible el laboratorio 3D (escritorio)? Muestra el aviso que lleva a él. */
+  labAvailable?: boolean;
 };
 
-export default function Hero({ onReady }: HeroProps) {
+export default function Hero({ onReady, go = true, labAvailable = false }: HeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const eyebrowRef = useRef<HTMLParagraphElement>(null);
   const firstNameRef = useRef<HTMLSpanElement>(null);
@@ -53,9 +58,14 @@ export default function Hero({ onReady }: HeroProps) {
   const handleVideoReady = () => {
     if (readyFiredRef.current) return;
     readyFiredRef.current = true;
-    startReveal();
     onReady?.();
   };
+
+  // El reveal del texto arranca junto con el video, al abrirse el vault.
+  useEffect(() => {
+    if (go) startReveal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [go]);
 
   useEffect(() => {
     const safety = window.setTimeout(handleVideoReady, VIDEO_READY_SAFETY_MS);
@@ -78,7 +88,7 @@ export default function Hero({ onReady }: HeroProps) {
           hace zoom y sigue la pinza (ver useArmFollowCam) — si no, no se
           entiende qué hace el brazo en pantallas angostas. */}
       <div className="absolute inset-0">
-        <HeroArmVideo onDrop={triggerOverload} onReady={handleVideoReady} />
+        <HeroArmVideo onDrop={triggerOverload} onReady={handleVideoReady} play={go} />
       </div>
 
       {/* Scrim: aclara/oscurece el fondo (según tema) para que el texto sea
@@ -224,6 +234,21 @@ export default function Hero({ onReady }: HeroProps) {
                 <Linkedin size={20} />
               </a>
             </div>
+
+            {/* Aviso del laboratorio: el 3D interactivo vive más abajo y el Hero lo anuncia. */}
+            {labAvailable && (
+              <a
+                href="#celda"
+                className="group mt-6 inline-flex items-center gap-2.5 rounded-lg border border-brand-primary/30 bg-background/40 px-3.5 py-2 text-sm font-semibold text-body backdrop-blur transition hover:border-brand-primary/70 hover:text-brand-primary md:mt-5"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-primary/60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-primary" />
+                </span>
+                Probá el laboratorio: tomá el control del brazo
+                <ArrowDown size={14} className="transition group-hover:translate-y-0.5" />
+              </a>
+            )}
           </div>
         </div>
       </div>

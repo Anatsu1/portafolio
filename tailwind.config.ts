@@ -61,11 +61,22 @@ export default {
           "0%, 100%": { boxShadow: "0 0 0 0 rgb(var(--color-brand-skills) / 0)" },
           "50%": { boxShadow: "0 0 14px -2px rgb(var(--color-brand-skills) / 0.4)" },
         },
+        // Banda de texto en bucle (MarqueeBand): recorre la mitad, porque el contenido va duplicado.
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        // Cuenta regresiva del panel de la celda (se frena con animation-play-state).
+        countdown: {
+          "0%": { transform: "scaleX(1)" },
+          "100%": { transform: "scaleX(0)" },
+        },
       },
       animation: {
         "fade-up": "fade-up .7s ease-out both",
         float: "float 6s ease-in-out infinite",
         glow: "glow 4s ease-in-out infinite",
+        marquee: "marquee 38s linear infinite",
       },
     },
   },

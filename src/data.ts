@@ -31,9 +31,24 @@ export const ABOUT_PARAGRAPHS = [
   "No solo escribo código: **construyo, enseño y sigo aprendiendo** para crear la tecnología del futuro.",
 ] as const;
 
+/** Palabras de la banda en bucle entre secciones (MarqueeBand). */
+export const MARQUEE_WORDS = [
+  "Full Stack",
+  "React",
+  "Node.js",
+  "Java · Spring Boot",
+  "Docker",
+  "Traefik",
+  "CI/CD",
+  "PostgreSQL",
+  "LangChain",
+  "n8n",
+] as const;
+
 export const NAV_LINKS = [
   { id: "inicio", label: "Inicio" },
   { id: "sobre-mi", label: "Sobre mí" },
+  { id: "trayectoria", label: "Trayectoria" },
   { id: "proyectos", label: "Proyectos" },
   { id: "contacto", label: "Contacto" },
 ] as const;

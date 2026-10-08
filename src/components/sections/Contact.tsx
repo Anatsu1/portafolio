@@ -3,6 +3,7 @@ import { Mail, MapPin, Send } from "lucide-react";
 import { OWNER } from "../../data";
 import { useContactForm } from "../../hooks/useContactForm";
 import { Reveal } from "../Reveal";
+import SectionHeading from "../SectionHeading";
 
 type Audience = "freelance" | "empresa";
 
@@ -67,7 +68,9 @@ export default function Contact() {
         ))}
         </div>
 
-        <h2 className="section-title mt-6">{copy.heading}</h2>
+        <div className="mt-6">
+          <SectionHeading key={audience} index="05" eyebrow="Escribime" title={copy.heading} />
+        </div>
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.2fr]">
