@@ -1,5 +1,4 @@
 import { lazy, Suspense, useRef, useState } from "react";
-import { useProgress } from "@react-three/drei";
 import { useTheme } from "../../hooks/useTheme";
 import { useCellSupport } from "../../hooks/useCellSupport";
 import { useInViewport } from "../../hooks/useInViewport";
@@ -23,7 +22,6 @@ export default function Celda() {
   const { ref, visible, everSeen } = useInViewport<HTMLDivElement>();
   const [env, setEnv] = useState<EnvId>("planta");
   const [mode, setMode] = useState<CellMode>("auto");
-  const { active: loadingModels, progress } = useProgress();
   const [showing, setShowing] = useState<number | null>(null);
   const commandsRef = useRef<CellCommands | null>(null);
 
@@ -69,15 +67,6 @@ export default function Celda() {
               onPick={pick}
             />
           </Suspense>
-        )}
-        {everSeen && loadingModels && (
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/80 backdrop-blur-sm">
-            <p className="text-sm uppercase tracking-[0.2em] text-muted">Cargando modelos 3D</p>
-            <div className="h-1 w-48 overflow-hidden rounded-full bg-border/10">
-              <div className="h-full bg-brand-primary transition-[width]" style={{ width: `${Math.round(progress)}%` }} />
-            </div>
-            <p className="text-xs tabular-nums text-muted">{Math.round(progress)} %</p>
-          </div>
         )}
       </div>
 

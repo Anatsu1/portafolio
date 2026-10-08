@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { ContactShadows } from "@react-three/drei";
+import { ContactShadows, useProgress } from "@react-three/drei";
 import type { MutableRefObject } from "react";
 import CellStage from "./CellStage";
 import type { CellCommands, CellMode } from "../../../hooks/useCellController";
@@ -18,10 +18,26 @@ type CellSceneProps = {
   onPick: (index: number) => void;
 };
 
+/** Barra de carga de los modelos; vive acá para que `drei` quede en el chunk lazy. */
+function LoadingOverlay() {
+  const { active, progress } = useProgress();
+  if (!active) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/80 backdrop-blur-sm">
+      <p className="text-sm uppercase tracking-[0.2em] text-muted">Cargando modelos 3D</p>
+      <div className="h-1 w-48 overflow-hidden rounded-full bg-border/10">
+        <div className="h-full bg-brand-primary transition-[width]" style={{ width: `${Math.round(progress)}%` }} />
+      </div>
+      <p className="text-xs tabular-nums text-muted">{Math.round(progress)} %</p>
+    </div>
+  );
+}
+
 export default function CellScene({ theme, active, env, mode, showing, commandsRef, onShowing, onPick }: CellSceneProps) {
   const rim = theme === "dark" ? "#34d399" : "#3b82f6";
 
   return (
+    <>
     <Canvas
       frameloop={active ? "always" : "never"}
       dpr={[1, 1.75]}
@@ -45,5 +61,7 @@ export default function CellScene({ theme, active, env, mode, showing, commandsR
         <ContactShadows position={[0, 0.01, 0]} opacity={0.6} scale={10} blur={2.4} far={3} />
       </Suspense>
     </Canvas>
+    <LoadingOverlay />
+    </>
   );
 }
