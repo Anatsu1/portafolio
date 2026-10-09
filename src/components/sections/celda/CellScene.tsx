@@ -12,6 +12,8 @@ import ViewShift from "./ViewShift";
 type CellSceneProps = {
   /** Se llama una vez: los modelos cargaron y la escena ya dibujó sus primeros cuadros. */
   onReady?: () => void;
+  /** Se llama cada vez que un entorno nuevo terminó de cargarse y dibujarse (para el cartel de carga). */
+  onEnvReady?: () => void;
   theme: "light" | "dark";
   active: boolean;
   env: EnvId;
@@ -78,7 +80,7 @@ function LoadingOverlay() {
   );
 }
 
-export default function CellScene({ onReady, theme, active, env, mode, panelOpen, showing, commandsRef, onShowing, onDelivered, onPick }: CellSceneProps) {
+export default function CellScene({ onReady, onEnvReady, theme, active, env, mode, panelOpen, showing, commandsRef, onShowing, onDelivered, onPick }: CellSceneProps) {
   const rim = theme === "dark" ? "#34d399" : "#3b82f6";
 
   return (
@@ -90,8 +92,14 @@ export default function CellScene({ onReady, theme, active, env, mode, panelOpen
       gl={{ antialias: true, alpha: true }}
       onCreated={({ camera }) => camera.lookAt(CAMERA_TARGET.x, CAMERA_TARGET.y, CAMERA_TARGET.z)}
     >
+      {/* El entorno va en su propio Suspense: al cambiar de entorno (carga y
+          construcción pesadas) el brazo y las cajas no desaparecen de la escena. */}
       <Suspense fallback={null}>
         <CellEnvironment env={env} theme={theme} rim={rim} />
+        <ReadySignal key={env} onReady={onEnvReady} />
+      </Suspense>
+
+      <Suspense fallback={null}>
         <ViewShift open={panelOpen} />
         <ReadySignal onReady={onReady} />
 

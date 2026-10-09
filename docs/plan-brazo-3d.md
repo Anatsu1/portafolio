@@ -117,6 +117,33 @@ Preguntas de diseño abiertas:
 - Los iconos de sección (`data/cellIcons.ts`) van en el color del tema, sin
   color propio por sección (pedido del dueño).
 
+## Estado 2026-10-09 (segunda publicación en main)
+
+Hecho desde la primera publicación: línea de montaje rehecha (piso, plataforma
+industrial, brazo paletizador y operarios), bosque industrial integrado, base y
+torreta procedurales, laboratorio 2D para móvil (el Hero móvil volvió al video
+original), iconos por sección en el color del tema, buscador por tecnología
+(el brazo trae PROYECTOS con el panel filtrado), pose de descanso a la derecha
+replegada sobre el ángulo de entrega, entrega abortable (si se elige otra caja
+con una en camino, la devuelve a su lugar), cartel de carga al cambiar de
+entorno, Trayectoria con cordón de soldadura y hitos a martillazo, Contacto con
+la placa de cierre, Proyectos en el orden mapa de skills → fichas → "También
+trabajo con", placa de características metálica antes de Contacto.
+
+Pendiente (retomar):
+1. **Etapa 2**: cajas de tecnología desde la línea del fondo (ver arriba).
+2. Medir **rendimiento real** (GPU integrada): escena ~1 M triángulos y ~230
+   draw calls; bajar calidad si hace falta (DPR, instancias del bosque/pasto).
+3. Verificar a ojo en Chrome real: la apertura de la primera tapa (se
+   precompila todo, pero no se pudo ver en movimiento), el golpe de los hitos de
+   Trayectoria, el brillo de la placa.
+4. Pulido de modelos: base "nueva" junto a las piezas de Meshy; charcos del
+   piso de la línea; operarios simples de cerca; musgo del bosque.
+5. Lab de iconos con red neuronal (fase 7), arrastrar la pinza (opcional).
+6. Rediseño más profundo de Proyectos/Contacto (contadores, credencial que se
+   voltea, scroll horizontal) y atajos por familia sobre el mapa de skills.
+7. Móvil: rótulos de las cajas del laboratorio 2D (~8 px) y teléfonos bajos.
+
 ## Decisiones ya tomadas
 
 | Tema | Decisión |

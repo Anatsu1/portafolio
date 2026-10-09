@@ -92,7 +92,6 @@ export default function Projects() {
             onToggle={toggle}
             onClear={clear}
           />
-          <Toolbox />
         </div>
       </Reveal>
 
@@ -201,6 +200,12 @@ export default function Projects() {
         </div>
       )}
 
+
+      {/* Herramientas que no filtran: debajo de los proyectos, en el orden
+          mapa de skills → proyectos → "También trabajo con". */}
+      <Reveal delay={0.1} className="mt-14 border-t border-border/10 pt-8">
+        <Toolbox />
+      </Reveal>
     </section>
   );
 }

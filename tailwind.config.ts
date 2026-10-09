@@ -66,6 +66,11 @@ export default {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        // Barra de carga indeterminada (cartel de cambio de entorno).
+        loadbar: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(300%)" },
+        },
         // Cuenta regresiva del panel de la celda (se frena con animation-play-state).
         countdown: {
           "0%": { transform: "scaleX(1)" },

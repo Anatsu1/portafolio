@@ -1,5 +1,6 @@
-import { lazy, Suspense, useCallback, useRef, useState } from "react";
-import { AnimatePresence } from "motion/react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Cog } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useTheme } from "../../hooks/useTheme";
 import { useInViewport } from "../../hooks/useInViewport";
 import SectionHeading from "../SectionHeading";
@@ -8,7 +9,7 @@ import SidePanel from "./celda/SidePanel";
 import LabSearch from "./celda/LabSearch";
 import { CELL_BOXES } from "../../data/cell";
 import CellErrorBoundary from "./celda/CellErrorBoundary";
-import { DEFAULT_ENV, type EnvId } from "./celda/environments";
+import { DEFAULT_ENV, ENVIRONMENTS, type EnvId } from "./celda/environments";
 import type { CellCommands, CellMode } from "../../hooks/useCellController";
 
 // El chunk con three y la escena es lazy: no entra al paquete principal. En
@@ -35,7 +36,35 @@ type CeldaProps = {
 export default function Celda({ supported, onReady }: CeldaProps) {
   const { theme } = useTheme();
   const { ref, visible } = useInViewport<HTMLDivElement>();
+  // `env` es lo que eligió el visitante; `shownEnv` es el que dibuja la escena. Se
+  // separan para mostrar el cartel de carga ANTES de empezar el trabajo pesado de
+  // construir el entorno nuevo (si no, la página se congela sin avisar).
   const [env, setEnv] = useState<EnvId>(DEFAULT_ENV);
+  const [shownEnv, setShownEnv] = useState<EnvId>(DEFAULT_ENV);
+  const shownEnvRef = useRef<EnvId>(DEFAULT_ENV);
+  const [switching, setSwitching] = useState(false);
+  const changeEnv = useCallback((next: EnvId) => {
+    setEnv(next);
+    if (next === shownEnvRef.current) {
+      setSwitching(false);
+      return;
+    }
+    setSwitching(true);
+    // Dos cuadros para que el cartel llegue a pintarse antes de montar el entorno.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        shownEnvRef.current = next;
+        setShownEnv(next);
+      })
+    );
+  }, []);
+  const handleEnvReady = useCallback(() => setSwitching(false), []);
+  // Red de seguridad: el cartel nunca queda colgado.
+  useEffect(() => {
+    if (!switching) return;
+    const t = window.setTimeout(() => setSwitching(false), 12000);
+    return () => window.clearTimeout(t);
+  }, [switching]);
   const [mode, setMode] = useState<CellMode>("auto");
   const [showing, setShowing] = useState<number | null>(null);
   const [delivered, setDelivered] = useState<number | null>(null);
@@ -122,7 +151,8 @@ export default function Celda({ supported, onReady }: CeldaProps) {
                 theme={theme}
                 active={visible}
                 onReady={onReady}
-                env={env}
+                onEnvReady={handleEnvReady}
+                env={shownEnv}
                 mode={mode}
                 panelOpen={delivered !== null}
                 showing={showing}
@@ -133,6 +163,27 @@ export default function Celda({ supported, onReady }: CeldaProps) {
               />
             </Suspense>
           </CellErrorBoundary>
+          <AnimatePresence>
+            {switching && (
+              <motion.div
+                key="env-loading"
+                className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-background/85 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                <Cog className="animate-[spin_3s_linear_infinite] text-heading" size={40} strokeWidth={1.5} />
+                <p className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">
+                  Cargando {ENVIRONMENTS.find((e) => e.id === env)?.label.toLowerCase()}
+                  <span className="animate-pulse">…</span>
+                </p>
+                <div className="h-0.5 w-44 overflow-hidden rounded-full bg-border/15">
+                  <div className="h-full w-1/3 animate-[loadbar_1.1s_ease-in-out_infinite] rounded-full bg-heading/70" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <AnimatePresence>
             {delivered !== null && (
               <SidePanel
@@ -149,7 +200,7 @@ export default function Celda({ supported, onReady }: CeldaProps) {
         </div>
 
         <div className="px-1 pb-1 pt-1">
-          <CellControls env={env} onEnvChange={setEnv} mode={mode} onModeChange={setMode} showing={showing} onShow={(i) => pick(i)} />
+          <CellControls env={env} onEnvChange={changeEnv} mode={mode} onModeChange={setMode} showing={showing} onShow={(i) => pick(i)} />
           <LabSearch onShowBox={(i) => pick(i)} onShowTech={pickTech} />
         </div>
       </div>
