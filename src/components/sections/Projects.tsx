@@ -2,11 +2,12 @@ import { useMemo } from "react";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PROJECTS } from "../../data/projects";
-import { FILTER_SCOPE, resolveStack } from "../../data/skillTree";
+import { FILTER_SCOPE, NODE_BY_ID, resolveStack } from "../../data/skillTree";
 import { useSkillTree } from "../../hooks/useSkillTree";
 import { useProjectSlider } from "../../hooks/useProjectSlider";
 import { Reveal, containerVariants, itemVariants } from "../Reveal";
 import SectionHeading from "../SectionHeading";
+import WeldLine from "../industrial/WeldLine";
 import ProjectPlate, { type PlateFilterState } from "./projects/ProjectPlate";
 import SkillTree from "./projects/SkillTree";
 import Toolbox from "./projects/Toolbox";
@@ -68,9 +69,53 @@ export default function Projects() {
       <SectionHeading
         index="04"
         eyebrow="Proyectos"
-        title="Trabajos y las skills detrás de cada uno"
+        title="Elegí una tecnología y mirá qué construí con ella"
         accent="text-brand-projects"
       />
+
+      <Reveal delay={0.1} className="mt-10">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+          Mapa de skills
+        </p>
+        <h3 className="mt-2 font-display text-lg font-semibold text-heading">
+          Seleccioná tecnologías para filtrar los proyectos
+        </h3>
+        <p className="mt-1 text-sm text-muted">
+          Un clic enciende también los fundamentos que esa tecnología necesita, pero el
+          filtro usa sólo lo que elegís: se muestran los proyectos que las usan todas.
+        </p>
+        <div className="mt-8">
+          <SkillTree
+            picked={picked}
+            selected={selected}
+            matchedCount={matchedCount}
+            onToggle={toggle}
+            onClear={clear}
+          />
+          <Toolbox />
+        </div>
+      </Reveal>
+
+      {/* Resultado del filtro: une el mapa de arriba con las fichas de abajo. */}
+      <div className="mt-12 flex flex-wrap items-center gap-x-4 gap-y-2" aria-live="polite">
+        <WeldLine className="w-10 shrink-0" />
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+          {picked.size === 0
+            ? `Los ${PROJECTS.length} proyectos`
+            : `${matchedCount} de ${PROJECTS.length} proyectos con ${[...picked]
+                .map((id) => NODE_BY_ID.get(id)?.label ?? id)
+                .join(" + ")}`}
+        </p>
+        {picked.size > 0 && (
+          <button
+            type="button"
+            onClick={clear}
+            className="text-xs font-semibold text-brand-projects underline-offset-4 hover:underline"
+          >
+            Quitar filtro
+          </button>
+        )}
+      </div>
 
       {/* Slider horizontal con scroll-snap nativo en TODAS las resoluciones
           (la sección mide siempre lo mismo, sumen los proyectos que sumen):
@@ -156,28 +201,6 @@ export default function Projects() {
         </div>
       )}
 
-      <Reveal delay={0.15} className="mt-16 border-t border-border/10 pt-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-          Mapa de skills
-        </p>
-        <h3 className="mt-2 font-display text-lg font-semibold text-heading">
-          Seleccioná tecnologías para filtrar los proyectos
-        </h3>
-        <p className="mt-1 text-sm text-muted">
-          Un clic enciende también los fundamentos que esa tecnología necesita, pero el
-          filtro usa sólo lo que elegís: se muestran los proyectos que las usan todas.
-        </p>
-        <div className="mt-8">
-          <SkillTree
-            picked={picked}
-            selected={selected}
-            matchedCount={matchedCount}
-            onToggle={toggle}
-            onClear={clear}
-          />
-          <Toolbox />
-        </div>
-      </Reveal>
     </section>
   );
 }

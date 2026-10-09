@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
+import WeldLine from "./industrial/WeldLine";
 
 // Misma curva de salida que el resto de las animaciones de sección (ver Reveal).
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -33,14 +34,7 @@ export default function SectionHeading({
     <div>
       <div className="mb-3 flex items-center gap-3">
         <span className={`font-display text-sm font-bold tabular-nums ${accent}`}>{index}</span>
-        <motion.span
-          aria-hidden
-          className="block h-px w-14 origin-left bg-border/40"
-          initial={{ scaleX: 0 }}
-          whileInView={{ scaleX: 1 }}
-          viewport={{ once: true, amount: 1 }}
-          transition={{ duration: 0.8, ease: EASE }}
-        />
+        <WeldLine className="w-16 shrink-0" />
         <span className="eyebrow !mb-0">{eyebrow}</span>
       </div>
 

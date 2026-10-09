@@ -58,55 +58,6 @@ function speckle(ctx: CanvasRenderingContext2D, w: number, h: number, rand: () =
 export type Theme = "light" | "dark";
 
 /**
- * Piso de hormigón alisado (epoxi gastado) en losas de 4 × 4. Devuelve color y
- * rugosidad: la rugosidad varía por manchas para que el piso tenga brillos
- * irregulares al reflejar las lámparas (sin reflejo real, que es caro).
- */
-export function floorTextures(theme: Theme) {
-  const size = 1024;
-  const rand = rng(11);
-  const { c, ctx } = canvas(size, size);
-  const base = theme === "dark" ? "#24282a" : "#7b8183";
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, size, size);
-  speckle(ctx, size, size, rand, 26000, theme === "dark" ? 25 : 110, 50, 0.22);
-  // marcas de llana: arcos muy tenues
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 70; i++) {
-    ctx.strokeStyle = `rgba(255,255,255,${0.01 + rand() * 0.02})`;
-    ctx.beginPath();
-    ctx.arc(rand() * size, rand() * size, 40 + rand() * 160, rand() * 6, rand() * 6 + 1.2);
-    ctx.stroke();
-  }
-  grime(ctx, size, size, rand, 60, theme === "dark" ? 0.12 : 0.08);
-  // juntas de losa (cada textura = 2 × 2 losas)
-  ctx.fillStyle = theme === "dark" ? "#121516" : "#5f6567";
-  for (const p of [0, size / 2]) {
-    ctx.fillRect(p, 0, 3, size);
-    ctx.fillRect(0, p, size, 3);
-  }
-  const map = toTexture(c, 7, 7);
-
-  const r = canvas(256, 256);
-  const rr = rng(5);
-  r.ctx.fillStyle = "rgb(185,185,185)";
-  r.ctx.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 26; i++) {
-    const x = rr() * 256;
-    const y = rr() * 256;
-    const rad = 10 + rr() * 50;
-    const g = r.ctx.createRadialGradient(x, y, 0, x, y, rad);
-    const v = rr() > 0.5 ? 135 : 210; // pulido o polvoriento
-    g.addColorStop(0, `rgba(${v},${v},${v},0.5)`);
-    g.addColorStop(1, `rgba(${v},${v},${v},0)`);
-    r.ctx.fillStyle = g;
-    r.ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
-  }
-  const roughnessMap = toTexture(r.c, 7, 7, false);
-  return { map, roughnessMap };
-}
-
-/**
  * Pared de chapa nervada (paneles verticales) con zócalo, suciedad que sube
  * desde el piso y remaches. Una textura cubre 4 paneles × toda la altura.
  */

@@ -9,6 +9,8 @@ import Celda from "./components/sections/Celda";
 import About from "./components/sections/About";
 import Trayectoria from "./components/sections/Trayectoria";
 import MarqueeBand from "./components/MarqueeBand";
+import Nameplate from "./components/industrial/Nameplate";
+import { MARQUEE_WORDS } from "./data";
 import Projects from "./components/sections/Projects";
 import Contact from "./components/sections/Contact";
 import { useCellSupport } from "./hooks/useCellSupport";
@@ -40,12 +42,13 @@ export default function App() {
       <ScrollProgress />
       <Navbar />
       <main>
-        <Hero onReady={() => setHeroReady(true)} go={ready} labAvailable={cellSupported} />
+        <Hero onReady={() => setHeroReady(true)} go={ready} labAvailable />
         <Celda supported={cellSupported} onReady={() => setCellReady(true)} />
-        <MarqueeBand />
+        <MarqueeBand words={MARQUEE_WORDS} />
         <About />
         <Trayectoria />
         <Projects />
+        <Nameplate />
         <Contact />
       </main>
       <Footer />

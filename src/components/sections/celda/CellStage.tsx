@@ -8,6 +8,8 @@ import {
   type CellMode,
 } from "../../../hooks/useCellController";
 import { useRef, type MutableRefObject } from "react";
+import { useFrame } from "@react-three/fiber";
+import type { PointLight } from "three";
 import { BOX_HALF_H, cartesian, facingOutward, slotOf } from "./cellLayout";
 
 type CellStageProps = {
@@ -26,6 +28,15 @@ type CellStageProps = {
 export default function CellStage({ active, mode, glow, showing, commandsRef, onShowing, onDelivered, onPick }: CellStageProps) {
   // Una apertura de tapa (0..1) por caja: el controlador la anima y cada caja la lee.
   const openRefs = useRef<MutableRefObject<number>[]>(CELL_BOXES.map(() => ({ current: 0 })));
+  // Luz interior ÚNICA de las cajas: siempre presente (intensidad 0 si ninguna está abierta).
+  const sharedLight = useRef<PointLight | null>(null);
+  // Antes que las cajas (prioridad negativa): apaga la luz para que la caja más abierta la reclame.
+  useFrame(() => {
+    const l = sharedLight.current;
+    if (!l) return;
+    l.userData.best = 0;
+    l.intensity = 0;
+  }, -1);
   const { poseRef, boxRefs } = useCellController({
     count: CELL_BOXES.length,
     active,
@@ -38,6 +49,7 @@ export default function CellStage({ active, mode, glow, showing, commandsRef, on
 
   return (
     <>
+      <pointLight ref={sharedLight} intensity={0} distance={1} decay={2} />
       <RobotArm poseRef={poseRef} />
       <DeliveryPad />
       {CELL_BOXES.map((box, i) => {
@@ -48,9 +60,11 @@ export default function CellStage({ active, mode, glow, showing, commandsRef, on
             ref={(group) => {
               boxRefs.current[i] = group;
             }}
+            id={box.id}
             label={box.label}
             glow={glow}
             openRef={openRefs.current[i]}
+            sharedLight={sharedLight}
             selected={showing === i}
             onSelect={() => onPick(i)}
             position={cartesian(slot, BOX_HALF_H)}

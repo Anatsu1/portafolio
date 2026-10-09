@@ -1,4 +1,5 @@
 import { CAMERA_POS, CAMERA_TARGET } from "./cellLayout";
+import { INVASIONS, cableDistance, siteClearance } from "./forestSite";
 
 /**
  * Datos del bosque (sin three): relieve suave, sendero, mezcla de suelos y dónde
@@ -59,7 +60,6 @@ export function smoothstep(a: number, b: number, x: number) {
   return t * t * (3 - 2 * t);
 }
 
-/** Radio despejado alrededor del brazo (la plataforma mide 3,4). */
 /** Radio despejado alrededor del brazo (la plataforma mide 3,4). */
 export const CLEAR_R = 5.8;
 
@@ -189,6 +189,8 @@ export function placeTrees(): Tree[] {
     const { dist } = viewOf(x, z);
     if (dist > MAX_DIST) continue;
     const near = dist < NEAR_DIST;
+    // Las copas no pueden tapar ni atravesar las máquinas del puesto.
+    if (siteClearance(x, z) < (near ? 3.2 : 1.5)) continue;
     if (!fits(x, z, near ? 4.2 : 3.6)) continue;
     let kind: TreeKind = "far";
     if (near) {
@@ -218,13 +220,16 @@ function scatter(
   attempts: number,
   sample: (rand: () => number) => [number, number],
   accept: (x: number, z: number, rand: () => number) => boolean,
-  make: (x: number, z: number, rand: () => number) => Partial<Prop> & { scale: number }
+  make: (x: number, z: number, rand: () => number) => Partial<Prop> & { scale: number },
+  /** Distancia mínima a las máquinas (ver forestSite). */
+  keepOut = 0.3
 ) {
   const rand = rng(seed);
   const out: Prop[] = [];
   for (let i = 0; i < attempts && out.length < count; i++) {
     const [x, z] = sample(rand);
     if (!inView(x, z, 0.08) || !outOfCorridor(x, z)) continue;
+    if (siteClearance(x, z) < keepOut) continue;
     if (!accept(x, z, rand)) continue;
     out.push({ x, z, y: groundHeight(x, z), rotY: rand() * Math.PI * 2, tone: rand(), variant: 0, ...make(x, z, rand) });
   }
@@ -243,7 +248,7 @@ export function placeUndergrowth(trees: Tree[]) {
     for (let i = 0; i < 9000 && bushes.length < 120; i++) {
       const [x, z] = ring(CLEAR_R + 1.6, 60)(rand);
       if (z > 1.5 || !inView(x, z, 0.05) || !offPath(x, z, 1.8)) continue;
-      if (nearTrunk(x, z, 1.2)) continue;
+      if (nearTrunk(x, z, 1.2) || siteClearance(x, z) < 1) continue;
       if (bushes.some((b) => (b.x - x) ** 2 + (b.z - z) ** 2 < 4.4)) continue;
       const r = Math.hypot(x, z);
       const edge = smoothstep(CLEAR_R + 1.5, 9, r) * (1 - smoothstep(13, 18, r));
@@ -262,7 +267,8 @@ export function placeUndergrowth(trees: Tree[]) {
       const near = Math.hypot(x, z) < CLEAR_R ? 0.3 : 1; // dentro del claro, pocas y bajas
       return rand() < grassAmount(x, z) * 0.95 * near && !nearTrunk(x, z, 0.8);
     },
-    (x, z, rand) => ({ scale: (Math.hypot(x, z) < CLEAR_R ? 0.5 : 0.85) + rand() * 0.6 })
+    (x, z, rand) => ({ scale: (Math.hypot(x, z) < CLEAR_R ? 0.5 : 0.85) + rand() * 0.6 }),
+    0.12
   );
 
   // Flores silvestres en manchones de un mismo color (como crecen de verdad).
@@ -273,8 +279,8 @@ export function placeUndergrowth(trees: Tree[]) {
     ring(4.4, 24),
     (x, z, rand) => rand() < grassAmount(x, z) * smoothstep(0.42, 0.6, fbm(x * 0.22 + 5, z * 0.22 - 9, 21, 3)),
     (x, z, rand) => {
-      const kind = Math.floor(fbm(x * 0.1 + 40, z * 0.1, 22, 2) * 6 * 1.6) % 3; // amarilla / violeta / roja
-      return { scale: 0.8 + rand() * 0.5, variant: kind * 2 + (rand() > 0.5 ? 1 : 0) };
+      const kind = Math.floor(fbm(x * 0.1 + 40, z * 0.1, 22, 2) * 6 * 1.6) % 3; // blanca / amarilla / violeta
+      return { scale: 0.75 + rand() * 0.45, variant: kind };
     }
   );
 
@@ -292,12 +298,14 @@ export function placeUndergrowth(trees: Tree[]) {
     34,
     6000,
     ring(CLEAR_R + 0.6, 26),
-    (x, z, rand) => z < 2 && rand() < (pathDistance(x, z) < 1.8 ? 0.6 : 0.12),
+    (x, z, rand) => z < 2 && cableDistance(x, z) > 0.6 && rand() < (pathDistance(x, z) < 1.8 ? 0.6 : 0.12),
     (x, z, rand) => {
+      // 0 = bloque grande (~0,55 m de radio a escala 1), 1 = piedra chica (~0,2 m)
       const large = rand() < 0.3;
-      const scale = large ? 0.6 + rand() * 0.6 : 0.8 + rand() * 1.0;
-      return { scale, variant: large ? Math.floor(rand() * 2) : 2 + Math.floor(rand() * 3), y: groundHeight(x, z) - 0.04 * scale };
-    }
+      const scale = large ? 0.6 + rand() * 0.6 : 0.6 + rand() * 0.9;
+      return { scale, variant: large ? 0 : 1, y: groundHeight(x, z) - 0.03 * scale };
+    },
+    0.8
   );
 
   // Troncos caídos y tocones (Kenney), lejos de los troncos en pie.
@@ -307,10 +315,12 @@ export function placeUndergrowth(trees: Tree[]) {
     for (let i = 0; i < 4000 && logs.length < 11; i++) {
       const [x, z] = ring(CLEAR_R + 1.8, 22)(rand);
       if (z > 1 || !inView(x, z, -0.1) || !offPath(x, z, 1.6) || nearTrunk(x, z, 1.8)) continue;
+      if (siteClearance(x, z) < 2 || cableDistance(x, z) < 1.6) continue;
       if (logs.some((l) => (l.x - x) ** 2 + (l.z - z) ** 2 < 20)) continue;
       // 0 = tronco grande, 1 = tronco chico, 2/3 = tocones
       const variant = logs.length < 3 ? 0 : logs.length < 5 ? 1 : 2 + (logs.length % 2);
-      const scale = variant === 0 ? 2.6 + rand() : variant === 1 ? 2.4 + rand() : 2.2 + rand() * 0.8;
+      // Tronco de ~3 m a escala 1 (el chico es el mismo, más corto); tocón de ~0,5 m.
+      const scale = variant === 0 ? 0.9 + rand() * 0.3 : variant === 1 ? 0.55 + rand() * 0.2 : 0.8 + rand() * 0.45;
       logs.push({ x, z, y: groundHeight(x, z) - 0.03, scale, rotY: rand() * Math.PI * 2, tone: rand(), variant });
     }
   }
@@ -319,11 +329,11 @@ export function placeUndergrowth(trees: Tree[]) {
   const anchors = [...nearTrees, ...logs];
   const mushrooms = scatter(
     606,
-    48,
+    36,
     6000,
     ring(CLEAR_R + 0.5, 22),
     (x, z, rand) => anchors.some((a) => (a.x - x) ** 2 + (a.z - z) ** 2 < 2.2) && rand() < 0.7,
-    (_x, _z, rand) => ({ scale: 1.2 + rand() * 0.9, variant: Math.floor(rand() * 3) })
+    (_x, _z, rand) => ({ scale: 0.8 + rand() * 0.7, variant: 0 })
   );
 
   // Lajas sobre el sendero, cada ~0,9 m.
@@ -339,12 +349,57 @@ export function placeUndergrowth(trees: Tree[]) {
         const x = ax + (bx - ax) * t + (rand() - 0.5) * 0.5;
         const z = az + (bz - az) * t + (rand() - 0.5) * 0.5;
         if (Math.hypot(x, z) < 3.7 || viewOf(x, z).dist > 34 || rand() < 0.25) continue;
-        stones.push({ x, z, y: groundHeight(x, z) - 0.025, scale: 0.75 + rand() * 0.35, rotY: Math.atan2(bx - ax, bz - az) + (rand() - 0.5) * 0.8, tone: rand(), variant: 0 });
+        stones.push({ x, z, y: groundHeight(x, z) - 0.02, scale: 0.9 + rand() * 0.5, rotY: Math.atan2(bx - ax, bz - az) + (rand() - 0.5) * 0.8, tone: rand(), variant: 0 });
       }
     }
   }
 
-  return { bushes, grass, flowers, ferns, rocks, logs, mushrooms, stones };
+  const invasion = padInvasion();
+  return {
+    bushes,
+    grass: [...grass, ...invasion.grass],
+    flowers: [...flowers, ...invasion.flowers],
+    ferns,
+    rocks: [...rocks, ...invasion.rocks],
+    logs,
+    mushrooms,
+    stones,
+  };
+}
+
+/** Radio de la plataforma de acero y altura de su cara superior (ver forestPad). */
+const PAD_EDGE = 3.4;
+const PAD_TOP = 0.005;
+
+/**
+ * Lo que se mete sobre el borde de la plataforma en las zonas de invasión
+ * (forestSite.INVASIONS): matas de pasto, alguna flor y piedras con musgo,
+ * más densas cuanto más afuera. Sobre la chapa se apoyan a su altura.
+ */
+function padInvasion() {
+  const rand = rng(909);
+  const grass: Prop[] = [];
+  const flowers: Prop[] = [];
+  const rocks: Prop[] = [];
+  for (const inv of INVASIONS) {
+    const n = Math.round(26 * inv.depth + 8);
+    for (let i = 0; i < n * 3 && grass.length < 400; i++) {
+      const a = inv.angle + (rand() - 0.5) * 2 * inv.spread;
+      const k = 1 - Math.abs(a - inv.angle) / inv.spread;
+      const r = PAD_EDGE + 0.35 - Math.pow(rand(), 1.4) * (0.2 + inv.depth * 0.9 * k);
+      if (r < 2.85) continue; // la banda de seguridad y el aro de alcance quedan a la vista
+      // Pose de descanso del brazo (a la izquierda, φ ≈ 2,5 → atan2(z, x) ≈ −2,5): ahí solo pasto al ras del canto.
+      if (r < 3.3 && Math.abs(a + 2.5) < 0.6) continue;
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+      const y = r < PAD_EDGE ? PAD_TOP : groundHeight(x, z) - 0.03;
+      const roll = rand();
+      if (roll < 0.72) grass.push({ x, z, y, scale: 0.35 + rand() * 0.4 * k + 0.15, rotY: rand() * Math.PI * 2, tone: rand(), variant: 0 });
+      else if (roll < 0.86) flowers.push({ x, z, y, scale: 0.55 + rand() * 0.3, rotY: rand() * Math.PI * 2, tone: rand(), variant: Math.floor(rand() * 3) });
+      else rocks.push({ x, z, y: y - 0.02, scale: 0.35 + rand() * 0.45, rotY: rand() * Math.PI * 2, tone: rand(), variant: 1, sy: 0.45 });
+    }
+  }
+  return { grass, flowers, rocks };
 }
 
 // ---- Mapa de suelo ------------------------------------------------------------

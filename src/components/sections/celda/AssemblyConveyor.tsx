@@ -132,8 +132,13 @@ function Legs() {
 
 type Part = { geometry: THREE.BufferGeometry; material: THREE.Material; local: THREE.Matrix4 };
 
-/** Cajas de carga sobre la cinta: posición = función del tiempo (ver assemblyPath). */
-function LineBoxes({ extra = [] }: { extra?: readonly Xform[] }) {
+/**
+ * Cajas de carga sobre la cinta: posición = función del tiempo (ver
+ * assemblyPath). Solo se dibujan las visibles: se compactan al principio del
+ * buffer y `count` corta el resto (las que esperan en el túnel no cuestan
+ * triángulos). Las cajas de los pallets las dibuja el paletizador.
+ */
+function LineBoxes() {
   const { scene } = useGLTF(LINE_BOX_URL);
   const parts = useMemo<Part[]>(() => {
     scene.updateMatrixWorld(true);
@@ -144,49 +149,35 @@ function LineBoxes({ extra = [] }: { extra?: readonly Xform[] }) {
     return list;
   }, [scene]);
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
-  const total = LINE_BOX_COUNT + extra.length;
   const tmp = useMemo(
     () => ({
-      st: { s: 0, visible: false, jitter: 0, flip: 0, lap: 0 } as BoxState,
+      st: { s: 0, visible: false, jitter: 0, flip: 0, lap: 0, held: false } as BoxState,
       pt: { x: 0, z: 0, yaw: 0 } as PathPoint,
       o: new THREE.Object3D(),
       m: new THREE.Matrix4(),
-      zero: new THREE.Matrix4().makeScale(0, 0, 0),
     }),
     []
   );
 
-  // Los pallets quietos se escriben una sola vez, al final del buffer.
-  const writeStatic = (mesh: THREE.InstancedMesh, part: Part) => {
-    extra.forEach((it, i) => {
-      tmp.o.position.set(...it.p);
-      tmp.o.rotation.set(...(it.r ?? [0, 0, 0]));
-      tmp.o.scale.setScalar(typeof it.s === "number" ? it.s : LINE_BOX_SCALE);
-      tmp.o.updateMatrix();
-      mesh.setMatrixAt(LINE_BOX_COUNT + i, tmp.m.multiplyMatrices(tmp.o.matrix, part.local));
-    });
-  };
-
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    const { st, pt, o, m, zero } = tmp;
+    const { st, pt, o, m } = tmp;
+    let n = 0;
     for (let k = 0; k < LINE_BOX_COUNT; k++) {
       boxAt(k, t, st);
-      if (st.visible) {
-        pointAt(st.s, pt);
-        o.position.set(pt.x, BELT_TOP + LINE_BOX_HALF_H, pt.z);
-        o.rotation.set(0, pt.yaw + st.jitter + st.flip, 0);
-        o.scale.setScalar(LINE_BOX_SCALE);
-        o.updateMatrix();
-      }
-      parts.forEach((part, j) => {
-        const mesh = refs.current[j];
-        if (!mesh) return;
-        mesh.setMatrixAt(k, st.visible ? m.multiplyMatrices(o.matrix, part.local) : zero);
-      });
+      if (!st.visible) continue;
+      pointAt(st.s, pt);
+      o.position.set(pt.x, BELT_TOP + LINE_BOX_HALF_H, pt.z);
+      o.rotation.set(0, pt.yaw + st.jitter + st.flip, 0);
+      o.scale.setScalar(LINE_BOX_SCALE);
+      o.updateMatrix();
+      parts.forEach((part, j) => refs.current[j]?.setMatrixAt(n, m.multiplyMatrices(o.matrix, part.local)));
+      n++;
     }
     refs.current.forEach((mesh) => {
-      if (mesh) mesh.instanceMatrix.needsUpdate = true;
+      if (!mesh) return;
+      mesh.count = n;
+      mesh.instanceMatrix.needsUpdate = true;
     });
   });
 
@@ -197,9 +188,8 @@ function LineBoxes({ extra = [] }: { extra?: readonly Xform[] }) {
           key={j}
           ref={(mesh) => {
             refs.current[j] = mesh;
-            if (mesh) writeStatic(mesh, part);
           }}
-          args={[part.geometry, part.material, total]}
+          args={[part.geometry, part.material, LINE_BOX_COUNT]}
           frustumCulled={false}
         />
       ))}
@@ -207,7 +197,7 @@ function LineBoxes({ extra = [] }: { extra?: readonly Xform[] }) {
   );
 }
 
-export default function AssemblyConveyor({ pallets }: { pallets?: readonly Xform[] }) {
+export default function AssemblyConveyor() {
   const straights = SEGMENTS.filter((s): s is Straight => s.kind === "line");
   const curves = SEGMENTS.filter((s): s is Curve => s.kind === "arc");
   // Una textura por tramo recto (comparten la imagen; cambia la repetición).
@@ -228,7 +218,7 @@ export default function AssemblyConveyor({ pallets }: { pallets?: readonly Xform
         <RollerCurve key={i} seg={seg} />
       ))}
       <Legs />
-      <LineBoxes extra={pallets} />
+      <LineBoxes />
     </group>
   );
 }

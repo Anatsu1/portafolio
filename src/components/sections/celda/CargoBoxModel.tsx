@@ -166,9 +166,17 @@ type CargoBoxModelProps = {
   openRef: MutableRefObject<number>;
   /** Color de la luz interior. */
   glow: string;
+  /**
+   * Luz puntual COMPARTIDA por todas las cajas (la crea el escenario, siempre
+   * presente). Una luz por caja que aparecía y desaparecía cambiaba la cantidad
+   * de luces de la escena y obligaba a recompilar todos los shaders la primera
+   * vez que se abría una tapa (el tirón). Acá cada caja solo la mueve y la
+   * enciende mientras está abierta.
+   */
+  sharedLight?: MutableRefObject<THREE.PointLight | null>;
 };
 
-export default function CargoBoxModel({ openRef, glow }: CargoBoxModelProps) {
+export default function CargoBoxModel({ openRef, glow, sharedLight }: CargoBoxModelProps) {
   const { scene: bodyScene } = useGLTF(BODY_URL);
   const { scene: lidScene } = useGLTF(LID_URL);
 
@@ -191,7 +199,6 @@ export default function CargoBoxModel({ openRef, glow }: CargoBoxModelProps) {
 
   const hingeRef = useRef<THREE.Group>(null);
   const fxRef = useRef<THREE.Group>(null);
-  const lightRef = useRef<THREE.PointLight>(null);
   const spring = useRef({ angle: 0, vel: 0 });
   const scratch = useMemo(() => new THREE.Vector3(), []);
 
@@ -250,8 +257,12 @@ export default function CargoBoxModel({ openRef, glow }: CargoBoxModelProps) {
     const scale = fx.getWorldScale(scratch).x;
     const proj = state.camera.projectionMatrix.elements[5];
     uniforms.uPx.value = state.size.height * state.viewport.dpr * 0.5 * proj * scale;
-    const light = lightRef.current;
-    if (light) {
+    const light = sharedLight?.current;
+    // Si hay dos cajas con tapa en movimiento a la vez, manda la más abierta.
+    if (light && open >= (light.userData.best ?? 0)) {
+      light.userData.best = open;
+      fx.localToWorld(light.position.set(0, FLOOR_Y + 0.35, 0));
+      light.color.set(glow);
       light.intensity = open * 4.5 * scale * scale;
       light.distance = 1.6 * scale; // corta antes de llegar al exterior (no hay sombras)
     }
@@ -267,7 +278,6 @@ export default function CargoBoxModel({ openRef, glow }: CargoBoxModelProps) {
       </group>
       {/* Interior vivo: apagado (invisible) mientras la caja está cerrada */}
       <group ref={fxRef} visible={false}>
-        <pointLight ref={lightRef} position={[0, FLOOR_Y + 0.35, 0]} color={glow} intensity={0} decay={2} />
         <mesh position={[0, FLOOR_Y + 0.004, 0]} rotation-x={-Math.PI / 2} raycast={noRaycast} renderOrder={1}>
           <planeGeometry args={[INNER * 2, INNER * 2]} />
           <shaderMaterial

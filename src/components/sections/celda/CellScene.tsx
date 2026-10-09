@@ -32,7 +32,23 @@ type CellSceneProps = {
  */
 function ReadySignal({ onReady }: { onReady?: () => void }) {
   const invalidate = useThree((s) => s.invalidate);
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
   useEffect(() => {
+    // Precompila TAMBIÉN lo que hoy está oculto (interior de las cajas, efectos):
+    // si no, sus shaders se compilan recién al aparecer y se nota un tirón.
+    const hidden: { visible: boolean }[] = [];
+    scene.traverse((o) => {
+      if (!o.visible) hidden.push(o);
+      o.visible = true;
+    });
+    try {
+      gl.compile(scene, camera);
+    } finally {
+      hidden.forEach((o) => (o.visible = false));
+    }
+
     let frames = 0;
     let raf = 0;
     const tick = () => {
@@ -70,7 +86,7 @@ export default function CellScene({ onReady, theme, active, env, mode, panelOpen
     <Canvas
       frameloop={active ? "always" : "demand"}
       dpr={[1, 1.75]}
-      camera={{ position: [CAMERA_POS.x, CAMERA_POS.y, CAMERA_POS.z], fov: 36, near: 0.1, far: 400 }}
+      camera={{ position: [CAMERA_POS.x, CAMERA_POS.y, CAMERA_POS.z], fov: 34, near: 0.1, far: 400 }}
       gl={{ antialias: true, alpha: true }}
       onCreated={({ camera }) => camera.lookAt(CAMERA_TARGET.x, CAMERA_TARGET.y, CAMERA_TARGET.z)}
     >

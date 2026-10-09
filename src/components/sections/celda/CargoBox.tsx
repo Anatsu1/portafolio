@@ -1,8 +1,11 @@
 import { forwardRef, useMemo, useState, type MutableRefObject } from "react";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
+import type { PointLight } from "three";
 
 import CargoBoxModel from "./CargoBoxModel";
+import CellIcon from "./CellIcon";
+import { CELL_ICON_PATHS, type CellIconId } from "../../../data/cellIcons";
 
 // El modelo mide ~1,9 de lado; escalado a ~0,5 cabe entre los dedos cerrados.
 export const BOX_SCALE = 0.26;
@@ -10,27 +13,52 @@ export const BOX_SCALE = 0.26;
 // Posición de la placa metálica en el frente (+Z) del modelo, medida del render.
 const PLATE = { x: 0.12, y: -0.05, z: 0.93, w: 0.8, h: 0.5 };
 
-function makeLabelTexture(label: string) {
+/**
+ * Chapa de la caja: un icono grande y brillante, en el color del tema, sobre
+ * metal oscuro (sin texto: se lee a distancia y se memoriza). El mismo icono
+ * aparece en el rótulo, los botones y el panel de la sección.
+ */
+function makePlateTexture(id: string, accent: string) {
+  const W = 512;
+  const H = 320;
   const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 320;
+  canvas.width = W;
+  canvas.height = H;
   const ctx = canvas.getContext("2d");
   if (ctx) {
-    const grad = ctx.createLinearGradient(0, 0, 512, 320);
-    grad.addColorStop(0, "#9aa0a3");
-    grad.addColorStop(1, "#6e7477");
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, "#232a2e");
+    grad.addColorStop(1, "#14181a");
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 512, 320);
-    ctx.fillStyle = "#14181a";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    let size = 120;
-    ctx.font = `800 ${size}px Sora, system-ui, sans-serif`;
-    while (ctx.measureText(label).width > 470 && size > 28) {
-      size -= 4;
-      ctx.font = `800 ${size}px Sora, system-ui, sans-serif`;
+    ctx.fillRect(0, 0, W, H);
+    // Cepillado del metal
+    for (let y = 0; y < H; y += 3) {
+      ctx.fillStyle = `rgba(255,255,255,${0.012 + ((y * 7) % 5) * 0.004})`;
+      ctx.fillRect(0, y, W, 1);
     }
-    ctx.fillText(label, 256, 165);
+    // Marco de color
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = 10;
+    ctx.strokeRect(14, 14, W - 28, H - 28);
+    ctx.globalAlpha = 1;
+    // Icono grande con brillo
+    const paths = CELL_ICON_PATHS[id as CellIconId];
+    if (paths) {
+      const size = 285;
+      ctx.save();
+      ctx.translate((W - size) / 2, (H - size) / 2);
+      ctx.scale(size / 24, size / 24);
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = accent;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 14;
+      for (const d of paths) ctx.stroke(new Path2D(d));
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -39,6 +67,7 @@ function makeLabelTexture(label: string) {
 }
 
 type CargoBoxProps = {
+  id: string;
   label: string;
   /** Color del resplandor del piso (hover / seleccionada). */
   glow: string;
@@ -47,6 +76,8 @@ type CargoBoxProps = {
   onSelect?: () => void;
   /** Apertura de la tapa (0 cerrada, 1 abierta); la mueve el controlador. */
   openRef: MutableRefObject<number>;
+  /** Luz interior compartida (ver CargoBoxModel). */
+  sharedLight?: MutableRefObject<PointLight | null>;
   position?: [number, number, number];
   rotationY?: number;
 };
@@ -57,10 +88,12 @@ type CargoBoxProps = {
  * posición inicial es solo el punto de partida.
  */
 const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
-  { label, glow, selected = false, onSelect, openRef, position, rotationY = 0 },
+  { id, label, glow, selected = false, onSelect, openRef, sharedLight, position, rotationY = 0 },
   ref
 ) {
-  const texture = useMemo(() => makeLabelTexture(label), [label]);
+  // El icono va en el color del tema (`glow` = color de marca del tema).
+  const accent = glow;
+  const texture = useMemo(() => makePlateTexture(id, accent), [id, accent]);
   const [hovered, setHovered] = useState(false);
   const lit = hovered || selected;
 
@@ -84,11 +117,15 @@ const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
         document.body.style.cursor = "";
       }}
     >
-      <CargoBoxModel openRef={openRef} glow={glow} />
+      <CargoBoxModel openRef={openRef} glow={glow} sharedLight={sharedLight} />
       {/* Rótulo legible: la placa del modelo es chica a esta distancia */}
       {!selected && (
         <Html position={[0, 1.35, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
-          <span className="whitespace-nowrap rounded border border-white/20 bg-black/65 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur">
+          <span
+            className="flex items-center gap-1.5 whitespace-nowrap rounded border bg-black/70 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur"
+            style={{ borderColor: accent }}
+          >
+            <CellIcon id={id as CellIconId} size={12} color={accent} />
             {label}
           </span>
         </Html>
@@ -100,7 +137,14 @@ const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
       </mesh>
       <mesh position={[PLATE.x, PLATE.y, PLATE.z]}>
         <planeGeometry args={[PLATE.w, PLATE.h]} />
-        <meshStandardMaterial map={texture} metalness={0.6} roughness={0.45} />
+        <meshStandardMaterial
+          map={texture}
+          emissive="#ffffff"
+          emissiveMap={texture}
+          emissiveIntensity={0.55}
+          metalness={0.5}
+          roughness={0.5}
+        />
       </mesh>
     </group>
   );

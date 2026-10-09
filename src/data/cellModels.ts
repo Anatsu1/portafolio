@@ -13,7 +13,8 @@ export const CELL_PRELOAD_URLS: readonly string[] = [
   "/models/caja-color.webp",
   "/models/caja-mr.webp",
   "/models/caja-normal.webp",
-  // entorno "Línea de montaje": cajas de la cinta y piezas de Kenney
+  // entorno "Línea de montaje": cajas de la cinta (y su versión lejana) y piezas de Kenney
   "/models/caja-lite.glb",
   "/models/linea/kit.glb",
+  "/models/linea/caja-far.glb",
 ];

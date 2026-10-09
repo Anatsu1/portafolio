@@ -6,7 +6,6 @@ import type { ArmPose } from "../components/sections/celda/RobotArm";
 import { solveIK, type ReachTarget } from "../components/sections/celda/kinematics";
 import { BOX_SCALE } from "../components/sections/celda/CargoBox";
 import {
-  ARC_CENTER,
   BOX_HALF_H,
   DELIVERY,
   HOLD_AUTO_S,
@@ -28,7 +27,14 @@ const GRIP_CLOSED = 0.2; // no 0: así las almohadillas apoyan en la cara de la 
  * nunca más, ni siquiera cuando el visitante pide otra caja a medio camino.
  */
 const BASE_SPEED = 1.25;
-const HOME: ReachTarget = { phi: ARC_CENTER, r: 1.75, y: 0.95 };
+/**
+ * Pose de descanso: el brazo mira hacia la DERECHA, sobre el mismo ángulo en
+ * que deja la caja en la plataforma de entrega, pero flexionado hacia arriba
+ * (replegado cerca de la base y con la garra en alto). Desde ahí se agacha a
+ * buscar la próxima caja; el yaw se interpola como ángulo continuo, así que
+ * puede girar hasta 360° cuando hace falta.
+ */
+const HOME: ReachTarget = { phi: DELIVERY.phi, r: 1.15, y: 1.55 };
 
 export type CellMode = "auto" | "manual";
 
@@ -89,6 +95,10 @@ type Phase = "ir" | "espera" | "volver";
 type Task = {
   index: number;
   phase: Phase;
+  /** El visitante pidió cerrar el panel antes de llegar a la espera (el panel abre mientras el brazo aún se aparta). */
+  releaseAsked?: boolean;
+  /** La caja ya está sobre la plataforma (agrandada y con el panel abierto). */
+  showcased?: boolean;
   /** Tramo de movimiento en curso (fases ir y volver). */
   tl: gsap.core.Timeline | null;
   /** Cuenta regresiva de la espera (solo en automático). */
@@ -96,7 +106,7 @@ type Task = {
 };
 
 export function useCellController({ count, active, mode, onShowing, onDelivered, commandsRef, openRefs }: ControllerOptions) {
-  const poseRef = useRef<ArmPose>({ yaw: ARC_CENTER, shoulder: 0.5, elbow: -1.1, grip: GRIP_OPEN });
+  const poseRef = useRef<ArmPose>({ yaw: HOME.phi, shoulder: 0.5, elbow: -1.1, grip: 0.6 });
   const boxRefs = useRef<(Group | null)[]>([]);
   const reach = useRef<ReachTarget>({ ...HOME });
   const carried = useRef<Group | null>(null);
@@ -246,12 +256,50 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       if (!t) return;
       t.phase = "espera";
       t.tl = null;
-      if (queue.current.length > 0) {
+      if (queue.current.length > 0 || t.releaseAsked) {
         endHold(); // el visitante ya pidió otra: no hace falta esperar
         return;
       }
       if (live.current.mode === "auto") t.timer = gsap.delayedCall(HOLD_AUTO_S, endHold);
       applyPause();
+    };
+
+    /**
+     * El visitante pidió otra caja con la entrega todavía en camino: en vez de
+     * terminar de llevarla, abrirla y cerrarla, el brazo la deja de vuelta en su
+     * lugar y recién entonces sigue con la nueva.
+     */
+    const abortGo = () => {
+      const t = task.current;
+      if (!t || t.phase !== "ir") return;
+      t.tl?.kill();
+      t.tl = null;
+      const box = boxRefs.current[t.index];
+      if (t.showcased) {
+        // Ya está sobre la plataforma: es lo mismo que una espera que se corta.
+        t.phase = "espera";
+        endHold();
+        return;
+      }
+      if (carried.current && carried.current === box) {
+        t.phase = "volver";
+        const slot = slotOf(t.index);
+        const tl = gsap.timeline({ onComplete: finish });
+        tl.to(target, { y: HOVER_Y, duration: 0.45, ease: "power2.inOut" });
+        tl.to(target, { phi: slot.phi, r: slot.r, duration: 1.3, ease: "power2.inOut" });
+        tl.to(target, { y: GRASP_Y, duration: 0.75, ease: "power2.inOut" });
+        tl.to(grip, { grip: GRIP_OPEN, duration: 0.45, ease: "power2.out" }, "-=0.1");
+        tl.call(() => {
+          carried.current = null;
+        });
+        tl.to(target, { y: HOVER_Y, duration: 0.6, ease: "power2.inOut" });
+        tl.to(grip, { grip: 0.5, duration: 0.5, ease: "sine.inOut" }, "<");
+        tl.timeScale(BASE_SPEED);
+        t.tl = tl;
+        applyPause();
+        return;
+      }
+      finish(); // todavía no la había tomado: no hay nada que devolver
     };
 
     const finish = () => {
@@ -279,6 +327,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       const tl = gsap.timeline({ onComplete: enterHold });
       pickAndPlace(tl, index, slot, DELIVERY);
       tl.call(() => {
+        if (task.current) task.current.showcased = true;
         showcase(index, true);
         live.current.onDelivered?.(index);
       });
@@ -298,13 +347,19 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
         // Solo importa lo último que pidió el visitante: no se acumula una fila.
         queue.current = [index];
         if (t) {
-          // Sin apurar nada: el brazo mantiene su ritmo. Si la caja está mostrada, se libera ya.
+          // Sin apurar nada: el brazo mantiene su ritmo. Si la caja está mostrada, se libera ya;
+          // si todavía la lleva, la devuelve a su lugar antes de ir por la nueva.
           if (t.phase === "espera") endHold();
+          else if (t.phase === "ir") abortGo();
         } else {
           next();
         }
       },
-      release: () => endHold(),
+      release: () => {
+        const t = task.current;
+        if (t && t.phase === "ir") t.releaseAsked = true; // se aplica al llegar a la espera
+        else endHold();
+      },
       holdPause: (paused) => {
         reading.current = paused;
         applyPause();
