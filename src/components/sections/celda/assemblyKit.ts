@@ -16,8 +16,10 @@ import * as THREE from "three";
 
 export const KIT_URL = "/models/linea/kit.glb";
 export const LINE_BOX_URL = "/models/caja-lite.glb";
+/** La misma caja simplificada (~2,4k triángulos): para las que están lejos, en los pallets. */
+export const LINE_BOX_FAR_URL = "/models/linea/caja-far.glb";
 
-export type KitPiece = "machine-window" | "scanner-high" | "robot-arm-a" | "pipe-large-valve";
+export type KitPiece = "machine-window" | "scanner-high" | "pipe-large-valve";
 
 export function useKit() {
   const { scene } = useGLTF(KIT_URL);
@@ -56,3 +58,4 @@ export function useKit() {
 
 useGLTF.preload(KIT_URL);
 useGLTF.preload(LINE_BOX_URL);
+useGLTF.preload(LINE_BOX_FAR_URL);

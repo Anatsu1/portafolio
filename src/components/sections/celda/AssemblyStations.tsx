@@ -8,18 +8,15 @@ import { screenTexture, shaftTexture } from "./assemblyTextures";
 /*
  * Estaciones del tramo frontal de la línea. Cada una mira la caja más cercana
  * (`stationView`, función pura del tiempo) y reacciona: el escáner barre con
- * su haz, la selladora se ilumina por dentro, el brazo auxiliar se inclina a
- * revisar y las pantallas cuentan unidades. Sin estado de React por cuadro.
+ * su haz, la selladora se ilumina por dentro y las pantallas cuentan unidades.
+ * (El brazo de la línea ahora es el paletizador: AssemblyPalletizer.) Sin estado de React por cuadro.
  */
 
 export const SCAN_X = -3.75;
 export const SEAL_X = 2.85;
-const ARM_POS: [number, number, number] = [-2.3, 0, RUN_Z - 1.1];
-const ARM_X = ARM_POS[0];
 
 const SCAN_S = sOnRun(SCAN_X);
 const SEAL_S = sOnRun(SEAL_X);
-const ARM_S = sOnRun(ARM_X);
 
 /** 1 cuando la caja está justo en la estación, 0 a más de `reach` de distancia. */
 function presence(d: number, reach: number) {
@@ -163,40 +160,10 @@ function Sealer() {
   );
 }
 
-/** Brazo auxiliar (Kenney "robot-arm-a"): se inclina sobre cada caja que pasa. */
-function InspectorArm() {
-  const kit = useKit();
-  const arm = useMemo(() => kit.piece("robot-arm-a"), [kit]);
-  const joints = useMemo(() => {
-    const get = (n: string) => arm.getObjectByName(n)!;
-    return { a: get("element-a"), b: get("element-b"), d: get("element-d"), e: get("element-e"), ca: get("claw-a"), cb: get("claw-b") };
-  }, [arm]);
-  const lean = useRef(0);
-
-  useFrame((state, dt) => {
-    const t = state.clock.elapsedTime;
-    const { near } = stationView(ARM_S, t);
-    // Sigue a la caja mientras pasa por delante (near: −0,8 … +0,8)
-    const a = presence(near, 0.9);
-    lean.current += (a - lean.current) * Math.min(1, dt * 3);
-    const l = lean.current;
-    const follow = Number.isFinite(near) ? THREE.MathUtils.clamp(near, -0.9, 0.9) : 0;
-    joints.a.rotation.y = -0.15 * Math.sin(t * 0.4) * (1 - l) - follow * 0.55 * l;
-    joints.b.rotation.x = 0.45 * l + 0.05 * Math.sin(t * 0.7);
-    joints.d.rotation.x = 0.55 * l;
-    joints.e.rotation.x = 0.35 * l;
-    const grip = 0.25 + 0.2 * Math.sin(t * 3) * l;
-    joints.ca.rotation.z = -grip;
-    joints.cb.rotation.z = grip;
-  });
-
-  return <primitive object={arm} position={ARM_POS} scale={0.62} />;
-}
-
 /** Consola del operador con la pantalla de datos de la línea. */
 function Console({ rim, screen }: { rim: string; screen: THREE.Texture }) {
   return (
-    <group position={[-4.7, 0, RUN_Z + 1.5]} rotation-y={0.5}>
+    <group position={[-5.3, 0, RUN_Z + 1.2]} rotation-y={0.5}>
       <mesh position={[0, 0.42, 0]}>
         <boxGeometry args={[0.9, 0.84, 0.5]} />
         <meshStandardMaterial color="#23292c" metalness={0.75} roughness={0.45} />
@@ -242,7 +209,6 @@ export default function AssemblyStations({ rim }: { rim: string }) {
     <group>
       <Scanner rim={rim} />
       <Sealer />
-      <InspectorArm />
       <Console rim={rim} screen={screen.texture} />
     </group>
   );

@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { CAMERA_POS } from "./cellLayout";
 import {
   SPLAT_SIZE,
@@ -14,6 +13,7 @@ import {
   type Tree,
 } from "./forestScatter";
 import * as geo from "./forestGeometry";
+import * as flora from "./forestFlora";
 import * as tex from "./forestTextures";
 
 /**
@@ -119,7 +119,7 @@ const fromTree = (t: Tree, k = 1): Placement => ({
   tone: (t.rotY * 3.7) % 1,
 });
 
-const fromProp = (p: Prop, sy = p.scale): Placement => ({
+const fromProp = (p: Prop, sy = p.scale * (p.sy ?? 1)): Placement => ({
   x: p.x,
   y: p.y,
   z: p.z,
@@ -177,46 +177,11 @@ function shaftGeometry(anchors: ReturnType<typeof shaftAnchors>, sun: THREE.Vect
 
 export type ForestKit = ReturnType<typeof buildForestKit>;
 
-/**
- * Saca de la escena de `bosque.glb` la geometría de un modelo (nodo por
- * nombre), ya en floats y con su transformación aplicada, uniendo sus
- * primitivas. El GLB viene cuantizado (meshopt) y con el color de cada
- * material horneado como color de vértice.
- */
-function modelGeometry(scene: THREE.Object3D, name: string) {
-  const node = scene.getObjectByName(name);
-  if (!node) throw new Error(`bosque.glb: falta el modelo ${name}`);
-  node.updateWorldMatrix(true, true);
-  const parts: THREE.BufferGeometry[] = [];
-  node.traverse((o) => {
-    const m = o as THREE.Mesh;
-    if (!m.isMesh) return;
-    const g = new THREE.BufferGeometry();
-    for (const attr of ["position", "normal", "color"] as const) {
-      const src = m.geometry.getAttribute(attr);
-      const out = new Float32Array(src.count * 3);
-      for (let i = 0; i < src.count; i++) {
-        out[i * 3] = src.getX(i);
-        out[i * 3 + 1] = src.getY(i);
-        out[i * 3 + 2] = src.getZ(i);
-      }
-      g.setAttribute(attr, new THREE.BufferAttribute(out, 3));
-    }
-    if (m.geometry.index) g.setIndex(Array.from(m.geometry.index.array));
-    g.applyMatrix4(m.matrixWorld);
-    parts.push(g);
-  });
-  const merged = mergeGeometries(parts)!;
-  parts.forEach((p) => p.dispose());
-  merged.computeBoundingSphere();
-  return merged;
-}
-
 /** Colores de hojas por instancia: de día verdes variados; al atardecer, algunos otoñales. */
 const LEAVES_DAY = ["#86b64e", "#5e9a3e", "#9db04e", "#6aa65a", "#78a844", "#4f8a3c"];
 const LEAVES_DUSK = ["#7aa046", "#55853a", "#e2a446", "#d9772f", "#b9502f", "#8fa040", "#e6b850"];
 
-export function buildForestKit(models: THREE.Object3D) {
+export function buildForestKit() {
   const disposables: { dispose: () => void }[] = [];
   const keep = <T extends { dispose: () => void }>(x: T) => {
     disposables.push(x);
@@ -297,26 +262,22 @@ export function buildForestKit(models: THREE.Object3D) {
   };
   group.add(new THREE.Mesh(groundGeo, groundMat));
 
-  // Empedrado sobre la plataforma (CellPad solo admite un color liso): un
-  // disco apenas por encima, por debajo del aro de alcance.
-  const paving = keep(tex.pavingTexture());
-  const padMat = keep(new THREE.MeshStandardMaterial({ map: paving, color: "#a49f94", roughness: 0.92 }));
-  const pad = new THREE.Mesh(keep(new THREE.CircleGeometry(3.4, 72)), padMat);
-  pad.rotation.x = -Math.PI / 2;
-  pad.position.y = 0.002;
-  group.add(pad);
-
   // ---- Materiales ----
   const barkMat = keep(new THREE.MeshStandardMaterial({ map: bark.map, bumpMap: bark.bump, bumpScale: 2.5, roughness: 0.95, vertexColors: true }));
-  const leafOpts = { alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.8 } as const;
+  // alphaToCoverage: con el MSAA del canvas, el borde recortado de las tarjetas
+  // de hojas sale suavizado (three lo afina con fwidth) en vez de dentado.
+  const leafOpts = { alphaTest: 0.45, alphaToCoverage: true, side: THREE.DoubleSide, vertexColors: true, roughness: 0.8 } as const;
   const oakMat = keep(foliage(new THREE.MeshStandardMaterial({ ...leafOpts, map: oakLeaves }), 0.016, 1.8));
   const leafMat = keep(foliage(new THREE.MeshStandardMaterial({ ...leafOpts, map: leaves }), 0.016, 1.8));
   const bushMat = keep(foliage(new THREE.MeshStandardMaterial({ ...leafOpts, map: leaves }), 0.03, 0.15));
   const grassMat = keep(foliage(new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.9 }), 0.1, 0));
-  const fernMat = keep(foliage(new THREE.MeshStandardMaterial({ map: fern, alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.85 }), 0.07, 0.05));
-  // Modelos de Kenney: color por vértice; las flores se mecen con el viento.
-  const propMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88 }));
-  const flowerMat = keep(foliage(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, side: THREE.DoubleSide }), 0.35, 0.02));
+  const fernMat = keep(foliage(new THREE.MeshStandardMaterial({ map: fern, alphaTest: 0.45, alphaToCoverage: true, side: THREE.DoubleSide, vertexColors: true, roughness: 0.85 }), 0.07, 0.05));
+  // Sotobosque propio (forestFlora): rocas con grano triplanar, hongos algo
+  // satinados y flores que se mecen con el viento.
+  const rockDetail = keep(tex.rockDetailTexture());
+  const rockMat = keep(flora.rockMaterial(rockDetail));
+  const mushroomMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55 }));
+  const flowerMat = keep(foliage(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, side: THREE.DoubleSide }), 0.12, 0.02));
 
   // El entorno (Lightformers) está calibrado fuerte para que brille el metal
   // del brazo; en materiales mates del bosque eso lava todo, así que se baja.
@@ -365,17 +326,19 @@ export function buildForestKit(models: THREE.Object3D) {
   group.add(instances(keep(geo.grassTuft()), grassMat, grassItems, (t, c) => c.setRGB(0.85 + t * 0.25, 0.9 + t * 0.15, 0.8 + t * 0.1)));
   group.add(instances(keep(geo.fernClump()), fernMat, under.ferns.map((p) => fromProp(p)), (t, c) => c.setRGB(0.8 + t * 0.3, 0.85 + t * 0.2, 0.75)));
 
-  /** Un InstancedMesh por variante de modelo de Kenney. */
-  const kenney = (names: string[], props: Prop[], mat: THREE.Material, tint = vary(0.25)) =>
-    names.forEach((name, v) => {
-      const items = props.filter((p) => p.variant === v).map((p) => fromProp(p));
-      if (items.length) group.add(instances(keep(modelGeometry(models, name)), mat, items, tint));
-    });
-  kenney(["flower_yellowA", "flower_yellowB", "flower_purpleA", "flower_purpleB", "flower_redA", "flower_redB"], under.flowers, flowerMat, vary(0.15));
-  kenney(["rock_largeA", "rock_largeB", "rock_smallA", "rock_smallB", "rock_smallC"], under.rocks, propMat);
-  kenney(["log_large", "log", "stump_old", "stump_roundDetailed"], under.logs, propMat);
-  kenney(["mushroom_redGroup", "mushroom_tanGroup", "mushroom_red"], under.mushrooms, propMat, vary(0.1));
-  kenney(["path_stone"], under.stones, propMat, (t, c) => c.setScalar(0.62 + t * 0.2));
+  /** Un InstancedMesh por geometría; `pick` elige qué props van en cada una. */
+  const props = (geometry: THREE.BufferGeometry, mat: THREE.Material, items: Placement[], tint = vary(0.25)) => {
+    if (items.length) group.add(instances(keep(geometry), mat, items, tint));
+  };
+  const byVariant = (list: Prop[], ...v: number[]) => list.filter((p) => v.includes(p.variant)).map((p) => fromProp(p));
+  (["daisy", "buttercup", "bell"] as const).forEach((kind, v) => props(flora.flowerClump(kind), flowerMat, byVariant(under.flowers, v), vary(0.12)));
+  props(flora.rock(5, 3, 0.55, 0.9), rockMat, byVariant(under.rocks, 0));
+  // Piedras chicas y lajas del sendero: la misma geometría, las lajas aplastadas.
+  const lajas = under.stones.map((p) => ({ ...fromProp(p, p.scale * 0.32), sx: p.scale * 1.5, sz: p.scale * 1.2 }));
+  props(flora.rock(9, 2, 0.2, 0.55), rockMat, [...byVariant(under.rocks, 1), ...lajas], vary(0.3));
+  props(flora.fallenLog(), barkMat, byVariant(under.logs, 0, 1), barkTint);
+  props(flora.stump(), barkMat, byVariant(under.logs, 2, 3), barkTint);
+  props(flora.mushroomCluster(), mushroomMat, under.mushrooms.map((p) => fromProp(p)), vary(0.25, 0.08));
 
   // ---- Haces de luz ----
   const anchors = shaftAnchors(trees);

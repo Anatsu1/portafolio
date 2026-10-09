@@ -363,6 +363,42 @@ export function fernTexture() {
   return toTexture(canvas, { repeat: false });
 }
 
+/**
+ * Grano de piedra (gris medio, repetible): manchas, motas claras y oscuras y
+ * alguna fisura. Las rocas lo proyectan en tres planos y lo multiplican por su
+ * color por vértice (canal R, lineal).
+ */
+export function rockDetailTexture() {
+  const size = 256;
+  const { canvas, ctx } = makeCanvas(size, size);
+  const rand = rng(71);
+  ctx.fillStyle = "#808080";
+  ctx.fillRect(0, 0, size, size);
+  blotches(ctx, size, rand, 70, 8, 40, ["rgba(40,40,40,0.25)", "rgba(200,200,200,0.22)", "rgba(110,110,110,0.3)"]);
+  for (let i = 0; i < 9000; i++) {
+    const v = rand() > 0.5 ? 210 : 45;
+    ctx.fillStyle = `rgba(${v},${v},${v},${rand() * 0.35})`;
+    ctx.fillRect(rand() * size, rand() * size, 1 + rand() * 1.5, 1 + rand() * 1.5);
+  }
+  ctx.strokeStyle = "rgba(30,30,30,0.55)";
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i < 9; i++) {
+    let x = rand() * size;
+    let y = rand() * size;
+    let a = rand() * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let k = 0; k < 8; k++) {
+      a += (rand() - 0.5) * 1.2;
+      x += Math.cos(a) * 7;
+      y += Math.sin(a) * 7;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  return toTexture(canvas, { srgb: false });
+}
+
 /** Haz de luz: franja blanca que se desvanece a los costados y en los extremos. */
 export function shaftTexture() {
   const w = 64;
@@ -387,64 +423,4 @@ export function shaftTexture() {
   }
   ctx.putImageData(img, 0, 0);
   return toTexture(canvas, { srgb: false, repeat: false });
-}
-
-/**
- * Empedrado circular para la plataforma: anillos de lajas irregulares con
- * juntas de tierra y algo de musgo. Se apoya como "calco" sobre CellPad.
- */
-export function pavingTexture() {
-  const size = 512;
-  const { canvas, ctx } = makeCanvas(size, size);
-  const rand = rng(97);
-  const c = size / 2;
-  ctx.fillStyle = "#4a4436";
-  ctx.fillRect(0, 0, size, size);
-  const tones = ["#9a958a", "#8b867b", "#a8a296", "#7f7a70", "#b0a998", "#918a7c"];
-  const rings = [0, 34, 76, 120, 166, 212, 256];
-  for (let i = 0; i < rings.length - 1; i++) {
-    const r0 = rings[i];
-    const r1 = rings[i + 1];
-    const count = i === 0 ? 1 : Math.round(((r0 + r1) * Math.PI) / 62);
-    const off = rand() * Math.PI * 2;
-    for (let k = 0; k < count; k++) {
-      const a0 = off + (k / count) * Math.PI * 2;
-      const a1 = off + ((k + 1) / count) * Math.PI * 2;
-      const gap = 2.5 / Math.max(r1, 1);
-      ctx.fillStyle = pick(rand, tones);
-      ctx.beginPath();
-      if (i === 0) ctx.arc(c, c, r1 - 3, 0, Math.PI * 2);
-      else {
-        const j = () => (rand() - 0.5) * 3;
-        ctx.moveTo(c + Math.cos(a0 + gap) * (r0 + 3) + j(), c + Math.sin(a0 + gap) * (r0 + 3) + j());
-        ctx.arc(c, c, r1 - 3, a0 + gap, a1 - gap);
-        ctx.arc(c, c, r0 + 3, a1 - gap, a0 + gap, true);
-        ctx.closePath();
-      }
-      ctx.fill();
-      // Desgaste y manchas dentro de la laja.
-      for (let n = 0; n < 6; n++) {
-        const a = a0 + rand() * (a1 - a0);
-        const r = r0 + rand() * (r1 - r0);
-        ctx.fillStyle = `rgba(${rand() > 0.5 ? "60,55,45" : "200,195,180"},${0.08 + rand() * 0.12})`;
-        ctx.beginPath();
-        ctx.arc(c + Math.cos(a) * r, c + Math.sin(a) * r, 3 + rand() * 9, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  }
-  // Musgo en las juntas, más hacia el borde.
-  for (let i = 0; i < 500; i++) {
-    const a = rand() * Math.PI * 2;
-    const r = 120 + rand() * 136;
-    ctx.fillStyle = `rgba(${70 + rand() * 30},${100 + rand() * 30},${40},${0.25 + rand() * 0.3})`;
-    ctx.beginPath();
-    ctx.arc(c + Math.cos(a) * r, c + Math.sin(a) * r, 1 + rand() * 3, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  for (let i = 0; i < 5000; i++) {
-    ctx.fillStyle = `rgba(${rand() > 0.5 ? "255,255,240" : "20,15,10"},${rand() * 0.08})`;
-    ctx.fillRect(rand() * size, rand() * size, 1, 1);
-  }
-  return toTexture(canvas, { repeat: false });
 }

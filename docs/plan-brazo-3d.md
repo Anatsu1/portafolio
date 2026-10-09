@@ -96,6 +96,27 @@ Hecho:
 8. Los modelos `.glb` no llevan hash en el nombre: si se regeneran, renombrar o
    limpiar caché (nginx los cachea 30 días).
 
+## Etapa 2 (idea del dueño, 2026-10-09) — cajas de tecnología
+
+El buscador por tecnología NO debe saltar directo al portafolio. Hoy, como paso
+intermedio: buscar una tecnología hace que el brazo traiga la caja PROYECTOS y
+su panel muestra solo los proyectos que la usan (sin tocar la página).
+
+La idea final: al pasar por PROYECTOS el brazo **gira hacia la línea de
+ensamblaje del fondo, agarra de ahí la caja de una tecnología** (React,
+TypeScript, Python, Node.js, Docker, PostgreSQL, Java/Spring, Tailwind…; o por
+familia: frontend/backend) **y al abrirla se muestran todos los proyectos que
+la usan**, para denotar la experiencia en cada tecnología principal.
+Preguntas de diseño abiertas:
+- Alcance: el brazo llega a ~2,78 de radio y la línea está a z ≈ −4…−6. Hace
+  falta una estación de recogida (alimentador corto) al alcance, detrás.
+- Cajas de tecnología: chapa con el logo de marca (`data/brandIcons.ts`) o el
+  nombre; ¿en la cinta (cajas distintas, no instanciadas) o en un estante?
+- Cómo se elige: desde el buscador, chips de familias/tecnologías, o tocando la
+  caja en la línea.
+- Los iconos de sección (`data/cellIcons.ts`) van en el color del tema, sin
+  color propio por sección (pedido del dueño).
+
 ## Decisiones ya tomadas
 
 | Tema | Decisión |

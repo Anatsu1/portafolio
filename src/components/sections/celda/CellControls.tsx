@@ -1,4 +1,6 @@
 import { CELL_BOXES } from "../../../data/cell";
+import type { CellIconId } from "../../../data/cellIcons";
+import CellIcon from "./CellIcon";
 import type { CellMode } from "../../../hooks/useCellController";
 import { ENVIRONMENTS, type EnvId } from "./environments";
 
@@ -11,9 +13,9 @@ type CellControlsProps = {
   onShow: (index: number) => void;
 };
 
-const MODES: { id: CellMode; label: string }[] = [
-  { id: "auto", label: "Automático" },
-  { id: "manual", label: "Manual" },
+const MODES: { id: CellMode; label: string; hint: string }[] = [
+  { id: "auto", label: "Automático", hint: "El brazo recorre las cajas solo, una tras otra" },
+  { id: "manual", label: "Manual", hint: "Elegís vos qué caja trae el brazo" },
 ];
 
 /**
@@ -55,13 +57,15 @@ export default function CellControls({ env, onEnvChange, mode, onModeChange, sho
             key={m.id}
             type="button"
             aria-pressed={mode === m.id}
+            title={m.hint}
             onClick={() => onModeChange(m.id)}
-            className={`rounded-md px-3 py-1.5 font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${
               mode === m.id
                 ? "bg-brand-primary text-on-brand"
                 : "text-muted hover:text-heading"
             }`}
           >
+            <CellIcon id={m.id as CellIconId} size={14} />
             {m.label}
           </button>
         ))}
@@ -75,12 +79,13 @@ export default function CellControls({ env, onEnvChange, mode, onModeChange, sho
             type="button"
             onClick={() => onShow(i)}
             aria-pressed={showing === i}
-            className={`rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${
               showing === i
                 ? "border-brand-primary bg-brand-primary/15 text-brand-primary"
                 : "border-border/10 bg-surface/50 text-body hover:border-brand-primary/50 hover:text-brand-primary"
             }`}
           >
+            <CellIcon id={box.id as CellIconId} size={14} />
             {box.label}
           </button>
         ))}

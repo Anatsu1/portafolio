@@ -7,7 +7,6 @@ type UsePageLoaderExitArgs = {
   visible: boolean;
   rootRef: RefObject<HTMLDivElement>;
   gearsRef: RefObject<HTMLDivElement>;
-  lockRef: RefObject<HTMLDivElement>;
   leftDoorRef: RefObject<HTMLDivElement>;
   rightDoorRef: RefObject<HTMLDivElement>;
 };
@@ -15,9 +14,8 @@ type UsePageLoaderExitArgs = {
 /**
  * Animación de salida del `PageLoader`: cuando `visible` pasa a `false`, en
  * vez de un fade simple, simula una puerta pesada (vault/refugio) que se
- * destraba y se abre en dos hojas. Los engranajes se apagan, el cerrojo
- * central pulsa como si se destrabara, y recién ahí las hojas se separan
- * hacia los costados.
+ * destraba y se abre en dos hojas. Los engranajes se apagan y recién ahí
+ * las hojas se separan hacia los costados.
  *
  * `prefers-reduced-motion`: salta directo al estado final (oculto), sin
  * animación — a diferencia del fade CSS anterior, esto es un tween de GSAP
@@ -28,7 +26,6 @@ export function usePageLoaderExit({
   visible,
   rootRef,
   gearsRef,
-  lockRef,
   leftDoorRef,
   rightDoorRef,
 }: UsePageLoaderExitArgs) {
@@ -50,7 +47,6 @@ export function usePageLoaderExit({
         onComplete: () => gsap.set(rootRef.current, { autoAlpha: 0 }),
       })
       .to(gearsRef.current, { opacity: 0, scale: 0.85, duration: 0.3 })
-      .to(lockRef.current, { scale: 1.35, opacity: 0, duration: 0.25 }, "<")
       .to(leftDoorRef.current, { xPercent: -100, duration: 0.9 }, "+=0.1")
       .to(rightDoorRef.current, { xPercent: 100, duration: 0.9 }, "<");
   }, [visible]);

@@ -2,24 +2,24 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import * as THREE from "three";
-import CellPad from "./CellPad";
+import AssemblyFloor from "./AssemblyFloor";
+import AssemblyPad from "./AssemblyPad";
+import AssemblyPalletizer, { FORK_DOOR, FORK_TUNNEL_Z } from "./AssemblyPalletizer";
+import AssemblyWorkers from "./AssemblyWorkers";
+import { newStationState, stationAt } from "./assemblyPallet";
 import AssemblyConveyor from "./AssemblyConveyor";
 import AssemblyStations, { StackLight } from "./AssemblyStations";
 import StaticInstances, { type Xform } from "./StaticInstances";
 import { useKit } from "./assemblyKit";
 import {
   IN_X,
-  LINE_BOX_HALF_H,
   OUT_X,
   PATH_LEN,
   TUNNEL_Z,
   WALL_Z,
-  pointAt,
   stationView,
-  type PathPoint,
 } from "./assemblyPath";
 import {
-  floorTextures,
   glowTexture,
   hazardTexture,
   shaftTexture,
@@ -36,7 +36,7 @@ import {
  * con dos bocas de carga blindadas (estética "vault"), y una cinta en U detrás
  * del brazo por la que salen, viajan y vuelven a entrar las mismas cajas de
  * carga que levanta el brazo. En el tramo frontal pasan por un escáner, un
- * brazo inspector y una selladora (ver AssemblyStations).
+ * paletizador que desvía algunas cajas (AssemblyPalletizer) y una selladora (AssemblyStations).
  *
  * Encuadre: la cámara mira hacia abajo, así que de la pared del fondo solo se
  * ve hasta ~2,8 de altura; todo lo interesante vive por debajo de eso. El
@@ -82,6 +82,14 @@ function BackWall({ theme }: { theme: Theme }) {
       hole.closePath();
       shape.holes.push(hole);
     }
+    // Puerta C, la de los autoelevadores (más alta).
+    const fd = new THREE.Path();
+    fd.moveTo(FORK_DOOR.x - FORK_DOOR.w / 2, 0);
+    fd.lineTo(FORK_DOOR.x - FORK_DOOR.w / 2, FORK_DOOR.h);
+    fd.lineTo(FORK_DOOR.x + FORK_DOOR.w / 2, FORK_DOOR.h);
+    fd.lineTo(FORK_DOOR.x + FORK_DOOR.w / 2, 0);
+    fd.closePath();
+    shape.holes.push(fd);
     return new THREE.ShapeGeometry(shape);
   }, []);
   return (
@@ -192,7 +200,8 @@ function LoadingBay({ x, theme, glow, title, sub, sAtDoor }: { x: number; theme:
 function Columns() {
   const haz = useMemo(() => hazardTexture(2, 2), []);
   const hazMat = useMemo(() => new THREE.MeshStandardMaterial({ map: haz, metalness: 0.4, roughness: 0.55 }), [haz]);
-  const xs = [-11.5, -8.3, -2.6, 2.6, 8.3, 11.5];
+  // La de +2,6 se corrió a 3,3 para dejar lugar a la puerta C.
+  const xs = [-11.5, -8.3, -2.6, 3.3, 8.3, 11.5];
   const z = WALL_Z + 0.3;
   const beams = useMemo<Xform[]>(
     () =>
@@ -241,41 +250,70 @@ function Pipes() {
   );
 }
 
-/** Franjas pintadas en el piso que acompañan la U (pasillo peatonal). */
-function FloorLines({ rim, theme }: { rim: string; theme: Theme }) {
-  const make = (offset: number, width: number) => {
-    const pts: number[] = [];
-    const idx: number[] = [];
-    const p: PathPoint = { x: 0, z: 0, yaw: 0 };
-    const from = DOOR_S + 0.9;
-    const to = PATH_LEN - DOOR_S - 0.9;
-    const n = Math.ceil((to - from) / 0.15);
-    for (let i = 0; i <= n; i++) {
-      pointAt(from + ((to - from) * i) / n, p);
-      const nx = Math.sin(p.yaw);
-      const nz = Math.cos(p.yaw);
-      for (const e of [-width / 2, width / 2]) pts.push(p.x + nx * (offset + e), 0, p.z + nz * (offset + e));
-      if (i < n) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
+/**
+ * Puerta C: por acá entra y sale el autoelevador del paletizador. Túnel
+ * oscuro, marco blindado con franjas, persiana que sube cuando el autoelevador
+ * está por salir (assemblyPallet: `door`) y semáforo de paso.
+ */
+function ForkDoor({ theme }: { theme: Theme }) {
+  const { x, w, h } = FORK_DOOR;
+  const hazV = useMemo(() => hazardTexture(1, 6), []);
+  const hazH = useMemo(() => hazardTexture(7, 1), []);
+  const shutter = useMemo(() => {
+    const t = shutterTexture(theme);
+    t.repeat.set(1, 2);
+    return t;
+  }, [theme]);
+  const sign = useMemo(() => signTexture("PALLETS", "PUERTA C · AUTOELEVADORES"), []);
+  const curtain = useRef<THREE.Mesh>(null);
+  const light = useRef(0);
+  const st = useMemo(newStationState, []);
+  const depth = WALL_Z - FORK_TUNNEL_Z;
+  useFrame((state) => {
+    stationAt(state.clock.elapsedTime, st);
+    const open = st.fork.door;
+    // La persiana se enrolla hacia arriba: queda la parte que todavía cubre el hueco.
+    const cover = Math.max(0.02, 1 - open);
+    if (curtain.current) {
+      curtain.current.scale.y = cover;
+      curtain.current.position.y = h - (h * cover) / 2;
     }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
-    g.setIndex(idx);
-    g.computeVertexNormals();
-    return g;
-  };
-  const lines = useMemo(() => [make(1.45, 0.09), make(-1.45, 0.09)], []); // eslint-disable-line react-hooks/exhaustive-deps
-  const led = useMemo(() => make(1.25, 0.025), []); // eslint-disable-line react-hooks/exhaustive-deps
+    light.current = open > 0.05 ? (open < 0.99 ? 1 : 2) : 0;
+  });
   return (
-    <group position={[0, 0.004, 0]}>
-      {lines.map((g, i) => (
-        <mesh key={i} geometry={g}>
-          <meshStandardMaterial color="#d9a400" metalness={0.1} roughness={0.75} side={THREE.DoubleSide} polygonOffset polygonOffsetFactor={-1} />
+    <group>
+      <mesh position={[x, h / 2, WALL_Z - depth / 2]}>
+        <boxGeometry args={[w, h, depth]} />
+        <meshStandardMaterial color="#0b0d0e" metalness={0.4} roughness={0.8} side={THREE.BackSide} />
+      </mesh>
+      <mesh position={[x, h / 2, WALL_Z - depth + 0.02]}>
+        <planeGeometry args={[w, h]} />
+        <meshBasicMaterial color={theme === "dark" ? "#3a2a12" : "#6b5a3c"} toneMapped={false} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[x + side * (w / 2 + FRAME_T / 2), (h + FRAME_T) / 2, WALL_Z + 0.16]}>
+          <boxGeometry args={[FRAME_T, h + FRAME_T, 0.36]} />
+          <meshStandardMaterial map={hazV} metalness={0.4} roughness={0.55} />
         </mesh>
       ))}
-      {/* tira de luz del color de marca, del lado del brazo */}
-      <mesh geometry={led} position={[0, 0.002, 0]}>
-        <meshBasicMaterial color={rim} toneMapped={false} transparent opacity={theme === "dark" ? 0.9 : 0.7} side={THREE.DoubleSide} />
+      <mesh position={[x, h + FRAME_T / 2, WALL_Z + 0.16]}>
+        <boxGeometry args={[w, FRAME_T, 0.36]} />
+        <meshStandardMaterial map={hazH} metalness={0.4} roughness={0.55} />
       </mesh>
+      {/* caja del rollo de la persiana */}
+      <mesh position={[x, h - 0.12, WALL_Z - 0.14]}>
+        <boxGeometry args={[w, 0.24, 0.24]} />
+        <meshStandardMaterial color="#202426" metalness={0.75} roughness={0.45} />
+      </mesh>
+      <mesh ref={curtain} position={[x, h / 2, WALL_Z - 0.05]}>
+        <planeGeometry args={[w, h]} />
+        <meshStandardMaterial map={shutter} metalness={0.7} roughness={0.5} />
+      </mesh>
+      <mesh position={[x - w / 2 - FRAME_T - 0.78, 1.75, WALL_Z + 0.02]}>
+        <planeGeometry args={[1.25, 0.39]} />
+        <meshStandardMaterial map={sign} metalness={0.3} roughness={0.6} emissive="#ffffff" emissiveMap={sign} emissiveIntensity={0.25} />
+      </mesh>
+      <StackLight position={[x + w / 2 + FRAME_T + 0.14, 1.0, WALL_Z + 0.12]} stateRef={light} />
     </group>
   );
 }
@@ -309,36 +347,16 @@ function LightPools({ theme }: { theme: Theme }) {
   );
 }
 
-/** Pallets con cajas de carga esperando, junto a las bocas. */
-function usePallets() {
-  return useMemo(() => {
-    const y0 = 0.14 + LINE_BOX_HALF_H;
-    const s = 0.235;
-    const stack = (x: number, z: number, ry: number): Xform[] => [
-      { p: [x - 0.27, y0, z], r: [0, ry, 0], s },
-      { p: [x + 0.27, y0, z + 0.04], r: [0, ry + 0.08, 0], s },
-      { p: [x - 0.02, y0 + LINE_BOX_HALF_H * 2 + 0.01, z + 0.02], r: [0, ry - 0.12, 0], s },
-    ];
-    return { boxes: [...stack(-8.0, -8.3, 0.1), ...stack(7.9, -8.2, -0.15)], pallets: [[-8.0, -8.3], [7.9, -8.2]] as [number, number][] };
-  }, []);
-}
-
 export default function AssemblyLine({ theme, rim }: { theme: Theme; rim: string }) {
   const pal = PALETTE[theme];
   const dark = theme === "dark";
-  const floor = useMemo(() => floorTextures(theme), [theme]);
-  const pallets = usePallets();
 
   return (
     <>
       <color attach="background" args={[pal.bg]} />
       <fog attach="fog" args={[pal.bg, pal.fogNear, pal.fogFar]} />
 
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.01, 0]}>
-        <planeGeometry args={[70, 70]} />
-        <meshStandardMaterial map={floor.map} roughnessMap={floor.roughnessMap} metalness={dark ? 0.12 : 0.05} roughness={1} envMapIntensity={dark ? 0.35 : 0.5} />
-      </mesh>
-      <FloorLines rim={rim} theme={theme} />
+      <AssemblyFloor theme={theme} rim={rim} />
       <LightPools theme={theme} />
 
       <BackWall theme={theme} />
@@ -347,17 +365,13 @@ export default function AssemblyLine({ theme, rim }: { theme: Theme; rim: string
       <LoadingBay x={IN_X} theme={theme} glow={pal.tunnelIn} title="ENTRADA" sub="LINEA 01 · BOCA A" sAtDoor={DOOR_S} />
       <LoadingBay x={OUT_X} theme={theme} glow={rim} title="DESPACHO" sub="LINEA 01 · BOCA B" sAtDoor={PATH_LEN - DOOR_S} />
 
-      {pallets.pallets.map(([x, z]) => (
-        <mesh key={x} position={[x, 0.07, z]}>
-          <boxGeometry args={[1.15, 0.14, 0.9]} />
-          <meshStandardMaterial color={dark ? "#3a2f24" : "#6b5843"} roughness={0.85} />
-        </mesh>
-      ))}
-
-      <AssemblyConveyor pallets={pallets.boxes} />
+      <AssemblyConveyor />
       <AssemblyStations rim={rim} />
+      <AssemblyPalletizer rim={rim} />
+      <ForkDoor theme={theme} />
+      <AssemblyWorkers theme={theme} />
 
-      <CellPad color={pal.pad} ring={rim} />
+      <AssemblyPad theme={theme} rim={rim} />
 
       {/* Luces reales: pocas (cada una cuesta en todos los materiales) */}
       <hemisphereLight args={dark ? ["#3a4348", "#0a0b0c", 0.55] : ["#f4f7f9", "#7d8285", 1.0]} />

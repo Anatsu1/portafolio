@@ -22,7 +22,7 @@ type HeroProps = {
   /** Visto bueno para arrancar: cuando se abren las puertas del vault empiezan el
    *  video del brazo y el reveal del texto. Antes queda todo quieto bajo el loader. */
   go?: boolean;
-  /** ¿Está disponible el laboratorio 3D (escritorio)? Muestra el aviso que lleva a él. */
+  /** ¿Hay laboratorio (3D en escritorio o 2D en teléfono)? Muestra el aviso que lleva a él. */
   labAvailable?: boolean;
 };
 
@@ -37,7 +37,6 @@ export default function Hero({ onReady, go = true, labAvailable = false }: HeroP
   const socialsRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const readyFiredRef = useRef(false);
-
   const nameParts = OWNER.name.split(" ");
   const firstName = nameParts[0];
   const middleName = nameParts[1];
@@ -245,7 +244,9 @@ export default function Hero({ onReady, go = true, labAvailable = false }: HeroP
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-primary/60" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-primary" />
                 </span>
-                Probá el laboratorio: tomá el control del brazo
+                {/* En un teléfono el texto largo partía en dos renglones y tapaba al brazo. */}
+                <span className="sm:hidden">Probá el laboratorio del brazo</span>
+                <span className="hidden sm:inline">Probá el laboratorio: tomá el control del brazo</span>
                 <ArrowDown size={14} className="transition group-hover:translate-y-0.5" />
               </a>
             )}

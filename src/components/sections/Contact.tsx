@@ -4,6 +4,8 @@ import { OWNER } from "../../data";
 import { useContactForm } from "../../hooks/useContactForm";
 import { Reveal } from "../Reveal";
 import SectionHeading from "../SectionHeading";
+import Rivets from "../industrial/Rivets";
+import MarqueeStrip from "../industrial/MarqueeStrip";
 
 type Audience = "freelance" | "empresa";
 
@@ -11,15 +13,17 @@ type Audience = "freelance" | "empresa";
 // el objetivo principal es conseguir trabajo en relación de dependencia.
 const AUDIENCE_COPY: Record<
   Audience,
-  { label: string; heading: string; description: string }
+  { banner: string; label: string; heading: string; description: string }
 > = {
   empresa: {
+    banner: "Sumá talento a tu equipo",
     label: "Empresas",
     heading: "¿Buscás sumar talento a tu equipo?",
     description:
       "Estoy abierto a posiciones de tiempo completo en desarrollo web. Contame sobre la vacante y coordinamos una charla.",
   },
   freelance: {
+    banner: "Hablemos de tu proyecto",
     label: "Clientes / Freelance",
     heading: "Hablemos de tu proyecto",
     description:
@@ -73,7 +77,18 @@ export default function Contact() {
         </div>
       </Reveal>
 
-      <Reveal delay={0.1} className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.2fr]">
+      {/* Placa de cierre: franja de seguridad, texto en bucle y remaches (el
+          mismo vocabulario del laboratorio), con el cartel según la audiencia. */}
+      <Reveal
+        delay={0.1}
+        className="relative mt-10 overflow-hidden rounded-3xl border border-brand-primary/30 bg-gradient-to-br from-brand-primary/10 via-surface/60 to-surface/30"
+      >
+        <Rivets />
+        <div aria-hidden className="hazard-stripe h-1.5" />
+        <div className="border-b border-border/10">
+          <MarqueeStrip key={audience} phrase={copy.banner} className="text-brand-primary/80" />
+        </div>
+        <div className="grid gap-10 p-7 md:p-10 lg:grid-cols-[1fr_1.2fr]">
         <div className="space-y-6">
           <p className="text-muted">{copy.description}</p>
           <div className="space-y-4 text-sm">
@@ -97,7 +112,7 @@ export default function Contact() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-4 p-8">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-border/15 bg-background/50 p-6 md:p-8">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1.5 block text-sm text-muted">Nombre</span>
@@ -139,6 +154,7 @@ export default function Contact() {
             <Send size={17} /> Enviar mensaje
           </button>
         </form>
+        </div>
       </Reveal>
     </section>
   );

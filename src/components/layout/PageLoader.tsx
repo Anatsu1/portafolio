@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Cog, Lock } from "lucide-react";
+import { Cog } from "lucide-react";
 import { usePageLoaderExit } from "../../hooks/usePageLoaderExit";
 
 type PageLoaderProps = {
@@ -21,8 +21,9 @@ const RIVETS = Array.from({ length: 8 });
  * con todo cacheado dura un instante, en la primera carga sin caché lo que
  * tarde el video en bufferear.
  *
- * Dos hojas pesadas con remaches, un cerrojo central y engranajes girando
- * mientras carga; al terminar, las hojas se destraban y se abren hacia los
+ * Dos hojas pesadas con remaches y engranajes girando mientras carga (con la
+ * barra de avance: sin candado, el movimiento ya dice que está cargando); al
+ * terminar, las hojas se abren hacia los
  * costados en vez de un fade simple (ver `usePageLoaderExit`).
  *
  * Tonos neutros (`heading`/`muted`/`border`), no colores de marca: mismo
@@ -31,7 +32,6 @@ const RIVETS = Array.from({ length: 8 });
 export default function PageLoader({ visible, progress }: PageLoaderProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const gearsRef = useRef<HTMLDivElement>(null);
-  const lockRef = useRef<HTMLDivElement>(null);
   const leftDoorRef = useRef<HTMLDivElement>(null);
   const rightDoorRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +44,7 @@ export default function PageLoader({ visible, progress }: PageLoaderProps) {
     };
   }, [visible]);
 
-  usePageLoaderExit({ visible, rootRef, gearsRef, lockRef, leftDoorRef, rightDoorRef });
+  usePageLoaderExit({ visible, rootRef, gearsRef, leftDoorRef, rightDoorRef });
 
   return (
     <div ref={rootRef} aria-hidden className="fixed inset-0 z-[100] overflow-hidden">
@@ -72,15 +72,6 @@ export default function PageLoader({ visible, progress }: PageLoaderProps) {
             <span key={i} className="h-2 w-2 rounded-full bg-muted/50" />
           ))}
         </div>
-      </div>
-
-      {/* Cerrojo central: pulsa y desaparece justo antes de que las hojas
-          se separen, como si se destrabara. */}
-      <div
-        ref={lockRef}
-        className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-muted"
-      >
-        <Lock size={18} strokeWidth={1.5} />
       </div>
 
       <div

@@ -787,6 +787,46 @@ Para regenerar los videos: prompts de Flow/Veo y receta de encode (denoise
 debe venir **sin texto**, con el brazo a la derecha y la celda que brilla a la
 izquierda (~x20%/y32%), misma animación en ambas paletas.
 
+## Laboratorio (celda 3D del brazo) e identidad industrial
+
+El portafolio tiene, debajo del Hero, un **Laboratorio** (`#celda`): un brazo
+robótico industrial en 3D que levanta cajas = secciones del portafolio. La
+fuente de verdad (decisiones, fases, pendientes, bitácora) es
+**`docs/plan-brazo-3d.md`**; acá solo lo que hay que saber para no romperlo.
+
+- **Opcional y liviano**: `Celda.tsx` carga el chunk de la escena (three +
+  react-three-fiber + drei) con `lazy()`. NADA del paquete principal puede
+  importar `three`/`drei`/`@react-three/*` (rompió el chunk una vez por
+  `useProgress`). En teléfonos, sin WebGL o con `prefers-reduced-motion` se
+  muestra el **laboratorio 2D** (`sections/mobile/MobileLab.tsx`, SVG).
+- **Hero**: sigue siendo el video del brazo. Arranca recién cuando se abren las
+  puertas del vault; el `PageLoader` espera los modelos 3D con avance real
+  (`useCellPreload`, lista en `src/data/cellModels.ts`: actualizarla si cambia
+  la escena inicial).
+- **Piezas**: `sections/celda/` (escena, brazo con IK `kinematics.ts`,
+  controlador `hooks/useCellController.ts` como máquina de estados
+  ir→espera→volver, entornos `AssemblyLine*` (línea de montaje, por defecto) y
+  `Forest*` (bosque), paneles `SidePanel.tsx`, buscador `LabSearch.tsx`).
+  Modelos en `public/models/` (créditos CC0 en `docs/creditos-3d.md`).
+- **Medidas calibradas** en `RobotArm.tsx` (escalas, `TOOL_DROP`): no tocar sin
+  remedir. El suelo es y = 0 y la plataforma ocupa radio 3,4.
+- **Contenido** de paneles en `src/data/cell.ts` (sale del CV/marca personal);
+  iconos de sección en `src/data/cellIcons.ts`, siempre en el color del tema.
+- **Probar**: no hay suite; se prueba con Playwright headless (render por
+  software, ~1 fps). `?nolag` en dev da reloj real a GSAP; `window.__cellDebug()`
+  (solo dev) muestra el estado del controlador.
+
+### Identidad industrial (vocabulario compartido)
+El sitio mezcla lo tecnológico/abstracto (programación) con la robótica
+pesada. Piezas reutilizables en `src/components/industrial/`:
+- `WeldLine`: cordón de soldadura que se enfría (la FIRMA: línea de cada
+  título, vía `SectionHeading`).
+- `Rivets`: remaches en las esquinas de una placa (padre `relative`).
+- `HazardTape` / `MarqueeStrip` / `MarqueeBand`: cinta de advertencia y
+  bandas de texto en bucle entre secciones.
+- Clase `.hazard-stripe` (franja amarillo/negro #d9a400) en `index.css`.
+Usarlos con mesura (una firma, el resto discreto) y mantener `hola.mundo`.
+
 ## Build y despliegue (CI/CD)
 
 Este servicio **no se construye en el servidor**. Flujo completo:
@@ -826,6 +866,8 @@ docker compose pull && docker compose up -d
 | Agregar una herramienta informativa (editor, SO)  | `src/data/skillTree.ts` (TOOLBOX) + su marca en `src/data/brandIcons.ts` — no es filtro ni puede ir en un `stack` |
 | Tocar la ficha de proyecto, el carrusel o el árbol | `src/components/sections/projects/`             |
 | Tocar el video del brazo del Hero                | `src/components/sections/hero/HeroArmVideo.tsx`, assets en `src/assets/arm-*` |
+| Tocar el laboratorio 3D / 2D, sus modelos o entornos | `src/components/sections/celda/`, `sections/mobile/`, `docs/plan-brazo-3d.md` |
+| Usar cinta de advertencia, remaches o soldadura   | `src/components/industrial/` |
 | Tocar el reveal del texto del Hero o el aura      | `src/hooks/useHeroReveal.ts` |
 | Tocar la tira de métricas del Hero                | `src/components/sections/hero/HeroStats.tsx` (los números se derivan; el año de inicio está en `src/data.ts`) |
 | Tocar el splash de entrada (puertas de vault)     | `src/components/layout/PageLoader.tsx`, `src/hooks/usePageLoaderExit.ts` |

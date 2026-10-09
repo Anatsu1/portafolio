@@ -5,6 +5,9 @@ import { CELL_BOXES, type PanelBlock } from "../../../data/cell";
 import { PROJECTS } from "../../../data/projects";
 import { OWNER } from "../../../data";
 import { HOLD_AUTO_S } from "./cellLayout";
+import { describeSkill } from "../../../data/skillSearch";
+import type { CellIconId } from "../../../data/cellIcons";
+import CellIcon from "./CellIcon";
 
 // El ancho debe coincidir con PANEL_MAX_PX / PANEL_MAX_FRAC de ViewShift.
 const PANEL_WIDTH = "min(420px, 42%)";
@@ -18,6 +21,9 @@ type SidePanelProps = {
   onClose: () => void;
   /** El visitante está leyendo: frena la cuenta regresiva. */
   onReading: (reading: boolean) => void;
+  /** Tecnología buscada (id de nodo del árbol de skills): limita la lista de proyectos. */
+  tech?: string | null;
+  onClearTech?: () => void;
 };
 
 function Block({ block }: { block: PanelBlock }) {
@@ -46,21 +52,42 @@ function Block({ block }: { block: PanelBlock }) {
   );
 }
 
-function ProjectsBlock() {
+function ProjectsBlock({ tech, onClearTech }: { tech?: string | null; onClearTech?: () => void }) {
+  const summary = tech ? describeSkill(tech) : null;
+  const list = summary ? PROJECTS.filter((p) => summary.projects.some((x) => x.id === p.id)) : PROJECTS.slice(0, 6);
   return (
-    <ul className="mt-5 space-y-3">
-      {PROJECTS.slice(0, 6).map((p) => (
-        <li key={p.id} className="border-l-2 border-brand-projects/50 pl-3">
-          <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-heading">
-            {p.title}
-            <span className="rounded bg-brand-projects/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-projects">
-              {ROLE_LABEL[p.role]}
-            </span>
-          </p>
-          <p className="text-xs text-muted">{p.stack.slice(0, 5).join(" · ")}</p>
-        </li>
-      ))}
-    </ul>
+    <div className="mt-5">
+      {summary && (
+        <div className="mb-4 rounded-lg border border-brand-primary/30 bg-brand-primary/5 p-3">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm leading-relaxed text-body" aria-live="polite">
+              {summary.text}
+            </p>
+            <button
+              type="button"
+              onClick={onClearTech}
+              aria-label="Quitar el filtro de tecnología"
+              className="shrink-0 rounded p-1 text-muted hover:bg-heading/10 hover:text-heading"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+      <ul className="space-y-3">
+        {list.map((p) => (
+          <li key={p.id} className="border-l-2 border-brand-projects/50 pl-3">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-heading">
+              {p.title}
+              <span className="rounded bg-brand-projects/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-projects">
+                {ROLE_LABEL[p.role]}
+              </span>
+            </p>
+            <p className="text-xs text-muted">{p.stack.slice(0, 5).join(" · ")}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -111,7 +138,7 @@ function ContactBlock() {
  * caja en la plataforma. Su contenido sale de `data/cell.ts`; los proyectos y
  * los enlaces de contacto, de `PROJECTS` y `OWNER`, así no se duplican.
  */
-export default function SidePanel({ index, auto, onClose, onReading }: SidePanelProps) {
+export default function SidePanel({ index, auto, onClose, onReading, tech, onClearTech }: SidePanelProps) {
   const box = CELL_BOXES[index];
   const ref = useRef<HTMLElement>(null);
   const [reading, setReading] = useState(false);
@@ -157,7 +184,12 @@ export default function SidePanel({ index, auto, onClose, onReading }: SidePanel
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-primary">
           {panel.kicker} · {String(index + 1).padStart(2, "0")} / {String(CELL_BOXES.length).padStart(2, "0")}
         </p>
-        <h3 className="mt-1 font-display text-2xl font-bold text-heading">{panel.title}</h3>
+        <h3 className="mt-1 flex items-center gap-2.5 font-display text-2xl font-bold text-heading">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-primary bg-brand-primary/10 text-brand-primary">
+            <CellIcon id={box.id as CellIconId} size={20} />
+          </span>
+          {panel.title}
+        </h3>
         <button
           type="button"
           onClick={onClose}
@@ -182,7 +214,7 @@ export default function SidePanel({ index, auto, onClose, onReading }: SidePanel
 
       <div className="flex-1 overflow-y-auto px-5 py-4">
         {panel.intro && <p className="text-sm leading-relaxed text-body">{panel.intro}</p>}
-        {box.id === "proyectos" && <ProjectsBlock />}
+        {box.id === "proyectos" && <ProjectsBlock tech={tech} onClearTech={onClearTech} />}
         {box.id === "contacto" && <ContactBlock />}
         {panel.blocks.map((b, i) => (
           <Block key={i} block={b} />

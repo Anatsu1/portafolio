@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { ANCESTORS } from "../data/skillTree";
+import { skillFilterStore } from "./skillFilterStore";
 
 /**
  * Selección de nodos del árbol de skills. Distingue DOS conjuntos, y esa
@@ -22,16 +23,9 @@ import { ANCESTORS } from "../data/skillTree";
  * otro elegido — la clausura se recalcula sola, no hay estado que sincronizar.
  */
 export function useSkillTree() {
-  const [picked, setPicked] = useState<Set<string>>(new Set());
-
-  const toggle = useCallback((id: string) => {
-    setPicked((prev) => {
-      const next = new Set(prev);
-      if (prev.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+  // `picked` vive en un almacén compartido (lo usa también el buscador del laboratorio).
+  const picked = useSyncExternalStore(skillFilterStore.subscribe, skillFilterStore.getSnapshot) as Set<string>;
+  const { toggle, clear } = skillFilterStore;
 
   // Clausura de `picked` sobre `requires`: lo que se ve encendido en la red.
   const selected = useMemo(() => {
@@ -41,8 +35,6 @@ export function useSkillTree() {
     }
     return out;
   }, [picked]);
-
-  const clear = useCallback(() => setPicked(new Set()), []);
 
   return { picked, selected, toggle, clear };
 }

@@ -10,9 +10,9 @@ import { rng } from "./forestScatter";
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const UP = V(0, 1, 0);
-type RGB = [number, number, number];
+export type RGB = [number, number, number];
 
-class MeshBuilder {
+export class MeshBuilder {
   private positions: number[] = [];
   private normals: number[] = [];
   private uvs: number[] = [];
@@ -56,7 +56,7 @@ class MeshBuilder {
   }
 }
 
-type TubeOptions = {
+export type TubeOptions = {
   path: (t: number) => THREE.Vector3;
   radius: (t: number) => number;
   radial: number;
@@ -71,7 +71,7 @@ type TubeOptions = {
 };
 
 /** Tubo a lo largo de una curva: troncos, ramas, troncos caídos, palitos. */
-function tube(b: MeshBuilder, o: TubeOptions) {
+export function tube(b: MeshBuilder, o: TubeOptions) {
   const rand = rng(o.seed ?? 1);
   const lumps = Array.from({ length: o.radial }, () => (rand() - 0.5) * 2 * (o.noise ?? 0));
   const uScale = o.uScale ?? 1;
