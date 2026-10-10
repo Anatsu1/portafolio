@@ -133,7 +133,7 @@ export const CELL_BOXES: readonly CellBox[] = [
             },
             {
               title: "Fundador y Coordinador · Club de Robótica",
-              meta: "EEST N.º 3 Nikola Tesla · desde 2022",
+              meta: "EEST N.º 3 Nikola Tesla · desde 2021",
               detail: "Talleres de sistemas embebidos, prototipado con Arduino e impresión 3D.",
               badge: "actual",
             },

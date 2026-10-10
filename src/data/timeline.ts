@@ -27,7 +27,7 @@ function pick(title: string): PanelItem {
 export const TIMELINE: readonly TimelineEntry[] = [
   { when: "2016 – 2022", kind: "educacion", item: pick("Técnico Secundario en Programación") },
   { when: "2019 – hoy", kind: "experiencia", item: pick("Desarrollador Full Stack · Freelance"), featured: true },
-  { when: "2022 – hoy", kind: "experiencia", item: pick("Fundador y Coordinador · Club de Robótica") },
+  { when: "2021 – hoy", kind: "experiencia", item: pick("Fundador y Coordinador · Club de Robótica") },
   { when: "2023 – 2025", kind: "educacion", item: pick("Tecnicatura Universitaria en Programación") },
   { when: "2024 – 2025", kind: "experiencia", item: pick("Ayudante de Cátedra · Programación I") },
   { when: "2025 – hoy", kind: "experiencia", item: pick("Profesor Universitario · UTN"), featured: true },
