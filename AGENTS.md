@@ -100,7 +100,9 @@ src/
   hooks/
     useTheme.tsx             Modo claro/oscuro: contexto (ThemeProvider) + persistencia
     useScrollPosition.ts     Detecta scroll > umbral (usado por Navbar)
-    useContactForm.ts        Estado del form de contacto + submit por mailto
+    useContactForm.ts        Estado del form de contacto + submit por mailto (ancla temporal, NO
+                             window.location.href — en PCs sin cliente de correo la página navegaba
+                             al protocolo y se sentía rota) + aviso `sent` con plan B (copiar correo)
     useCarousel.ts           Estado de carrusel genérico (About + capturas de proyectos)
     useHasHover.ts           ¿El dispositivo tiene mouse? (matchMedia "(hover: hover)")
     useSkillTree.ts          Selección del árbol: `picked` (filtra) vs `selected` (= picked + prerequisitos, sólo visual)

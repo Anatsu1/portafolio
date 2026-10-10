@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, MapPin, Send } from "lucide-react";
+import { Check, Copy, Mail, MailCheck, MapPin, Send } from "lucide-react";
 import { OWNER } from "../../data";
 import { useContactForm } from "../../hooks/useContactForm";
 import { Reveal } from "../Reveal";
@@ -34,7 +34,7 @@ const AUDIENCE_COPY: Record<
 export default function Contact() {
   const [audience, setAudience] = useState<Audience>("empresa");
   const copy = AUDIENCE_COPY[audience];
-  const { form, setForm, handleSubmit } = useContactForm(
+  const { form, setForm, sent, copied, handleSubmit, copyEmail } = useContactForm(
     OWNER.email,
     copy.label
   );
@@ -153,6 +153,32 @@ export default function Contact() {
           >
             <Send size={17} /> Enviar mensaje
           </button>
+
+          {/* Confirmación de que el click hizo algo + plan B cuando el mailto
+              no abre ningún cliente (máquinas sin correo configurado): el
+              mensaje queda en el form y el mail se puede copiar para escribir
+              desde Gmail/Outlook web. */}
+          {sent && (
+            <div
+              role="status"
+              className="flex items-start gap-3 rounded-xl border border-brand-primary/30 bg-brand-primary/10 px-4 py-3 text-sm text-body"
+            >
+              <MailCheck size={18} className="mt-0.5 shrink-0 text-brand-primary" />
+              <p>
+                Se abrió tu cliente de correo con el mensaje listo para enviar. Si no se abrió,
+                escribime directo a{" "}
+                <span className="select-text font-semibold text-brand-primary">{OWNER.email}</span>
+                <button
+                  type="button"
+                  onClick={copyEmail}
+                  className="ml-2 inline-flex items-center gap-1 rounded-md border border-brand-primary/40 px-2 py-0.5 align-middle text-xs font-semibold text-brand-primary transition hover:bg-brand-primary/15"
+                >
+                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                  {copied ? "Copiado" : "Copiar correo"}
+                </button>
+              </p>
+            </div>
+          )}
         </form>
         </div>
       </Reveal>

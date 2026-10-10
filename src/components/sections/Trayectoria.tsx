@@ -11,33 +11,49 @@ const KIND_LABEL = { educacion: "Educación", experiencia: "Experiencia" } as co
 
 const SPARKS = Array.from({ length: 16 }, (_, i) => i);
 
+// El observer lo lleva el CONTENEDOR (16px estables) y las piezas se animan
+// por propagación de variants. NO un whileInView por pieza: con `once: false`
+// el rombo escala a 0 al resetearse y un IntersectionObserver sobre un target
+// de área cero flappea (entra/sale solo) y la soldadura se reinicia en bucle.
+const NODE_VIEWPORT = { once: false, amount: 1, margin: "0px 0px -35% 0px" } as const;
+
 /**
  * Hito soldado a la columna, a martillazo: el rombo cae desde grande, golpea
  * (se aplasta con un destello blanco), rebota y se asienta; salen dos ondas de
  * choque, una lluvia de chispas con estelas que caen por gravedad y una brasa
- * que se enfría hasta quedar como acero. Se dispara una sola vez, cuando el
- * hito pasa por el 65 % de la altura de la pantalla (donde va el cordón).
+ * que se enfría hasta quedar como acero. Se dispara cada vez que el hito entra
+ * en la zona del 65 % de la pantalla (donde va el cordón): `once: false` a
+ * propósito (pedido del usuario) — al subir y bajar de nuevo el hito se
+ * "re-suelda", en vez de quedar congelado como la primera vez.
  * Pequeño pero intenso (pedido del usuario): la coreografía es la misma pero
  * el alcance es contenido — ondas a ~2x el nodo, glow corto, chispas que no
  * se alejan más de ~35px; la fuerza la dan las opacidades altas, no el radio.
  */
 function WeldNode({ featured }: { featured?: boolean }) {
-  const viewport = { once: true, amount: 1, margin: "0px 0px -35% 0px" } as const;
   // Chicos a propósito: se leen como puntos de fijación/remaches a lo largo
   // del cordón, no como hitos que compiten con el texto (pedido del usuario).
   const size = featured ? "h-5 w-5" : "h-4 w-4";
   return (
     <span aria-hidden className="absolute left-3 top-0.5 -translate-x-1/2 md:left-1/2">
-      <span className={`relative block ${size}`}>
+      <motion.span
+        className={`relative block ${size}`}
+        initial="oculto"
+        whileInView="visible"
+        viewport={NODE_VIEWPORT}
+      >
         {/* Ondas de choque del golpe */}
         {[0, 1].map((n) => (
           <motion.span
             key={n}
             className="absolute inset-0 rounded-full border-2 border-[#ffb347]"
-            initial={{ scale: 0.4, opacity: 0 }}
-            whileInView={{ scale: n ? 2.4 : 1.6, opacity: [0, 0.95, 0] }}
-            viewport={viewport}
-            transition={{ duration: n ? 1.1 : 0.75, delay: 0.2 + n * 0.08, ease: "easeOut" }}
+            variants={{
+              oculto: { scale: 0.4, opacity: 0 },
+              visible: {
+                scale: n ? 2.4 : 1.6,
+                opacity: [0, 0.95, 0],
+                transition: { duration: n ? 1.1 : 0.75, delay: 0.2 + n * 0.08, ease: "easeOut" },
+              },
+            }}
           />
         ))}
         {/* El rombo: cae grande, golpea, rebota y queda */}
@@ -48,25 +64,35 @@ function WeldNode({ featured }: { featured?: boolean }) {
           // El giro va en `style` (no en la clase rotate-45): la animación de escala de
           // Motion escribe `transform` entero y pisaría el giro de Tailwind.
           style={{ rotate: 45 }}
-          initial={{ scale: 0, opacity: 0 }}
-          whileInView={{ scale: [2.2, 0.62, 1.18, 0.95, 1], opacity: [0, 1, 1, 1, 1] }}
-          viewport={viewport}
-          transition={{ duration: 0.85, times: [0, 0.26, 0.5, 0.75, 1], ease: "easeOut" }}
+          variants={{
+            oculto: { scale: 0, opacity: 0 },
+            visible: {
+              scale: [2.2, 0.62, 1.18, 0.95, 1],
+              opacity: [0, 1, 1, 1, 1],
+              transition: { duration: 0.85, times: [0, 0.26, 0.5, 0.75, 1], ease: "easeOut" },
+            },
+          }}
         />
         {/* Destello blanco del impacto y brasa que se enfría */}
         <motion.span
           className="absolute -inset-1 rotate-45 rounded-md bg-[#ff7a1a] shadow-[0_0_14px_5px_rgba(255,90,31,0.9)] mix-blend-screen"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: [0, 1, 0.85, 0.5, 0] }}
-          viewport={viewport}
-          transition={{ duration: 3, times: [0, 0.09, 0.3, 0.6, 1], ease: "easeOut" }}
+          variants={{
+            oculto: { opacity: 0 },
+            visible: {
+              opacity: [0, 1, 0.85, 0.5, 0],
+              transition: { duration: 3, times: [0, 0.09, 0.3, 0.6, 1], ease: "easeOut" },
+            },
+          }}
         />
         <motion.span
           className="absolute -inset-1.5 rounded-full bg-white mix-blend-screen"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: [0, 0.95, 0] }}
-          viewport={viewport}
-          transition={{ duration: 0.4, delay: 0.2, times: [0, 0.2, 1], ease: "easeOut" }}
+          variants={{
+            oculto: { opacity: 0 },
+            visible: {
+              opacity: [0, 0.95, 0],
+              transition: { duration: 0.4, delay: 0.2, times: [0, 0.2, 1], ease: "easeOut" },
+            },
+          }}
         />
         {/* Chispas con estela, con gravedad */}
         {SPARKS.map((n) => {
@@ -82,19 +108,20 @@ function WeldNode({ featured }: { featured?: boolean }) {
                 long ? "h-0.5 w-3.5" : "h-1.5 w-1.5"
               }`}
               style={{ rotate: `${(angle * 180) / Math.PI}deg` }}
-              initial={{ x: 0, y: 0, opacity: 0 }}
-              whileInView={{
-                x: [0, dx, dx * 1.25],
-                y: [0, dy, dy + 12 + (n % 3) * 5],
-                opacity: [0, 1, 0],
-                scale: [1, 1, 0.3],
+              variants={{
+                oculto: { x: 0, y: 0, opacity: 0 },
+                visible: {
+                  x: [0, dx, dx * 1.25],
+                  y: [0, dy, dy + 12 + (n % 3) * 5],
+                  opacity: [0, 1, 0],
+                  scale: [1, 1, 0.3],
+                  transition: { duration: 0.9 + (n % 3) * 0.18, delay: 0.2, times: [0, 0.35, 1], ease: "easeOut" },
+                },
               }}
-              viewport={viewport}
-              transition={{ duration: 0.9 + (n % 3) * 0.18, delay: 0.2, times: [0, 0.35, 1], ease: "easeOut" }}
             />
           );
         })}
-      </span>
+      </motion.span>
     </span>
   );
 }
@@ -104,6 +131,9 @@ function WeldNode({ featured }: { featured?: boolean }) {
  * columna se "dibuja" a medida que se hace scroll (el progreso del scroll de
  * la sección mueve el escalado de la línea). Cada hito entra desde su lado.
  * En pantallas angostas la columna va a la izquierda y todo se apila.
+ * Toda la sección se re-anima al volver a entrar en pantalla (once: false,
+ * pedido del usuario): el cordón ya va y vuelve solo con el scroll, y los
+ * hitos y entradas resetean su animación al salir del viewport.
  */
 export default function Trayectoria() {
   const listRef = useRef<HTMLOListElement>(null);
@@ -132,7 +162,9 @@ export default function Trayectoria() {
                 className="relative overflow-hidden rounded-2xl border border-brand-primary/30 bg-surface/60 p-5"
                 initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.4 }}
+                // once: false como el resto de la sección (pedido del usuario):
+                // al volver para atrás todo se resetea y se re-anima al bajar.
+                viewport={{ once: false, amount: 0.4 }}
                 transition={{ duration: 0.6, delay: i * 0.1, ease: EASE }}
               >
                 <span aria-hidden className="absolute inset-x-0 top-0 h-0.5 bg-brand-primary" />
@@ -181,7 +213,7 @@ export default function Trayectoria() {
               className="relative pl-10 md:grid md:grid-cols-2 md:pl-0"
               initial={{ opacity: 0, x: right ? 36 : -36 }}
               whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.35 }}
+              viewport={{ once: false, amount: 0.35 }}
               transition={{ type: "spring", stiffness: 220, damping: 19 }}
             >
               <WeldNode featured={entry.featured} />
