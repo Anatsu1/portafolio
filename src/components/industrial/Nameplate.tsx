@@ -4,8 +4,6 @@ import { OWNER } from "../../data";
 import Rivets from "./Rivets";
 import WeldLine from "./WeldLine";
 
-const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-
 // Datos de la "placa de fabricante": sale de OWNER y de lo que ya muestra el sitio.
 function rows() {
   const years = new Date().getFullYear() - OWNER.codingSince;
@@ -25,6 +23,11 @@ function rows() {
  * aparecer. Es el remate antes de Contacto: un objeto que resume quién es el
  * "equipo" que se va a contratar, en el idioma del resto del sitio. Los datos
  * salen de `OWNER`. El acero no depende del tema: es metal en claro y oscuro.
+ *
+ * Entrada: la placa aparece recién colgada — pivota desde el borde superior
+ * (donde irían los ganchos) y se mece como péndulo (rotateX con resorte de
+ * poco amortiguamiento) hasta quedar plana. El destello la cruza mientras se
+ * mece. Con `prefers-reduced-motion` el resorte no corre: queda el fade.
  */
 export default function Nameplate() {
   const [sheen, setSheen] = useState({ x: 28, y: 18 });
@@ -34,18 +37,19 @@ export default function Nameplate() {
   const engraved = { textShadow: "0 1px 0 rgba(255,255,255,0.55), 0 -1px 0 rgba(0,0,0,0.35)" } as const;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-14 md:px-10">
+    <div className="mx-auto w-full max-w-6xl px-6 py-14 md:px-10 [perspective:1200px]">
       <motion.div
-        className="relative mx-auto max-w-3xl overflow-hidden rounded-xl border border-white/40 p-6 shadow-[0_22px_48px_-22px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.75),inset_0_-3px_6px_rgba(0,0,0,0.4)] md:p-8"
+        className="relative mx-auto max-w-3xl origin-top overflow-hidden rounded-xl border border-white/40 p-6 shadow-[0_22px_48px_-22px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.75),inset_0_-3px_6px_rgba(0,0,0,0.4)] md:p-8"
         style={{ background: steel }}
         onPointerMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           setSheen({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
         }}
-        initial={{ opacity: 0, y: 28, rotate: -0.6 }}
-        whileInView={{ opacity: 1, y: 0, rotate: 0 }}
+        initial={{ opacity: 0, y: -18, rotateX: 22 }}
+        whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
         viewport={{ once: true, amount: 0.4 }}
-        transition={{ duration: 0.7, ease: EASE }}
+        // Péndulo: poco amortiguado para que se meza unas 3-4 veces antes de asentar.
+        transition={{ type: "spring", stiffness: 80, damping: 6.5 }}
       >
         {/* Destello que cruza la placa al aparecer */}
         <motion.span
@@ -54,7 +58,7 @@ export default function Nameplate() {
           initial={{ x: "-120%" }}
           whileInView={{ x: "420%" }}
           viewport={{ once: true, amount: 0.4 }}
-          transition={{ duration: 1.3, delay: 0.5, ease: "easeInOut" }}
+          transition={{ duration: 1.3, delay: 0.7, ease: "easeInOut" }}
         />
         <Rivets />
         <p

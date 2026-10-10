@@ -99,6 +99,14 @@ type Task = {
   releaseAsked?: boolean;
   /** La caja ya está sobre la plataforma (agrandada y con el panel abierto). */
   showcased?: boolean;
+  /**
+   * La garra ya soltó la caja sobre el destino. En el viaje de ida eso pasa
+   * ~0,7s ANTES de `showcased` (el brazo se retira primero): sin esta marca,
+   * un pedido nuevo en esa ventana caía en el `finish()` de "no la tomó" y
+   * la caja quedaba abandonada en la plataforma (bug visto en una grabación:
+   * CONTACTO fuera de su slot, colgada a la derecha del brazo).
+   */
+  released?: boolean;
   /** Tramo de movimiento en curso (fases ir y volver). */
   tl: gsap.core.Timeline | null;
   /** Cuenta regresiva de la espera (solo en automático). */
@@ -176,6 +184,23 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       }
     };
 
+    /**
+     * Suelta la caja que lleva la garra y la deja EXACTAMENTE en `to`, apoyada en
+     * el piso. La caja agarrada solo se actualiza cuando se dibuja un cuadro; si la
+     * garra termina de bajar y suelta entre dos cuadros (render lento) la caja
+     * quedaba con la altura del último cuadro, flotando. Fijar la posición final
+     * acá hace que el resultado no dependa de la tasa de cuadros.
+     */
+    const dropAt = (to: Polar) => {
+      const box = carried.current;
+      if (box) {
+        const [x, y, z] = cartesian(to, GRASP_Y);
+        box.position.set(x, y, z);
+        box.rotation.y = facingOutward(to.phi);
+      }
+      carried.current = null;
+    };
+
     let marks = 0;
     /**
      * Agarra la caja de `from` y la deja en `to`. Los movimientos se solapan a
@@ -214,7 +239,8 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       tl.to(target, { y: GRASP_Y, duration: 0.85, ease: "power2.inOut" }, place);
       tl.to(grip, { grip: GRIP_OPEN, duration: 0.5, ease: "power2.out" }, "-=0.05");
       tl.call(() => {
-        carried.current = null;
+        dropAt(to);
+        if (task.current) task.current.released = true;
       });
 
       // 6) Se retira hacia arriba mientras la garra termina de abrir.
@@ -275,8 +301,9 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       t.tl?.kill();
       t.tl = null;
       const box = boxRefs.current[t.index];
-      if (t.showcased) {
-        // Ya está sobre la plataforma: es lo mismo que una espera que se corta.
+      if (t.showcased || t.released) {
+        // Ya está sobre la plataforma — aunque todavía no se haya agrandado
+        // (ventana entre soltar y `showcased`): es una espera que se corta.
         t.phase = "espera";
         endHold();
         return;
@@ -289,9 +316,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
         tl.to(target, { phi: slot.phi, r: slot.r, duration: 1.3, ease: "power2.inOut" });
         tl.to(target, { y: GRASP_Y, duration: 0.75, ease: "power2.inOut" });
         tl.to(grip, { grip: GRIP_OPEN, duration: 0.45, ease: "power2.out" }, "-=0.1");
-        tl.call(() => {
-          carried.current = null;
-        });
+        tl.call(() => dropAt(slot));
         tl.to(target, { y: HOVER_Y, duration: 0.6, ease: "power2.inOut" });
         tl.to(grip, { grip: 0.5, duration: 0.5, ease: "sine.inOut" }, "<");
         tl.timeScale(BASE_SPEED);
@@ -381,12 +406,22 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
 
     if (import.meta.env.DEV) {
       (window as unknown as { __cellDebug?: () => unknown }).__cellDebug = () => ({
-        task: task.current && { index: task.current.index, phase: task.current.phase, timer: !!task.current.timer },
+        task: task.current && {
+          index: task.current.index,
+          phase: task.current.phase,
+          timer: !!task.current.timer,
+          showcased: !!task.current.showcased,
+          released: !!task.current.released,
+        },
         queue: [...queue.current],
         reading: reading.current,
         active: live.current.active,
         mode: live.current.mode,
         idle: !!idle.current,
+        carried: boxRefs.current.findIndex((b) => b && b === carried.current),
+        // Posición real de cada caja: la prueba automatizada del aborto las
+        // compara contra `slotOf` para verificar que ninguna queda afuera.
+        boxes: boxRefs.current.map((b) => (b ? b.position.toArray().map((v) => Math.round(v * 1000) / 1000) : null)),
       });
     }
 
