@@ -378,3 +378,7 @@ los navegadores actuales.
 - 2026-10-16: Hero en teléfonos sin brazo: credencial que agrupa todo el
   contenido (`hero/HeroMobile.tsx`, ver `docs/plan-hero-movil.md`). Deja sin
   efecto lo de "el Hero móvil volvió al video" y la vista móvil recortada.
+
+### Ajuste 17-oct (físicas y piloto)
+- Contacto garra–caja por **dedos** (dos segmentos radiales a ±0,17+0,35·grip del eje) en vez de un círculo central: una caja entre los dedos no se toca y se puede agarrar; las cajas del estante ya no quedan incrustadas. `PHYS_MAX_R` 3,3.
+- La caja abierta en la plataforma se toma **cerrando la garra** (Espacio / botón) además de con Esc: cierra el panel y la caja vuelve a su tamaño mientras se lleva.

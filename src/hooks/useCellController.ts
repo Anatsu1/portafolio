@@ -50,14 +50,15 @@ const PILOT_R_MAX = 2.65;
 const PILOT_Y_MAX = 1.9;
 const PILOT_GRAB_DIST = 0.42; // distancia horizontal máxima garra–caja para agarrarla
 const PILOT_GRAB_DY = 0.4;
-const PHYS_REACH = 0.53; // radio de contacto garra–caja (garra abierta + media caja)
-const PHYS_LOW_Y = 0.72; // por encima de esta altura del centro de la garra no toca las cajas del piso
+const PHYS_FINGER_R = 0.34; // distancia de contacto dedo–centro de caja (grosor del dedo + media caja)
+const PHYS_FINGER_HALF = 0.15; // los dedos son largos en sentido radial: segmento de ±este largo
+const PHYS_LOW_Y = 0.8; // por encima de esta altura del centro de la garra las puntas no tocan las cajas del piso
 const PHYS_BOX_DIST = 0.5; // distancia mínima entre centros de dos cajas
 const PHYS_SETTLE_S = 1.4; // quietas y corridas de su lugar: vuelven solas pasado este tiempo
 const PHYS_BASE_R = 1.0;
 // Tope del paso de la física; en desarrollo con `?nolag` (render a ~1 cuadro/s) se deja pasar el tiempo real.
 const PHYS_MAX_DT = import.meta.env.DEV && typeof window !== "undefined" && new URLSearchParams(window.location.search).has("nolag") ? 0.5 : 0.05; // radio de la torreta: las cajas no entran
-const PHYS_MAX_R = 3.1;
+const PHYS_MAX_R = 3.3;
 const PILOT_PAD_DIST = 0.6; // radio de la plataforma de entrega para "dejar la caja"
 
 // Solo en desarrollo: `?nolag` hace que las animaciones sigan el reloj real
@@ -359,7 +360,9 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       let best = -1;
       let bestD = PILOT_GRAB_DIST;
       boxRefs.current.forEach((box, i) => {
-        if (!box || task.current?.index === i) return;
+        // La caja que está en la plataforma (abierta) también se puede tomar cerrando la garra.
+        const onPad = task.current?.index === i && task.current.released && task.current.phase === "espera";
+        if (!box || (task.current?.index === i && !onPad)) return;
         const d = Math.hypot(box.position.x - gx, box.position.z - gz);
         if (d < bestD && Math.abs(box.position.y - gy) < PILOT_GRAB_DY) {
           best = i;
@@ -368,6 +371,16 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       });
       if (best >= 0) {
         const box = boxRefs.current[best]!;
+        if (task.current?.index === best) {
+          // Sale de la plataforma: cierra el panel y la caja vuelve a su tamaño mientras la lleva.
+          task.current.timer?.kill();
+          task.current = null;
+          live.current.onShowing?.(null);
+          live.current.onDelivered?.(null);
+          gsap.killTweensOf([box.scale, openRefs[best]]);
+          gsap.to(openRefs[best], { current: 0, duration: 0.25, ease: "none" });
+          gsap.to(box.scale, { x: BOX_SCALE, y: BOX_SCALE, z: BOX_SCALE, duration: 0.4, ease: "power2.inOut" });
+        }
         gsap.killTweensOf([box.position, box.rotation]);
         carried.current = box;
         carriedFlip.current = yawFlip(best);
@@ -390,6 +403,16 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       phys.gx = gx;
       phys.gz = gz;
       const low = t.y < PHYS_LOW_Y;
+      // Ejes de la garra: radial (hacia afuera) y tangencial (por donde abren los dedos).
+      const rl = Math.hypot(gx, gz) || 1;
+      const rx = gx / rl;
+      const rz = gz / rl;
+      const [ax, , az] = cartesian({ phi: t.phi + 0.01, r: t.r }, 0);
+      const tl_ = Math.hypot(ax - gx, az - gz) || 1;
+      const tx = (ax - gx) / tl_;
+      const tz = (az - gz) / tl_;
+      const gripOpen = poseRef.current.grip;
+      const pad = 0.17 + 0.35 * gripOpen; // distancia de cada almohadilla al eje de la garra
       const boxes = boxRefs.current;
       const free: number[] = [];
       for (let i = 0; i < boxes.length; i++) {
@@ -398,16 +421,23 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
         // Una caja con escala o altura de "mostrada" no es del piso.
         if (box.position.y > GRASP_Y + 0.15) continue;
         free.push(i);
-        if (low) {
-          const dx = box.position.x - gx;
-          const dz = box.position.z - gz;
-          const d = Math.hypot(dx, dz);
-          if (d < PHYS_REACH) {
-            const nx = d > 1e-4 ? dx / d : 1;
-            const nz = d > 1e-4 ? dz / d : 0;
-            const push = PHYS_REACH - d;
-            box.position.x += nx * push;
-            box.position.z += nz * push;
+        if (low && gripOpen > 0.5 && Math.hypot(box.position.x - gx, box.position.z - gz) > PILOT_GRAB_DIST) {
+          // Cada dedo es un segmento radial a un lado de la garra: una caja que
+          // queda entre los dos (a punto de agarrarse) no se toca.
+          for (const side of [-1, 1]) {
+            const cx = gx + tx * side * pad;
+            const cz = gz + tz * side * pad;
+            const along = Math.max(-PHYS_FINGER_HALF, Math.min(PHYS_FINGER_HALF, (box.position.x - cx) * rx + (box.position.z - cz) * rz));
+            const px = cx + rx * along;
+            const pz = cz + rz * along;
+            const dx = box.position.x - px;
+            const dz = box.position.z - pz;
+            const d = Math.hypot(dx, dz);
+            if (d >= PHYS_FINGER_R) continue;
+            const nx = d > 1e-4 ? dx / d : tx * side;
+            const nz = d > 1e-4 ? dz / d : tz * side;
+            box.position.x += nx * (PHYS_FINGER_R - d);
+            box.position.z += nz * (PHYS_FINGER_R - d);
             const kick = Math.min(3, 0.5 + gSpeed * 0.7);
             phys.vx[i] = nx * kick;
             phys.vz[i] = nz * kick;
@@ -474,7 +504,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
         }
         const [sx, , sz] = cartesian(slotFor(i), 0);
         const off = Math.hypot(box.position.x - sx, box.position.z - sz);
-        const near = Math.hypot(box.position.x - gx, box.position.z - gz) < PHYS_REACH + 0.4;
+        const near = Math.hypot(box.position.x - gx, box.position.z - gz) < 0.95;
         if (off > 0.04 && phys.vx[i] === 0 && phys.vz[i] === 0 && !(low && near)) {
           phys.idle[i] += dt;
           if (phys.idle[i] > PHYS_SETTLE_S) {
