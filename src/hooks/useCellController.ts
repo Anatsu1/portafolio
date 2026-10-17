@@ -50,6 +50,14 @@ const PILOT_R_MAX = 2.65;
 const PILOT_Y_MAX = 1.9;
 const PILOT_GRAB_DIST = 0.42; // distancia horizontal máxima garra–caja para agarrarla
 const PILOT_GRAB_DY = 0.4;
+const PHYS_REACH = 0.53; // radio de contacto garra–caja (garra abierta + media caja)
+const PHYS_LOW_Y = 0.72; // por encima de esta altura del centro de la garra no toca las cajas del piso
+const PHYS_BOX_DIST = 0.5; // distancia mínima entre centros de dos cajas
+const PHYS_SETTLE_S = 1.4; // quietas y corridas de su lugar: vuelven solas pasado este tiempo
+const PHYS_BASE_R = 1.0;
+// Tope del paso de la física; en desarrollo con `?nolag` (render a ~1 cuadro/s) se deja pasar el tiempo real.
+const PHYS_MAX_DT = import.meta.env.DEV && typeof window !== "undefined" && new URLSearchParams(window.location.search).has("nolag") ? 0.5 : 0.05; // radio de la torreta: las cajas no entran
+const PHYS_MAX_R = 3.1;
 const PILOT_PAD_DIST = 0.6; // radio de la plataforma de entrega para "dejar la caja"
 
 // Solo en desarrollo: `?nolag` hace que las animaciones sigan el reloj real
@@ -156,6 +164,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
   const pilotKeys = useRef<Record<PilotKey, boolean>>({ left: false, right: false, forward: false, back: false, up: false, down: false });
   const pilotVel = useRef({ yaw: 0, reach: 0, lift: 0 });
   const pilotGrabFn = useRef<(() => void) | null>(null);
+  const physicsStep = useRef<((dt: number) => void) | null>(null);
 
   useFrame((_, rawDt) => {
     const live_ = live.current;
@@ -179,6 +188,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       t.y = Math.min(PILOT_Y_MAX, Math.max(GRASP_Y, t.y + v.lift * dt));
     }
     solveIK(reach.current, poseRef.current);
+    if (live_.active) physicsStep.current?.(Math.min(rawDt, PHYS_MAX_DT));
     const box = carried.current;
     if (box) {
       const [x, y, z] = cartesian(reach.current, reach.current.y);
@@ -249,9 +259,22 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
     };
 
     /** Desliza una caja suelta de vuelta a su lugar, con un pequeño salto. */
+    // Estado de la física de las cajas sueltas (la garra las empuja al pasar baja).
+    const total = boxRefs.current.length || 32;
+    const phys = {
+      vx: new Float32Array(total),
+      vz: new Float32Array(total),
+      spin: new Float32Array(total),
+      idle: new Float32Array(total),
+      gx: NaN,
+      gz: NaN,
+    };
+    const homing = new Set<number>(); // cajas que están volviendo a su lugar: la física las deja en paz
     const slideHome = (index: number) => {
       const box = boxRefs.current[index];
       if (!box) return;
+      homing.add(index);
+      gsap.delayedCall(1.2, () => homing.delete(index));
       const slot = slotFor(index);
       const [x, , z] = cartesian(slot, GRASP_Y);
       gsap.killTweensOf([box.position, box.rotation]);
@@ -262,6 +285,11 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
 
     /** Deja todas las cajas en su lugar, sin animar (cambio de modo). */
     const resetBoxes = () => {
+      homing.clear();
+      phys.vx.fill(0);
+      phys.vz.fill(0);
+      phys.spin.fill(0);
+      phys.idle.fill(0);
       boxRefs.current.forEach((box, i) => {
         if (!box) return;
         gsap.killTweensOf([box.scale, box.position, box.rotation, openRefs[i]]);
@@ -347,6 +375,115 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       }
     };
     pilotGrabFn.current = pilotGrab;
+
+    /**
+     * Física simple de las cajas sueltas: si la garra (o la caja que lleva) pasa
+     * baja, las empuja con un golpe que se amortigua por rozamiento; se chocan
+     * entre sí, no entran en la torreta y, quietas y corridas, vuelven solas a su
+     * lugar. Las cajas en uso (llevada, en la plataforma, en tarea) no se tocan.
+     */
+    physicsStep.current = (dt) => {
+      if (dt <= 0) return;
+      const t = reach.current;
+      const [gx, , gz] = cartesian(t, 0);
+      const gSpeed = Number.isNaN(phys.gx) ? 0 : Math.hypot(gx - phys.gx, gz - phys.gz) / dt;
+      phys.gx = gx;
+      phys.gz = gz;
+      const low = t.y < PHYS_LOW_Y;
+      const boxes = boxRefs.current;
+      const free: number[] = [];
+      for (let i = 0; i < boxes.length; i++) {
+        const box = boxes[i];
+        if (!box || box === carried.current || task.current?.index === i || homing.has(i)) continue;
+        // Una caja con escala o altura de "mostrada" no es del piso.
+        if (box.position.y > GRASP_Y + 0.15) continue;
+        free.push(i);
+        if (low) {
+          const dx = box.position.x - gx;
+          const dz = box.position.z - gz;
+          const d = Math.hypot(dx, dz);
+          if (d < PHYS_REACH) {
+            const nx = d > 1e-4 ? dx / d : 1;
+            const nz = d > 1e-4 ? dz / d : 0;
+            const push = PHYS_REACH - d;
+            box.position.x += nx * push;
+            box.position.z += nz * push;
+            const kick = Math.min(3, 0.5 + gSpeed * 0.7);
+            phys.vx[i] = nx * kick;
+            phys.vz[i] = nz * kick;
+            phys.spin[i] = (Math.random() - 0.5) * kick * 1.6;
+          }
+        }
+      }
+      // Entre cajas.
+      for (let a = 0; a < free.length; a++) {
+        for (let b = a + 1; b < free.length; b++) {
+          const i = free[a];
+          const j = free[b];
+          const A = boxes[i]!;
+          const B = boxes[j]!;
+          const dx = B.position.x - A.position.x;
+          const dz = B.position.z - A.position.z;
+          const d = Math.hypot(dx, dz);
+          if (d >= PHYS_BOX_DIST || d < 1e-4) continue;
+          const nx = dx / d;
+          const nz = dz / d;
+          const half = (PHYS_BOX_DIST - d) / 2;
+          A.position.x -= nx * half;
+          A.position.z -= nz * half;
+          B.position.x += nx * half;
+          B.position.z += nz * half;
+          // Se pasan algo de impulso (la que venía rápida arrastra a la otra).
+          const rel = (phys.vx[i] - phys.vx[j]) * nx + (phys.vz[i] - phys.vz[j]) * nz;
+          if (rel > 0) {
+            phys.vx[j] += nx * rel * 0.7;
+            phys.vz[j] += nz * rel * 0.7;
+            phys.vx[i] -= nx * rel * 0.3;
+            phys.vz[i] -= nz * rel * 0.3;
+          }
+        }
+      }
+      // Integración, límites y vuelta a casa.
+      const damp = Math.exp(-4.5 * dt);
+      for (const i of free) {
+        const box = boxes[i]!;
+        let vx = phys.vx[i];
+        let vz = phys.vz[i];
+        if (vx !== 0 || vz !== 0) {
+          box.position.x += vx * dt;
+          box.position.z += vz * dt;
+          vx *= damp;
+          vz *= damp;
+          if (Math.hypot(vx, vz) < 0.04) vx = vz = 0;
+          phys.vx[i] = vx;
+          phys.vz[i] = vz;
+        }
+        if (phys.spin[i] !== 0) {
+          box.rotation.y += phys.spin[i] * dt;
+          phys.spin[i] *= damp;
+          if (Math.abs(phys.spin[i]) < 0.02) phys.spin[i] = 0;
+        }
+        // La torreta y el borde del piso frenan la caja.
+        const r = Math.hypot(box.position.x, box.position.z);
+        const clampR = Math.min(PHYS_MAX_R, Math.max(PHYS_BASE_R, r));
+        if (r > 1e-4 && clampR !== r) {
+          box.position.x *= clampR / r;
+          box.position.z *= clampR / r;
+          phys.vx[i] = 0;
+          phys.vz[i] = 0;
+        }
+        const [sx, , sz] = cartesian(slotFor(i), 0);
+        const off = Math.hypot(box.position.x - sx, box.position.z - sz);
+        const near = Math.hypot(box.position.x - gx, box.position.z - gz) < PHYS_REACH + 0.4;
+        if (off > 0.04 && phys.vx[i] === 0 && phys.vz[i] === 0 && !(low && near)) {
+          phys.idle[i] += dt;
+          if (phys.idle[i] > PHYS_SETTLE_S) {
+            phys.idle[i] = 0;
+            slideHome(i);
+          }
+        } else phys.idle[i] = 0;
+      }
+    };
 
     let marks = 0;
     /**
@@ -607,6 +744,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       commandsRef.current = null;
       kick.current = null;
       pilotGrabFn.current = null;
+      physicsStep.current = null;
       sync.current = null;
       modeChanged.current = null;
       task.current?.tl?.kill();
