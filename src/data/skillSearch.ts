@@ -1,5 +1,6 @@
 import { PROJECTS } from "./projects";
-import { CELL_BOXES } from "./cell";
+import { LAB_BOXES as CELL_BOXES } from "./cell";
+import { CELL_TECH } from "./cellTech";
 import { FILTER_SCOPE, NODE_BY_ID, PROJECT_IDS_BY_NODE, SKILL_NODES } from "./skillTree";
 
 /** Minúsculas, sin tildes ni símbolos: "Node.js" y "nodejs" se encuentran. */
@@ -37,6 +38,8 @@ export function searchLab(raw: string, limit = 6): SearchHit[] {
   const hits: (SearchHit & { score: number })[] = [];
 
   for (const node of SKILL_NODES) {
+    // Solo las tecnologías con caja en el estante: el brazo tiene que poder traerlas.
+    if (!CELL_TECH.some((t) => t.id === node.id)) continue;
     const best = Math.max(score(q, norm(node.label)), ...(node.aliases ?? []).map((a) => score(q, norm(a)) - 10));
     if (best > 0) hits.push({ kind: "skill", id: node.id, label: node.label, score: best });
   }

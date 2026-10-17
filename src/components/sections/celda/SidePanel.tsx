@@ -63,14 +63,16 @@ function ProjectsBlock({ tech, onClearTech }: { tech?: string | null; onClearTec
             <p className="text-sm leading-relaxed text-body" aria-live="polite">
               {summary.text}
             </p>
-            <button
-              type="button"
-              onClick={onClearTech}
-              aria-label="Quitar el filtro de tecnología"
-              className="shrink-0 rounded p-1 text-muted hover:bg-heading/10 hover:text-heading"
-            >
-              <X size={14} />
-            </button>
+            {onClearTech && (
+              <button
+                type="button"
+                onClick={onClearTech}
+                aria-label="Quitar el filtro de tecnología"
+                className="shrink-0 rounded p-1 text-muted hover:bg-heading/10 hover:text-heading"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
       )}

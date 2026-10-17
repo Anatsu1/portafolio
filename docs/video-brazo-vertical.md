@@ -1,5 +1,9 @@
 # Video del brazo, versión vertical (9:16) para celular
 
+> **En pausa (2026-10-16).** En teléfonos el Hero ya no usa el brazo: es una
+> credencial que agrupa todo el contenido (`hero/HeroMobile.tsx`, ver
+> `docs/plan-hero-movil.md`). Este documento queda por si se vuelve al video.
+
 Documento de trabajo para generar el clip que falta. Todo lo demás del Hero
 ya está preparado para recibirlo.
 

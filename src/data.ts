@@ -7,6 +7,8 @@ export const OWNER = {
   // larga no los leía ninguna de las dos.
   role: "Desarrollador Full Stack + IA",
   tagline: "Soluciones a medida",
+  /** Sello de la credencial del Hero en teléfonos (corto: va en una insignia). */
+  availability: "Disponible",
   /** Año en que empecé a programar: 4.º año de la secundaria técnica (2016-2022),
    *  con C y algoritmos. Coincide con el inicio del freelance en noviembre de 2019,
    *  así que el sitio, el CV y LinkedIn cuentan los mismos años. La tira de métricas

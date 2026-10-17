@@ -40,10 +40,13 @@ export function useMeasuredEdges(containerRef: RefObject<HTMLElement>) {
     const container = containerRef.current;
     if (!container) return;
     const box = container.getBoundingClientRect();
+    // Si el árbol está dentro de un visor con zoom (CSS scale), las medidas salen
+    // escaladas: se normalizan para dibujar el SVG en las coordenadas sin escalar.
+    const k = container.offsetWidth ? box.width / container.offsetWidth : 1;
 
     const center = (el: HTMLElement) => {
       const r = el.getBoundingClientRect();
-      return { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2 };
+      return { x: (r.left - box.left + r.width / 2) / k, y: (r.top - box.top + r.height / 2) / k };
     };
 
     const edges: MeasuredEdge[] = [];
@@ -60,17 +63,17 @@ export function useMeasuredEdges(containerRef: RefObject<HTMLElement>) {
       // Evita re-render si nada se movió (ResizeObserver puede disparar
       // por cambios que no afectan a los nodos).
       const same =
-        prev.width === box.width &&
-        prev.height === box.height &&
+        prev.width === box.width / k &&
+        prev.height === box.height / k &&
         prev.edges.length === edges.length &&
         prev.edges.every(
           (e, i) =>
-            e.x1 === edges[i].x1 &&
-            e.y1 === edges[i].y1 &&
-            e.x2 === edges[i].x2 &&
-            e.y2 === edges[i].y2
+            Math.abs(e.x1 - edges[i].x1) < 0.5 &&
+            Math.abs(e.y1 - edges[i].y1) < 0.5 &&
+            Math.abs(e.x2 - edges[i].x2) < 0.5 &&
+            Math.abs(e.y2 - edges[i].y2) < 0.5
         );
-      return same ? prev : { width: box.width, height: box.height, edges };
+      return same ? prev : { width: box.width / k, height: box.height / k, edges };
     });
   }, [containerRef]);
 

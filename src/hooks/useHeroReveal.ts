@@ -6,12 +6,16 @@ import type { RefObject } from "react";
 // Las cuatro strings tienen la MISMA forma (0 0 Npx rgb(...) / A) a
 // propósito: GSAP interpola string complejas número a número, así que
 // cambiar la estructura rompería la transición.
+// En teléfono el brillo del nombre es bastante más suave (menos radio y menos opacidad).
+const SOFT = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+const glow = (blur: number, alpha: number) =>
+  `0 0 ${SOFT ? Math.round(blur * 0.5) : blur}px rgb(var(--color-brand-primary) / ${SOFT ? +(alpha * 0.4).toFixed(2) : alpha})`;
 /** Chispazo del momento del impacto. */
-const GLOW_FLASH = "0 0 24px rgb(var(--color-brand-primary) / 1)";
+const GLOW_FLASH = glow(24, 1);
 /** Incandescencia sostenida: el nombre queda prendido con esto. */
-const GLOW_ON = "0 0 16px rgb(var(--color-brand-primary) / 0.7)";
+const GLOW_ON = glow(16, 0.7);
 /** Extremo alto del latido del nombre (respira entre GLOW_ON y esto). */
-const GLOW_PULSE = "0 0 22px rgb(var(--color-brand-primary) / 0.9)";
+const GLOW_PULSE = glow(22, 0.9);
 const GLOW_OUT = "0 0 0px rgb(var(--color-brand-primary) / 0)";
 
 /** Clase que enciende los botones sociales (keyframes en index.css). */

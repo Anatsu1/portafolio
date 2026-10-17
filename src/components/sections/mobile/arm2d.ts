@@ -1,5 +1,5 @@
 /**
- * Cinemática 2D del brazo de las vistas móviles (Hero y laboratorio 2D).
+ * Cinemática 2D del brazo del laboratorio 2D (teléfonos, sin WebGL o con movimiento reducido).
  *
  * Es matemática pura, sin three ni React: el laboratorio 3D tiene su propia IK
  * (`celda/kinematics.ts`) pero importarla arrastraría three al paquete móvil.
@@ -86,29 +86,6 @@ export function solveArm(view: View, dims: ArmDims, reach: Reach, out?: ArmPoint
 /** Ajusta `to` por vueltas completas para que el giro desde `from` sea el más corto. */
 export function nearestAngle(from: number, to: number) {
   return to + Math.PI * 2 * Math.round((from - to) / (Math.PI * 2));
-}
-
-// ── Pistas de animación (Hero) ───────────────────────────────────────────────
-
-/** Curva de un tramo: `io` arranca y frena suave; `lin` es velocidad constante (seguir la cinta). */
-export type Ease = "io" | "lin";
-/** Clave de una pista: [segundo, valor, curva del tramo que TERMINA en esta clave]. */
-export type Key = readonly [number, number, Ease?];
-
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-
-/** Valor de una pista en el segundo `t` (antes de la primera clave o después de la última, se queda quieta). */
-export function sample(track: readonly Key[], t: number) {
-  if (t <= track[0][0]) return track[0][1];
-  for (let i = 1; i < track.length; i++) {
-    const [t1, v1, ease = "io"] = track[i];
-    if (t <= t1) {
-      const [t0, v0] = track[i - 1];
-      const k = t1 === t0 ? 1 : (t - t0) / (t1 - t0);
-      return v0 + (v1 - v0) * (ease === "lin" ? k : easeInOut(k));
-    }
-  }
-  return track[track.length - 1][1];
 }
 
 /** ¿El usuario pidió movimiento reducido? (se mide una vez: es una preferencia del sistema) */

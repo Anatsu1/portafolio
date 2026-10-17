@@ -47,6 +47,14 @@ export const BOX_TOP_ABOVE_ORIGIN = 0.88 * 0.235;
 
 // --------------------------------------------------------------- eventos --
 
+/** Interpolación suave 0→1 (smoothstep) entre los segundos `a` y `b`. */
+const smooth = (x: number) => {
+  const c = Math.min(Math.max(x, 0), 1);
+  return c * c * (3 - 2 * c);
+};
+const span = (t: number, a: number, b: number) => smooth((t - a) / (b - a));
+
+
 const M = PICK_PHASES.length;
 
 /** Segundo en que la n-ésima caja desviada toca el tope. */
@@ -118,6 +126,75 @@ export function armEvent(t: number, out: ArmEvent): ArmEvent {
   return out;
 }
 
+export type Pose = { x: number; y: number; z: number; yaw: number };
+
+/** Polares alrededor del pie del brazo (para trasladar girando, no en línea recta). */
+function toPolar(x: number, z: number) {
+  const dx = x - ROBOT_POS.x;
+  const dz = z - ROBOT_POS.z;
+  return { phi: Math.atan2(-dz, dx), r: Math.hypot(dx, dz) };
+}
+
+function lerpAngle(a: number, b: number, t: number) {
+  let d = b - a;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return a + d * t;
+}
+
+/**
+ * Punto de la herramienta (tapa de la caja) según el ciclo. Lo usan el brazo
+ * (IK) y la cinta, que dibuja la caja en las ventosas con el mismo modelo que
+ * traía sobre la banda (así no cambia de modelo en el centro del cuadro).
+ */
+export function toolPose(ev: ArmEvent, out: Pose): Pose {
+  if (ev.n < 0) {
+    out.x = PICK_X;
+    out.z = RUN_Z;
+    out.y = CARRY_Y;
+    out.yaw = 0;
+    return out;
+  }
+  const [sx, sy, sz] = slotOffset(ev.slot);
+  const slotX = PALLET_POS.x + sx;
+  const slotZ = PALLET_POS.z + sz;
+  const slotY = sy + BOX_TOP_ABOVE_ORIGIN;
+  // La herramienta gira lo necesario para que la caja quede como pide el lugar.
+  const sYaw = slotYaw(ev.slot) - ev.flip;
+  const t = ev.tau;
+  // Tramo de traslado en polares (gira alrededor del pie).
+  const travel = (fx: number, fz: number, tx: number, tz: number, k: number) => {
+    const a = toPolar(fx, fz);
+    const b = toPolar(tx, tz);
+    const phi = lerpAngle(a.phi, b.phi, k);
+    const r = a.r + (b.r - a.r) * k;
+    out.x = ROBOT_POS.x + Math.cos(phi) * r;
+    out.z = ROBOT_POS.z - Math.sin(phi) * r;
+  };
+  if (t < ARM.up) {
+    out.x = PICK_X;
+    out.z = RUN_Z;
+    out.y = t < ARM.grip ? CARRY_Y + (PICK_TOP_Y - CARRY_Y) * span(t, 0, ARM.down) : PICK_TOP_Y + (CARRY_Y - PICK_TOP_Y) * span(t, ARM.grip, ARM.up);
+    out.yaw = ev.yaw * span(t, 0, ARM.down);
+  } else if (t < ARM.over) {
+    const k = span(t, ARM.up, ARM.over);
+    travel(PICK_X, RUN_Z, slotX, slotZ, k);
+    out.y = CARRY_Y;
+    out.yaw = ev.yaw + (sYaw - ev.yaw) * k;
+  } else if (t < ARM.clear) {
+    out.x = slotX;
+    out.z = slotZ;
+    out.y = t < ARM.place ? CARRY_Y + (slotY - CARRY_Y) * span(t, ARM.over, ARM.set) : slotY + (CARRY_Y - slotY) * span(t, ARM.place, ARM.clear);
+    out.yaw = sYaw;
+  } else {
+    const k = span(t, ARM.clear, ARM.home);
+    travel(slotX, slotZ, PICK_X, RUN_Z, k);
+    out.y = CARRY_Y;
+    out.yaw = sYaw * (1 - k);
+  }
+  return out;
+}
+
 // ------------------------------------------------------------- autoelevador --
 
 /*
@@ -125,12 +202,18 @@ export function armEvent(t: number, out: ArmEvent): ArmEvent {
  * mástil). Sale del túnel de la puerta C hacia la cámara, dobla 90° y avanza
  * hacia −X hasta calzar las uñas en el pallet; vuelve marcha atrás por el
  * mismo camino.
+ *
+ * Regla para que no se note el truco: el autoelevador solo aparece, desaparece
+ * o cambia de carga (lleno → vacío) estacionado en el túnel y con la persiana
+ * de la puerta C cerrada del todo. Estacionado, las uñas con el pallet quedan
+ * detrás de la persiana (≈0,3 de margen) y la cola, antes del fondo del túnel.
  */
 export const FORK_DOOR_X = 1.6;
 const TURN_R = 1.2;
 const LANE_Z = PALLET_POS.z;
 const TURN_Z = LANE_Z - TURN_R; // donde empieza a doblar
-const START_Z = WALL_Z - 3.0; // escondido dentro del túnel
+/** Estacionado en el túnel: punta de las uñas (+1,05) detrás de la persiana (WALL_Z − 0,05). */
+const START_Z = WALL_Z - 1.4;
 const ENGAGE_X = PALLET_POS.x + 0.53; // talón contra el borde +X del pallet
 const LEG_A = TURN_Z - START_Z;
 const LEG_B = (Math.PI / 2) * TURN_R;
@@ -141,24 +224,34 @@ const STAGE = 1.1; // espera con las uñas fuera del pallet
 /** Altura de elevación de las uñas con carga. */
 export const FORK_LIFT = 0.13;
 
-/** Fases del cambio de pallet, en segundos desde que el pallet se llenó. */
+/*
+ * Fases del cambio de pallet, en segundos desde que el pallet se llenó. Dos
+ * viajes: (1) sale vacío, levanta el pallet lleno y lo entra al túnel; la
+ * persiana baja, (2) sube la persiana y sale con un pallet vacío, lo deja y
+ * vuelve a entrar; la persiana baja otra vez. Con la cinta actual queda un
+ * hueco de ~25 s hasta la próxima caja desviada: el pallet nuevo se apoya
+ * (`lowered`) mucho antes de que el brazo vuelva a necesitarlo.
+ */
 const FK = {
-  start: -4.5,
-  staged: 0.3,
+  appear: -6.3, // ya está estacionado (persiana cerrada)
+  open1: -6.0, // la persiana empieza a subir…
+  opened1: -4.5, // …y termina: arranca
+  staged: 0.3, // uñas frente al pallet
   engaged: 1.1, // empieza a levantar: el pallet pasa a las uñas
   lifted: 2.1,
-  out: 6.8,
-  back: 8.3, // vuelve con uno vacío
-  arrived: 13.0,
-  lowered: 14.0, // el pallet nuevo queda en la estación
-  gone: 18.7,
+  parked1: 6.4, // de vuelta en el túnel con el pallet lleno
+  close1: 6.6,
+  closed1: 8.1,
+  swap: 8.55, // persiana cerrada: cambia el pallet lleno por uno vacío
+  open2: 9.0,
+  opened2: 10.5,
+  arrived: 15.3, // pallet vacío sobre la estación
+  lowered: 16.3, // el pallet nuevo queda en la estación
+  parked2: 21.0,
+  close2: 21.2,
+  closed2: 22.7,
+  vanish: 23.0,
 } as const;
-
-const smooth = (x: number) => {
-  const c = Math.min(Math.max(x, 0), 1);
-  return c * c * (3 - 2 * c);
-};
-const span = (t: number, a: number, b: number) => smooth((t - a) / (b - a));
 
 export type ForkState = {
   visible: boolean;
@@ -220,29 +313,33 @@ export function stationAt(t: number, out: StationState): StationState {
 
   // Cambio en curso: el del último pallet lleno o el que está por empezar.
   let tau = Infinity;
-  if (full >= 1 && t - fullTime(full - 1) < FK.gone + 2) tau = t - fullTime(full - 1);
-  else if (t - fullTime(full) >= FK.start - 1.5) tau = t - fullTime(full);
+  if (full >= 1 && t - fullTime(full - 1) < FK.vanish + 1) tau = t - fullTime(full - 1);
+  else if (t - fullTime(full) >= FK.appear - 1) tau = t - fullTime(full);
   if (!Number.isFinite(tau)) return out;
 
   if (tau < FK.engaged) {
     if (full >= 1 && tau >= 0) out.boxes = PALLET_CAP;
   } else if (tau < FK.lowered) out.pallet = false;
 
-  f.door = span(tau, FK.start - 1.5, FK.start) * (1 - span(tau, FK.gone, FK.gone + 1.5));
-  if (tau < FK.start || tau > FK.gone) return out;
+  // Persiana: sube, baja con el pallet lleno adentro, sube y baja otra vez.
+  f.door =
+    tau < FK.swap
+      ? span(tau, FK.open1, FK.opened1) * (1 - span(tau, FK.close1, FK.closed1))
+      : span(tau, FK.open2, FK.opened2) * (1 - span(tau, FK.close2, FK.closed2));
+  if (tau < FK.appear || tau > FK.vanish) return out;
   f.visible = true;
   let u: number;
-  if (tau < FK.staged) u = (PATH - STAGE) * span(tau, FK.start, FK.staged);
+  if (tau < FK.staged) u = (PATH - STAGE) * span(tau, FK.opened1, FK.staged);
   else if (tau < FK.lifted) u = PATH - STAGE + STAGE * span(tau, FK.staged, FK.engaged);
-  else if (tau < FK.back) u = PATH * (1 - span(tau, FK.lifted, FK.out));
-  else if (tau < FK.lowered) u = PATH * span(tau, FK.back, FK.arrived);
-  else u = PATH * (1 - span(tau, FK.lowered, FK.gone));
+  else if (tau < FK.swap) u = PATH * (1 - span(tau, FK.lifted, FK.parked1));
+  else if (tau < FK.lowered) u = PATH * span(tau, FK.opened2, FK.arrived);
+  else u = PATH * (1 - span(tau, FK.lowered, FK.parked2));
   placeOnPath(u, f);
 
-  if (tau >= FK.engaged && tau < FK.out + 0.5) {
+  if (tau >= FK.engaged && tau < FK.swap) {
     f.load = "full";
     f.lift = FORK_LIFT * span(tau, FK.engaged, FK.lifted);
-  } else if (tau >= FK.back - 0.5 && tau < FK.lowered) {
+  } else if (tau >= FK.swap && tau < FK.lowered) {
     f.load = "empty";
     f.lift = FORK_LIFT * (1 - span(tau, FK.arrived, FK.lowered));
   }

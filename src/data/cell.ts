@@ -171,3 +171,10 @@ export const CELL_BOXES: readonly CellBox[] = [
     },
   },
 ] as const;
+
+/**
+ * Cajas que ve el laboratorio 3D. PROYECTOS no tiene caja propia ahí: los
+ * proyectos se descubren por tecnología, con las cajas del estante (`cellTech`).
+ * El laboratorio 2D del teléfono sí usa la lista completa.
+ */
+export const LAB_BOXES: readonly CellBox[] = CELL_BOXES.filter((b) => b.id !== "proyectos");

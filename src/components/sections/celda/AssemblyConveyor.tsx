@@ -5,6 +5,7 @@ import * as THREE from "three";
 import StaticInstances, { type Xform } from "./StaticInstances";
 import { LINE_BOX_URL } from "./assemblyKit";
 import { beltTexture } from "./assemblyTextures";
+import { ARM, BOX_TOP_ABOVE_ORIGIN, armEvent, toolPose, type ArmEvent, type Pose } from "./assemblyPallet";
 import {
   BELT_SPEED,
   BELT_TOP,
@@ -15,6 +16,7 @@ import {
   LINE_BOX_SCALE,
   SEGMENTS,
   boxAt,
+  lineTime,
   pointAt,
   type BoxState,
   type PathPoint,
@@ -136,7 +138,10 @@ type Part = { geometry: THREE.BufferGeometry; material: THREE.Material; local: T
  * Cajas de carga sobre la cinta: posición = función del tiempo (ver
  * assemblyPath). Solo se dibujan las visibles: se compactan al principio del
  * buffer y `count` corta el resto (las que esperan en el túnel no cuestan
- * triángulos). Las cajas de los pallets las dibuja el paletizador.
+ * triángulos). Una instancia extra es la caja que el paletizador lleva en las
+ * ventosas: sigue con este modelo hasta que la apoya (si cambiara de modelo al
+ * levantarla, el salto se notaría justo en el centro del cuadro). Las cajas
+ * de los pallets las dibuja el paletizador.
  */
 function LineBoxes() {
   const { scene } = useGLTF(LINE_BOX_URL);
@@ -153,6 +158,8 @@ function LineBoxes() {
     () => ({
       st: { s: 0, visible: false, jitter: 0, flip: 0, lap: 0, held: false } as BoxState,
       pt: { x: 0, z: 0, yaw: 0 } as PathPoint,
+      ev: { n: -1, tau: 0, slot: 0, yaw: 0, flip: 0 } as ArmEvent,
+      pose: { x: 0, y: 0, z: 0, yaw: 0 } as Pose,
       o: new THREE.Object3D(),
       m: new THREE.Matrix4(),
     }),
@@ -160,19 +167,30 @@ function LineBoxes() {
   );
 
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
-    const { st, pt, o, m } = tmp;
+    const t = lineTime(state.clock.elapsedTime);
+    const { st, pt, ev, pose, o, m } = tmp;
     let n = 0;
+    const put = () => {
+      o.scale.setScalar(LINE_BOX_SCALE);
+      o.updateMatrix();
+      parts.forEach((part, j) => refs.current[j]?.setMatrixAt(n, m.multiplyMatrices(o.matrix, part.local)));
+      n++;
+    };
     for (let k = 0; k < LINE_BOX_COUNT; k++) {
       boxAt(k, t, st);
       if (!st.visible) continue;
       pointAt(st.s, pt);
       o.position.set(pt.x, BELT_TOP + LINE_BOX_HALF_H, pt.z);
       o.rotation.set(0, pt.yaw + st.jitter + st.flip, 0);
-      o.scale.setScalar(LINE_BOX_SCALE);
-      o.updateMatrix();
-      parts.forEach((part, j) => refs.current[j]?.setMatrixAt(n, m.multiplyMatrices(o.matrix, part.local)));
-      n++;
+      put();
+    }
+    // Caja en las ventosas: desde que deja la banda hasta que queda en el pallet.
+    armEvent(t, ev);
+    if (ev.n >= 0 && ev.tau >= ARM.grip && ev.tau < ARM.place) {
+      toolPose(ev, pose);
+      o.position.set(pose.x, pose.y - BOX_TOP_ABOVE_ORIGIN, pose.z);
+      o.rotation.set(0, pose.yaw + ev.flip, 0);
+      put();
     }
     refs.current.forEach((mesh) => {
       if (!mesh) return;
@@ -189,7 +207,7 @@ function LineBoxes() {
           ref={(mesh) => {
             refs.current[j] = mesh;
           }}
-          args={[part.geometry, part.material, LINE_BOX_COUNT]}
+          args={[part.geometry, part.material, LINE_BOX_COUNT + 1]}
           frustumCulled={false}
         />
       ))}
@@ -205,7 +223,7 @@ export default function AssemblyConveyor() {
 
   useFrame((state) => {
     // offset.x negativo = la banda avanza hacia +X local (sentido de las cajas)
-    const shift = -((state.clock.elapsedTime * BELT_SPEED) / TILE) % 1;
+    const shift = -((lineTime(state.clock.elapsedTime) * BELT_SPEED) / TILE) % 1;
     for (const t of textures) t.offset.x = shift;
   });
 

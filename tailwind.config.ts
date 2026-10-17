@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 export default {
   darkMode: "class",
@@ -15,17 +16,6 @@ export default {
         // sobre la MISMA propiedad de un mismo elemento (hoy no pasa en
         // ningún componente — verificado por grep).
         md: { raw: "(min-width: 768px) and (min-height: 500px)" },
-        // Punto donde el mapa de skills se da vuelta: familias en columnas
-        // y fases en filas (ver SkillTree.tsx). Recién a partir de acá
-        // entran a lo ancho las 14 hojas del árbol, que miden 1280px: el
-        // corte subió de 1200 a 1360px porque las familias PHP y Java
-        // sumaron una hoja cada una. Los 80px que sobran son el aire a los
-        // costados —el mapa se centra sobre la pantalla, ver SkillTree—,
-        // así que si se suma otra hoja (~80px) hay que subir esto de nuevo.
-        // No lleva condición de alto —el layout ancho es más BAJO que el
-        // angosto— y, como el `md` de arriba, no se combina con otro
-        // breakpoint sobre la misma propiedad del mismo elemento.
-        wide: "1360px",
       },
       colors: {
         background: "rgb(var(--color-background) / <alpha-value>)",
@@ -85,5 +75,15 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Variante `wide`: el mapa de skills se da vuelta (familias en columnas y fases en
+    // filas, ver SkillTree.tsx). A partir de 1360px entran a lo ancho las 14 hojas del
+    // árbol (1280px; si se suma otra hoja, ~80px, hay que subir el corte). También se
+    // activa bajo un ancestro `.force-wide`: en pantallas angostas el mismo layout ancho
+    // se muestra dentro de un visor con zoom y arrastre. No se combina con otro
+    // breakpoint sobre la misma propiedad del mismo elemento.
+    plugin(({ addVariant }) => {
+      addVariant("wide", ["@media (min-width: 1360px)", ":is(.force-wide) &"]);
+    }),
+  ],
 } satisfies Config;

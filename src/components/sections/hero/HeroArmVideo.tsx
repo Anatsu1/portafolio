@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SyntheticEvent } from "react";
 import { useTheme } from "../../../hooks/useTheme";
+import HeroThemeLoader from "./HeroThemeLoader";
 import { useArmFollowCam } from "../../../hooks/useArmFollowCam";
 import armLightMp4 from "../../../assets/arm-light.mp4";
 import armLightPoster from "../../../assets/arm-light-poster.jpg";
@@ -83,9 +84,22 @@ export default function HeroArmVideo({ onDrop, onReady, play = true, className }
   // El video se remonta (key={theme}) y repite la animación en cada cambio
   // de tema — "desarma" el drop para que el aura (useHeroReveal) pueda
   // reactivarse en cada ciclo, no solo la primera vez.
+  // También muestra el cartel de carga (no en la primera carga: ahí está el vault).
+  const [switching, setSwitching] = useState(false);
+  const firstThemeRef = useRef(true);
+  const switchStartRef = useRef(0);
+  const hideTimerRef = useRef(0);
   useEffect(() => {
     firedDropRef.current = false;
     bufferedRef.current = false;
+    if (firstThemeRef.current) {
+      firstThemeRef.current = false;
+      return;
+    }
+    switchStartRef.current = performance.now();
+    setSwitching(true);
+    const safety = window.setTimeout(() => setSwitching(false), 10000);
+    return () => window.clearTimeout(safety);
   }, [theme]);
 
   useEffect(() => {
@@ -112,11 +126,16 @@ export default function HeroArmVideo({ onDrop, onReady, play = true, className }
 
   const handleCanPlayThrough = () => {
     bufferedRef.current = true;
+    // El cartel dura al menos un momento: con el video en caché el cambio sería un parpadeo.
+    const wait = Math.max(0, 900 - (performance.now() - switchStartRef.current));
+    window.clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = window.setTimeout(() => setSwitching(false), wait);
     fireReady();
     tryPlay();
   };
 
   const handleError = () => {
+    setSwitching(false);
     fireReady();
     fireDrop();
   };
@@ -137,6 +156,7 @@ export default function HeroArmVideo({ onDrop, onReady, play = true, className }
   }
 
   return (
+    <>
     <video
       // Remontar al cambiar de tema recarga el <source> correcto.
       key={theme}
@@ -154,5 +174,7 @@ export default function HeroArmVideo({ onDrop, onReady, play = true, className }
     >
       <source src={src.mp4} type="video/mp4" />
     </video>
+    <HeroThemeLoader show={switching} />
+    </>
   );
 }

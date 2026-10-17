@@ -2,7 +2,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useKit } from "./assemblyKit";
-import { BELT_TOP, BELT_W, RUN_Z, sOnRun, stationView } from "./assemblyPath";
+import { BELT_TOP, BELT_W, RUN_Z, lineTime, sOnRun, stationView } from "./assemblyPath";
 import { screenTexture, shaftTexture } from "./assemblyTextures";
 
 /*
@@ -79,7 +79,7 @@ function Scanner({ rim }: { rim: string }) {
   const status = useRef(0);
 
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
+    const t = lineTime(state.clock.elapsedTime);
     const a = presence(stationView(SCAN_S, t).near, 0.45);
     sheet.opacity = 0.08 + 0.45 * a;
     lineMat.opacity = 0.35 + 0.65 * a;
@@ -118,7 +118,7 @@ function Sealer() {
   }, []);
 
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
+    const t = lineTime(state.clock.elapsedTime);
     const a = presence(stationView(SEAL_S, t).near, 0.7);
     // parpadeo de soldadura mientras hay caja adentro
     const flick = a > 0.3 ? 0.6 + 0.4 * Math.abs(Math.sin(t * 37) * Math.sin(t * 13)) : 0;
@@ -197,7 +197,7 @@ export default function AssemblyStations({ rim }: { rim: string }) {
 
   // La pantalla se redibuja 4 veces por segundo (dibujar un canvas cuesta).
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
+    const t = lineTime(state.clock.elapsedTime);
     const tick = Math.floor(t * 4);
     if (tick === last.current) return;
     last.current = tick;

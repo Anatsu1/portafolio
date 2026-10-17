@@ -7,7 +7,9 @@ import SectionHeading from "../SectionHeading";
 import CellControls from "./celda/CellControls";
 import SidePanel from "./celda/SidePanel";
 import LabSearch from "./celda/LabSearch";
-import { CELL_BOXES } from "../../data/cell";
+import PilotHud from "./celda/PilotHud";
+import { CELL_BOXES, LAB_BOXES } from "../../data/cell";
+import { CELL_TECH } from "../../data/cellTech";
 import CellErrorBoundary from "./celda/CellErrorBoundary";
 import { DEFAULT_ENV, ENVIRONMENTS, type EnvId } from "./celda/environments";
 import type { CellCommands, CellMode } from "../../hooks/useCellController";
@@ -58,35 +60,71 @@ export default function Celda({ supported, onReady }: CeldaProps) {
       })
     );
   }, []);
-  const handleEnvReady = useCallback(() => setSwitching(false), []);
+  // Lo mismo con el tema: la escena reconstruye texturas y materiales, así que se
+  // le pasa el tema nuevo recién cuando el cartel ya está a la vista.
+  const [shownTheme, setShownTheme] = useState(theme);
+  const [themeSwitching, setThemeSwitching] = useState(false);
+  useEffect(() => {
+    if (theme === shownTheme) return;
+    setThemeSwitching(true);
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setShownTheme(theme));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [theme, shownTheme]);
+  const handleEnvReady = useCallback(() => {
+    setSwitching(false);
+    setThemeSwitching(false);
+  }, []);
   // Red de seguridad: el cartel nunca queda colgado.
   useEffect(() => {
-    if (!switching) return;
-    const t = window.setTimeout(() => setSwitching(false), 12000);
+    if (!switching && !themeSwitching) return;
+    const t = window.setTimeout(() => {
+      setSwitching(false);
+      setThemeSwitching(false);
+    }, 12000);
     return () => window.clearTimeout(t);
-  }, [switching]);
+  }, [switching, themeSwitching]);
   const [mode, setMode] = useState<CellMode>("auto");
   const [showing, setShowing] = useState<number | null>(null);
   const [delivered, setDelivered] = useState<number | null>(null);
-  // Tecnología buscada: el panel de PROYECTOS muestra solo lo que la usa (null = todo).
-  const [tech, setTech] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const commandsRef = useRef<CellCommands | null>(null);
   const handleFailure = useCallback(() => {
     setFailed(true);
     onReady?.(); // que el loader del vault no espere una escena que no va a llegar
   }, [onReady]);
+  // Esc sale del modo piloto (si hay un panel abierto, Esc cierra primero el panel).
+  useEffect(() => {
+    if (mode !== "pilot" || delivered !== null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMode("manual");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, delivered]);
   const closePanel = useCallback(() => commandsRef.current?.release(), []);
   const setReading = useCallback((reading: boolean) => commandsRef.current?.holdPause(reading), []);
 
   // Elegir una caja (clic o botón) pasa a manual: el visitante tomó el control.
-  const pick = (index: number, techId: string | null = null) => {
+  const pick = (index: number) => {
     setMode("manual");
-    setTech(techId);
     commandsRef.current?.show(index);
   };
-  const projectsIndex = CELL_BOXES.findIndex((b) => b.id === "proyectos");
-  const pickTech = (nodeId: string) => pick(projectsIndex, nodeId);
+  // Las tecnologías las trae el brazo desde el estante trasero (índices después de las secciones).
+  const pickTech = (nodeId: string) => {
+    const shelf = CELL_TECH.findIndex((t) => t.id === nodeId);
+    if (shelf >= 0) pick(LAB_BOXES.length + shelf);
+  };
+  // Una caja del estante abre el panel PROYECTOS ya filtrado por su tecnología.
+  const onShelf = delivered !== null && delivered >= LAB_BOXES.length;
+  const panelBoxId = delivered === null ? null : onShelf ? "proyectos" : LAB_BOXES[delivered].id;
+  const panelIndex = Math.max(0, CELL_BOXES.findIndex((b) => b.id === panelBoxId));
+  const panelTech = onShelf ? CELL_TECH[delivered - LAB_BOXES.length].id : null;
 
   if (!supported || failed) return <LabFallback />;
 
@@ -130,7 +168,7 @@ export default function Celda({ supported, onReady }: CeldaProps) {
           </div>
           <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-primary" aria-hidden />
-            {mode === "auto" ? "En ciclo automático" : "Control manual"}
+            {mode === "auto" ? "En ciclo automático" : mode === "pilot" ? "Piloto: manejás vos" : "Control manual"}
           </p>
         </div>
         <div aria-hidden className="hazard-stripe mx-4 mb-3 h-1.5 rounded-full" />
@@ -148,7 +186,7 @@ export default function Celda({ supported, onReady }: CeldaProps) {
               }
             >
               <CellScene
-                theme={theme}
+                theme={shownTheme}
                 active={visible}
                 onReady={onReady}
                 onEnvReady={handleEnvReady}
@@ -164,7 +202,7 @@ export default function Celda({ supported, onReady }: CeldaProps) {
             </Suspense>
           </CellErrorBoundary>
           <AnimatePresence>
-            {switching && (
+            {(switching || themeSwitching) && (
               <motion.div
                 key="env-loading"
                 className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-background/85 backdrop-blur-sm"
@@ -175,7 +213,7 @@ export default function Celda({ supported, onReady }: CeldaProps) {
               >
                 <Cog className="animate-[spin_3s_linear_infinite] text-heading" size={40} strokeWidth={1.5} />
                 <p className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">
-                  Cargando {ENVIRONMENTS.find((e) => e.id === env)?.label.toLowerCase()}
+                  Cargando {switching ? ENVIRONMENTS.find((e) => e.id === env)?.label.toLowerCase() : "el tema"}
                   <span className="animate-pulse">…</span>
                 </p>
                 <div className="h-0.5 w-44 overflow-hidden rounded-full bg-border/15">
@@ -184,16 +222,16 @@ export default function Celda({ supported, onReady }: CeldaProps) {
               </motion.div>
             )}
           </AnimatePresence>
+          {mode === "pilot" && <PilotHud commandsRef={commandsRef} onExit={() => setMode("manual")} />}
           <AnimatePresence>
             {delivered !== null && (
               <SidePanel
                 key={delivered}
-                index={delivered}
+                index={panelIndex}
                 auto={mode === "auto"}
                 onClose={closePanel}
                 onReading={setReading}
-                tech={tech}
-                onClearTech={() => setTech(null)}
+                tech={panelTech}
               />
             )}
           </AnimatePresence>

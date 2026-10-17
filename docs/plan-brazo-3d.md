@@ -117,6 +117,10 @@ Preguntas de diseño abiertas:
 - Los iconos de sección (`data/cellIcons.ts`) van en el color del tema, sin
   color propio por sección (pedido del dueño).
 
+**Etapa 2 implementada (2026-10-16):** estante en arco detrás del brazo (`TechRack.tsx`, r = 2,5 sobre -Z) con 8 cajas de tecnología (`data/cellTech.ts`: React, TypeScript, Node.js, Java, Python, PostgreSQL, Docker, Tailwind; chapa con la sigla, mirando a la cámara). El buscador trae la caja de la tecnología (índice `CELL_BOXES.length + i`; `slotFor`/`yawFlip` en `cellLayout.ts`) y el panel PROYECTOS se abre filtrado, sin botón de quitar filtro. Las tecnologías fuera del estante siguen el camino anterior (caja PROYECTOS filtrada). El modo automático solo recorre las secciones. 
+
+**Ajustes 2026-10-16 (feedback del dueño):** el laboratorio 3D ya NO tiene caja PROYECTOS (`LAB_BOXES` en `data/cell.ts`; el 2D del teléfono sigue con la lista completa): los proyectos se descubren por tecnología con las cajas del estante. Al ir por una caja del estante la cámara se acerca (`CameraZoom.tsx`, `zoomRef` del controlador). Nuevo modo **Pilotar** (`CellMode = "pilot"`): flechas/WASD giran y extienden, Q/E suben y bajan, Espacio cierra/abre la garra; agarrás una caja y la dejás en el círculo ENTREGA para abrir el panel; si la soltás afuera cae y vuelve sola a su lugar; HUD con botones (`PilotHud.tsx`), Esc sale. Mapa de skills en pantallas < 1360 px: layout ancho dentro de un visor con arrastre y zoom (`projects/PanZoom.tsx`; variante Tailwind `wide` ahora por plugin y también activa bajo `.force-wide`; `useMeasuredEdges` normaliza por la escala). Idea futura del dueño: físicas de la garra también al pasar por encima de las cajas (hoy las atraviesa; solo la caja agarrada se mueve). Pendiente: chips por familia; afinar velocidades del piloto en Chrome real; versión táctil del piloto.
+
 ## Estado 2026-10-09 (segunda publicación en main)
 
 Hecho desde la primera publicación: línea de montaje rehecha (piso, plataforma
@@ -371,3 +375,6 @@ los navegadores actuales.
   carga opt-in del 3D ("tocar para cargar, 9 MB"). A decidir con el usuario.
 - 2026-10-08: fase 1 lista. Medidas de pivotes en `RobotArm.tsx`. Las escalas
   elegidas: base 0,8; segmento 1 = 1,0; segmento 2 = 0,85; garra 0,4; caja 0,26.
+- 2026-10-16: Hero en teléfonos sin brazo: credencial que agrupa todo el
+  contenido (`hero/HeroMobile.tsx`, ver `docs/plan-hero-movil.md`). Deja sin
+  efecto lo de "el Hero móvil volvió al video" y la vista móvil recortada.

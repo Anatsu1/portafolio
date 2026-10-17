@@ -13,7 +13,8 @@ import {
   cartesian,
   facingCamera,
   facingOutward,
-  slotOf,
+  slotFor,
+  yawFlip,
   type Polar,
 } from "../components/sections/celda/cellLayout";
 
@@ -36,7 +37,20 @@ const BASE_SPEED = 1.25;
  */
 const HOME: ReachTarget = { phi: DELIVERY.phi, r: 1.15, y: 1.55 };
 
-export type CellMode = "auto" | "manual";
+export type CellMode = "auto" | "manual" | "pilot";
+
+/** Controles del modo piloto (teclado o botones en pantalla). */
+export type PilotKey = "left" | "right" | "forward" | "back" | "up" | "down";
+
+const PILOT_YAW_SPEED = 1.5; // rad/s
+const PILOT_REACH_SPEED = 1.3; // unidades/s
+const PILOT_LIFT_SPEED = 1.5;
+const PILOT_R_MIN = 0.95;
+const PILOT_R_MAX = 2.65;
+const PILOT_Y_MAX = 1.9;
+const PILOT_GRAB_DIST = 0.42; // distancia horizontal máxima garra–caja para agarrarla
+const PILOT_GRAB_DY = 0.4;
+const PILOT_PAD_DIST = 0.6; // radio de la plataforma de entrega para "dejar la caja"
 
 // Solo en desarrollo: `?nolag` hace que las animaciones sigan el reloj real
 // aunque el render sea lento (navegador headless con GPU por software). GSAP
@@ -48,15 +62,20 @@ if (import.meta.env.DEV && typeof window !== "undefined" && new URLSearchParams(
 
 /** Comandos que la interfaz (botones, clic en cajas, panel) le manda al controlador. */
 export type CellCommands = {
-  /** Trae la caja `index` a la plataforma (si ya está en cola o en curso, no hace nada). */
+  /** Trae la caja `index` (sección o tecnología) a la plataforma (si ya está en cola o en curso, no hace nada). */
   show: (index: number) => void;
   /** Cierra el panel y devuelve la caja a su lugar. */
   release: () => void;
   /** Congela o reanuda la espera del panel (mientras el visitante lo lee). */
   holdPause: (paused: boolean) => void;
+  /** Modo piloto: mantiene apretada (o suelta) una dirección. */
+  pilotKey: (key: PilotKey, down: boolean) => void;
+  /** Modo piloto: cierra la garra (agarra la caja que tenga debajo) o la abre (suelta). */
+  pilotGrab: () => void;
 };
 
 type ControllerOptions = {
+  /** Cajas que recorre el modo automático (las secciones). */
   count: number;
   active: boolean;
   mode: CellMode;
@@ -67,6 +86,8 @@ type ControllerOptions = {
   commandsRef: MutableRefObject<CellCommands | null>;
   /** Apertura de la tapa de cada caja (0..1); el controlador la anima. */
   openRefs: MutableRefObject<number>[];
+  /** Acercamiento de cámara (0..1) que el controlador pide al ir por una caja del estante trasero. */
+  zoomRef?: MutableRefObject<number>;
 };
 
 /** Ajusta `to` por múltiplos de 2π para que el giro desde `from` sea el más corto. */
@@ -113,11 +134,12 @@ type Task = {
   timer: gsap.core.Tween | null;
 };
 
-export function useCellController({ count, active, mode, onShowing, onDelivered, commandsRef, openRefs }: ControllerOptions) {
+export function useCellController({ count, active, mode, onShowing, onDelivered, commandsRef, openRefs, zoomRef }: ControllerOptions) {
   const poseRef = useRef<ArmPose>({ yaw: HOME.phi, shoulder: 0.5, elbow: -1.1, grip: 0.6 });
   const boxRefs = useRef<(Group | null)[]>([]);
   const reach = useRef<ReachTarget>({ ...HOME });
   const carried = useRef<Group | null>(null);
+  const carriedFlip = useRef(0); // media vuelta extra de las cajas del estante (ver yawFlip)
 
   const queue = useRef<number[]>([]);
   const task = useRef<Task | null>(null);
@@ -129,14 +151,39 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
   const kick = useRef<(() => void) | null>(null);
   const sync = useRef<(() => void) | null>(null);
   const modeChanged = useRef<(() => void) | null>(null);
+  const wasPilot = useRef(false);
 
-  useFrame(() => {
+  const pilotKeys = useRef<Record<PilotKey, boolean>>({ left: false, right: false, forward: false, back: false, up: false, down: false });
+  const pilotVel = useRef({ yaw: 0, reach: 0, lift: 0 });
+  const pilotGrabFn = useRef<(() => void) | null>(null);
+
+  useFrame((_, rawDt) => {
+    const live_ = live.current;
+    if (zoomRef) {
+      const t = task.current;
+      // Se acerca la cámara mientras el brazo va por una caja del estante (o la devuelve).
+      const shelf = t && t.index >= live_.count && ((t.phase === "ir" && !t.released) || t.phase === "volver");
+      zoomRef.current = shelf ? 1 : 0;
+    }
+    if (live_.mode === "pilot" && live_.active) {
+      const dt = Math.min(rawDt, 0.1);
+      const k = pilotKeys.current;
+      const v = pilotVel.current;
+      const ease = Math.min(1, dt * 12);
+      v.yaw += ((Number(k.right) - Number(k.left)) * PILOT_YAW_SPEED - v.yaw) * ease;
+      v.reach += ((Number(k.forward) - Number(k.back)) * PILOT_REACH_SPEED - v.reach) * ease;
+      v.lift += ((Number(k.up) - Number(k.down)) * PILOT_LIFT_SPEED - v.lift) * ease;
+      const t = reach.current;
+      t.phi += v.yaw * dt;
+      t.r = Math.min(PILOT_R_MAX, Math.max(PILOT_R_MIN, t.r + v.reach * dt));
+      t.y = Math.min(PILOT_Y_MAX, Math.max(GRASP_Y, t.y + v.lift * dt));
+    }
     solveIK(reach.current, poseRef.current);
     const box = carried.current;
     if (box) {
       const [x, y, z] = cartesian(reach.current, reach.current.y);
       box.position.set(x, y, z);
-      box.rotation.y = facingOutward(reach.current.phi);
+      box.rotation.y = facingOutward(reach.current.phi) + carriedFlip.current;
     }
   });
 
@@ -176,7 +223,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
         gsap.to(box.rotation, { y: face + 0.4, duration: d(3.4), ease: "sine.inOut", yoyo: true, repeat: -1, delay: d(0.9) });
         gsap.to(lid, { current: 1, duration: d(0.5), delay: d(0.85), ease: "none" }); // la tapa sigue un resorte propio
       } else {
-        const back = nearestAngle(box.rotation.y, facingOutward(DELIVERY.phi));
+        const back = nearestAngle(box.rotation.y, facingOutward(DELIVERY.phi) + yawFlip(index));
         gsap.to(lid, { current: 0, duration: d(0.3), ease: "none" });
         gsap.to(box.scale, { x: BOX_SCALE, y: BOX_SCALE, z: BOX_SCALE, duration: d(0.6), ease: "power2.inOut", delay: d(0.7) });
         gsap.to(box.position, { y: BOX_HALF_H, duration: d(0.6), ease: "power2.inOut", delay: d(0.7) });
@@ -196,10 +243,110 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       if (box) {
         const [x, y, z] = cartesian(to, GRASP_Y);
         box.position.set(x, y, z);
-        box.rotation.y = facingOutward(to.phi);
+        box.rotation.y = facingOutward(to.phi) + carriedFlip.current;
       }
       carried.current = null;
     };
+
+    /** Desliza una caja suelta de vuelta a su lugar, con un pequeño salto. */
+    const slideHome = (index: number) => {
+      const box = boxRefs.current[index];
+      if (!box) return;
+      const slot = slotFor(index);
+      const [x, , z] = cartesian(slot, GRASP_Y);
+      gsap.killTweensOf([box.position, box.rotation]);
+      gsap.to(box.position, { x, z, duration: 1, ease: "power2.inOut" });
+      gsap.to(box.position, { y: GRASP_Y + 0.55, duration: 0.5, ease: "sine.out", yoyo: true, repeat: 1 });
+      gsap.to(box.rotation, { y: nearestAngle(box.rotation.y, facingOutward(slot.phi) + yawFlip(index)), duration: 1, ease: "power2.inOut" });
+    };
+
+    /** Deja todas las cajas en su lugar, sin animar (cambio de modo). */
+    const resetBoxes = () => {
+      boxRefs.current.forEach((box, i) => {
+        if (!box) return;
+        gsap.killTweensOf([box.scale, box.position, box.rotation, openRefs[i]]);
+        openRefs[i].current = 0;
+        const slot = slotFor(i);
+        const [x, y, z] = cartesian(slot, GRASP_Y);
+        box.scale.setScalar(BOX_SCALE);
+        box.position.set(x, y, z);
+        box.rotation.y = facingOutward(slot.phi) + yawFlip(i);
+      });
+      carried.current = null;
+    };
+
+    /** Limpia lo que esté en curso (tarea, cola, reposo) al entrar o salir del modo piloto. */
+    const clearAll = () => {
+      // La cola se conserva: un pedido hecho desde el piloto (buscador, botones) se atiende al salir.
+      const t = task.current;
+      t?.tl?.kill();
+      t?.timer?.kill();
+      task.current = null;
+      idle.current?.kill();
+      idle.current = null;
+      reading.current = false;
+      resetBoxes();
+      live.current.onShowing?.(null);
+      live.current.onDelivered?.(null);
+    };
+
+    /** Piloto: cierra la garra (agarra) o la abre (suelta / entrega). */
+    const pilotState = { closed: false, holding: -1 };
+    const pilotGrab = () => {
+      if (live.current.mode !== "pilot") return;
+      const grip = poseRef.current;
+      if (pilotState.closed) {
+        pilotState.closed = false;
+        gsap.to(grip, { grip: GRIP_OPEN, duration: 0.35, ease: "power2.out" });
+        const box = carried.current;
+        const index = pilotState.holding;
+        pilotState.holding = -1;
+        if (!box || index < 0) return;
+        carried.current = null;
+        const [px, , pz] = cartesian(DELIVERY, 0);
+        if (Math.hypot(box.position.x - px, box.position.z - pz) < PILOT_PAD_DIST && !task.current) {
+          // Entrega: queda sobre la plataforma, se muestra y abre el panel.
+          const [x, y, z] = cartesian(DELIVERY, GRASP_Y);
+          box.position.set(x, y, z);
+          box.rotation.y = facingOutward(DELIVERY.phi) + yawFlip(index);
+          task.current = { index, phase: "espera", showcased: true, released: true, tl: null, timer: null };
+          live.current.onShowing?.(index);
+          showcase(index, true);
+          live.current.onDelivered?.(index);
+        } else {
+          // Cae al piso donde la soltó y, un momento después, vuelve sola a su lugar.
+          gsap.killTweensOf(box.position);
+          gsap.to(box.position, { y: GRASP_Y, duration: 0.3, ease: "bounce.out" });
+          gsap.delayedCall(1.6, () => {
+            if (carried.current !== box && live.current.mode === "pilot") slideHome(index);
+          });
+        }
+        return;
+      }
+      pilotState.closed = true;
+      gsap.to(grip, { grip: GRIP_CLOSED, duration: 0.3, ease: "power2.inOut" });
+      // ¿Hay una caja a mano? La más cercana a la garra.
+      const t = reach.current;
+      const [gx, gy, gz] = cartesian(t, t.y);
+      let best = -1;
+      let bestD = PILOT_GRAB_DIST;
+      boxRefs.current.forEach((box, i) => {
+        if (!box || task.current?.index === i) return;
+        const d = Math.hypot(box.position.x - gx, box.position.z - gz);
+        if (d < bestD && Math.abs(box.position.y - gy) < PILOT_GRAB_DY) {
+          best = i;
+          bestD = d;
+        }
+      });
+      if (best >= 0) {
+        const box = boxRefs.current[best]!;
+        gsap.killTweensOf([box.position, box.rotation]);
+        carried.current = box;
+        carriedFlip.current = yawFlip(best);
+        pilotState.holding = best;
+      }
+    };
+    pilotGrabFn.current = pilotGrab;
 
     let marks = 0;
     /**
@@ -227,6 +374,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       tl.to(grip, { grip: GRIP_CLOSED, duration: 0.5, ease: "power2.inOut" }, "-=0.05");
       tl.call(() => {
         carried.current = boxRefs.current[index];
+        carriedFlip.current = yawFlip(index);
       });
 
       // 4) Sube y, antes de terminar de subir, ya empieza a girar hacia el destino (arco).
@@ -268,9 +416,20 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       showcase(t.index, false);
       live.current.onDelivered?.(null);
 
+      if (live.current.mode === "pilot") {
+        // Sin brazo automático: la caja vuelve sola a su lugar (el visitante sigue pilotando).
+        const tl = gsap.timeline({ onComplete: finish });
+        tl.to({}, { duration: 1.3 });
+        tl.call(() => slideHome(t.index));
+        tl.to({}, { duration: 1.1 });
+        t.tl = tl;
+        applyPause();
+        return;
+      }
+
       const tl = gsap.timeline({ onComplete: finish });
       tl.to({}, { duration: 1.4 }); // se cierra la tapa y la caja recupera su tamaño
-      pickAndPlace(tl, t.index, DELIVERY, slotOf(t.index));
+      pickAndPlace(tl, t.index, DELIVERY, slotFor(t.index));
       tl.timeScale(BASE_SPEED);
       t.tl = tl;
       applyPause();
@@ -310,7 +469,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       }
       if (carried.current && carried.current === box) {
         t.phase = "volver";
-        const slot = slotOf(t.index);
+        const slot = slotFor(t.index);
         const tl = gsap.timeline({ onComplete: finish });
         tl.to(target, { y: HOVER_Y, duration: 0.45, ease: "power2.inOut" });
         tl.to(target, { phi: slot.phi, r: slot.r, duration: 1.3, ease: "power2.inOut" });
@@ -336,7 +495,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
     const next = () => {
       if (task.current) return;
       const { active: isActive, mode: m, count: n } = live.current;
-      if (!isActive) return;
+      if (!isActive || m === "pilot") return;
 
       let index = queue.current.shift();
       if (index === undefined && m === "auto") index = cursor.current++ % n;
@@ -348,7 +507,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       idle.current?.kill();
       idle.current = null;
 
-      const slot = slotOf(index);
+      const slot = slotFor(index);
       const tl = gsap.timeline({ onComplete: enterHold });
       pickAndPlace(tl, index, slot, DELIVERY);
       tl.call(() => {
@@ -389,10 +548,25 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
         reading.current = paused;
         applyPause();
       },
+      pilotKey: (key, down) => {
+        pilotKeys.current[key] = down;
+      },
+      pilotGrab,
     };
 
     kick.current = next;
     modeChanged.current = () => {
+      const pilot = live.current.mode === "pilot";
+      if (pilot !== wasPilot.current) {
+        wasPilot.current = pilot;
+        clearAll();
+        pilotState.closed = false;
+        pilotState.holding = -1;
+        Object.keys(pilotKeys.current).forEach((key) => (pilotKeys.current[key as PilotKey] = false));
+        if (pilot) gsap.to(poseRef.current, { grip: GRIP_OPEN, duration: 0.4 });
+        return;
+      }
+      if (pilot) return;
       const t = task.current;
       if (!t || t.phase !== "espera") return;
       if (live.current.mode === "manual") {
@@ -405,6 +579,8 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
     };
 
     if (import.meta.env.DEV) {
+      // Solo desarrollo: coloca la garra directamente (las pruebas en headless van a ~1 cuadro por segundo).
+      (window as unknown as { __cellPilotTo?: (r: ReachTarget) => void }).__cellPilotTo = (r) => Object.assign(reach.current, r);
       (window as unknown as { __cellDebug?: () => unknown }).__cellDebug = () => ({
         task: task.current && {
           index: task.current.index,
@@ -413,6 +589,8 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
           showcased: !!task.current.showcased,
           released: !!task.current.released,
         },
+        reach: [reach.current.phi, reach.current.r, reach.current.y].map((v) => Math.round(v * 100) / 100),
+        grip: poseRef.current.grip,
         queue: [...queue.current],
         reading: reading.current,
         active: live.current.active,
@@ -428,6 +606,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
     return () => {
       commandsRef.current = null;
       kick.current = null;
+      pilotGrabFn.current = null;
       sync.current = null;
       modeChanged.current = null;
       task.current?.tl?.kill();
@@ -438,6 +617,44 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       queue.current = [];
       carried.current = null;
       reading.current = false;
+    };
+  }, [commandsRef]);
+
+  // Teclado del modo piloto: flechas o WASD, Q/E (o RePág/AvPág) para subir y bajar, Espacio para agarrar/soltar.
+  useEffect(() => {
+    const KEYS: Record<string, PilotKey | "grab"> = {
+      ArrowLeft: "left", a: "left", A: "left",
+      ArrowRight: "right", d: "right", D: "right",
+      ArrowUp: "forward", w: "forward", W: "forward",
+      ArrowDown: "back", s: "back", S: "back",
+      q: "up", Q: "up", PageUp: "up",
+      e: "down", E: "down", PageDown: "down",
+      " ": "grab",
+    };
+    const typing = (el: EventTarget | null) => {
+      const n = el as HTMLElement | null;
+      return !!n && (n.tagName === "INPUT" || n.tagName === "TEXTAREA" || n.tagName === "SELECT" || n.isContentEditable);
+    };
+    const onKey = (e: KeyboardEvent, down: boolean) => {
+      if (live.current.mode !== "pilot" || !live.current.active || typing(e.target)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const action = KEYS[e.key];
+      if (!action) return;
+      e.preventDefault();
+      if (action === "grab") {
+        if (down && !e.repeat) pilotGrabFn.current?.();
+      } else commandsRef.current?.pilotKey(action, down);
+    };
+    const kd = (e: KeyboardEvent) => onKey(e, true);
+    const ku = (e: KeyboardEvent) => onKey(e, false);
+    const clear = () => Object.keys(pilotKeys.current).forEach((key) => (pilotKeys.current[key as PilotKey] = false));
+    window.addEventListener("keydown", kd);
+    window.addEventListener("keyup", ku);
+    window.addEventListener("blur", clear);
+    return () => {
+      window.removeEventListener("keydown", kd);
+      window.removeEventListener("keyup", ku);
+      window.removeEventListener("blur", clear);
     };
   }, [commandsRef]);
 

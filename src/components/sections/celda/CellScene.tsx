@@ -96,7 +96,7 @@ export default function CellScene({ onReady, onEnvReady, theme, active, env, mod
           construcción pesadas) el brazo y las cajas no desaparecen de la escena. */}
       <Suspense fallback={null}>
         <CellEnvironment env={env} theme={theme} rim={rim} />
-        <ReadySignal key={env} onReady={onEnvReady} />
+        <ReadySignal key={`${env}-${theme}`} onReady={onEnvReady} />
       </Suspense>
 
       <Suspense fallback={null}>

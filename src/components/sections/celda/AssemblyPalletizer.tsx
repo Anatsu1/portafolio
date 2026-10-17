@@ -4,14 +4,11 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { StackLight } from "./AssemblyStations";
 import { LINE_BOX_FAR_URL } from "./assemblyKit";
-import { BELT_TOP, BELT_W, LINE_BOX_HALF_H, LINE_BOX_SCALE, PICK_X, RUN_Z, WALL_Z } from "./assemblyPath";
+import { BELT_TOP, BELT_W, LINE_BOX_HALF_H, LINE_BOX_SCALE, PICK_X, RUN_Z, WALL_Z, lineTime } from "./assemblyPath";
 import {
   ARM,
-  BOX_TOP_ABOVE_ORIGIN,
-  CARRY_Y,
   FORK_DOOR_X,
   PALLET_POS,
-  PICK_TOP_Y,
   ROBOT_POS,
   armEvent,
   newStationState,
@@ -19,7 +16,9 @@ import {
   slotYaw,
   stationAt,
   stopperDown,
+  toolPose,
   type ArmEvent,
+  type Pose,
 } from "./assemblyPallet";
 import {
   ARM_H0,
@@ -69,70 +68,6 @@ const smooth = (x: number) => {
   return c * c * (3 - 2 * c);
 };
 const span = (t: number, a: number, b: number) => smooth((t - a) / (b - a));
-
-type Pose = { x: number; y: number; z: number; yaw: number };
-
-/** Polares alrededor del pie del brazo (para trasladar girando, no en línea recta). */
-function toPolar(x: number, z: number) {
-  const dx = x - ROBOT_POS.x;
-  const dz = z - ROBOT_POS.z;
-  return { phi: Math.atan2(-dz, dx), r: Math.hypot(dx, dz) };
-}
-
-function lerpAngle(a: number, b: number, t: number) {
-  let d = b - a;
-  while (d > Math.PI) d -= Math.PI * 2;
-  while (d < -Math.PI) d += Math.PI * 2;
-  return a + d * t;
-}
-
-/** Punto de la herramienta (tapa de la caja) según el ciclo. */
-function toolPose(ev: ArmEvent, out: Pose) {
-  const home = { x: PICK_X, z: RUN_Z };
-  if (ev.n < 0) {
-    out.x = home.x;
-    out.z = home.z;
-    out.y = CARRY_Y;
-    out.yaw = 0;
-    return out;
-  }
-  const [sx, sy, sz] = slotOffset(ev.slot);
-  const slot = { x: PALLET_POS.x + sx, z: PALLET_POS.z + sz, y: sy + BOX_TOP_ABOVE_ORIGIN };
-  // La herramienta gira lo necesario para que la caja quede como pide el lugar.
-  const sYaw = slotYaw(ev.slot) - ev.flip;
-  const t = ev.tau;
-  // Tramo de traslado en polares (gira alrededor del pie).
-  const travel = (from: { x: number; z: number }, to: { x: number; z: number }, k: number) => {
-    const a = toPolar(from.x, from.z);
-    const b = toPolar(to.x, to.z);
-    const phi = lerpAngle(a.phi, b.phi, k);
-    const r = a.r + (b.r - a.r) * k;
-    out.x = ROBOT_POS.x + Math.cos(phi) * r;
-    out.z = ROBOT_POS.z - Math.sin(phi) * r;
-  };
-  if (t < ARM.up) {
-    out.x = home.x;
-    out.z = home.z;
-    out.y = t < ARM.grip ? CARRY_Y + (PICK_TOP_Y - CARRY_Y) * span(t, 0, ARM.down) : PICK_TOP_Y + (CARRY_Y - PICK_TOP_Y) * span(t, ARM.grip, ARM.up);
-    out.yaw = ev.yaw * span(t, 0, ARM.down);
-  } else if (t < ARM.over) {
-    const k = span(t, ARM.up, ARM.over);
-    travel(home, slot, k);
-    out.y = CARRY_Y;
-    out.yaw = ev.yaw + (sYaw - ev.yaw) * k;
-  } else if (t < ARM.clear) {
-    out.x = slot.x;
-    out.z = slot.z;
-    out.y = t < ARM.place ? CARRY_Y + (slot.y - CARRY_Y) * span(t, ARM.over, ARM.set) : slot.y + (CARRY_Y - slot.y) * span(t, ARM.place, ARM.clear);
-    out.yaw = sYaw;
-  } else {
-    const k = span(t, ARM.clear, ARM.home);
-    travel(slot, home, k);
-    out.y = CARRY_Y;
-    out.yaw = sYaw * (1 - k);
-  }
-  return out;
-}
 
 type Joints = { yaw: THREE.Group; shoulder: THREE.Group; elbow: THREE.Group; wrist: THREE.Group; tool: THREE.Group; cups: THREE.Mesh };
 
@@ -240,7 +175,7 @@ export default function AssemblyPalletizer({ rim }: { rim: string }) {
   );
 
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
+    const t = lineTime(state.clock.elapsedTime);
     const { ev, st, pose, o, m, pal } = tmp;
     armEvent(t, ev);
     stationAt(t, st);
@@ -306,10 +241,8 @@ export default function AssemblyPalletizer({ rim }: { rim: string }) {
         }
       }
     }
-    // Caja en las ventosas.
-    if (ev.n >= 0 && ev.tau >= ARM.grip && ev.tau < ARM.place) {
-      putBox(pose.x, pose.y - BOX_TOP_ABOVE_ORIGIN, pose.z, pose.yaw + ev.flip);
-    }
+    // La caja en las ventosas la dibuja la cinta (AssemblyConveyor) con el
+    // mismo modelo que traía sobre la banda: acá recién aparece al apoyarla.
     for (const sp of STATIC_PALLETS) {
       putPallet(palletAt(sp.x, 0, sp.z, sp.ry));
       const y0 = 0.144 + LINE_BOX_HALF_H;

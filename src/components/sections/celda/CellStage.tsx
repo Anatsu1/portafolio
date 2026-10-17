@@ -1,7 +1,10 @@
 import RobotArm from "./RobotArm";
 import CargoBox from "./CargoBox";
 import DeliveryPad from "./DeliveryPad";
-import { CELL_BOXES } from "../../../data/cell";
+import { LAB_BOXES as CELL_BOXES } from "../../../data/cell";
+import { CELL_TECH } from "../../../data/cellTech";
+import TechRack from "./TechRack";
+import CameraZoom from "./CameraZoom";
 import {
   useCellController,
   type CellCommands,
@@ -10,7 +13,7 @@ import {
 import { useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { PointLight } from "three";
-import { BOX_HALF_H, cartesian, facingOutward, slotOf } from "./cellLayout";
+import { BOX_HALF_H, TOTAL_BOXES, cartesian, facingOutward, slotFor, yawFlip } from "./cellLayout";
 
 type CellStageProps = {
   active: boolean;
@@ -27,7 +30,7 @@ type CellStageProps = {
 /** Lo que se mueve dentro del Canvas: el brazo, las cajas y la plataforma. */
 export default function CellStage({ active, mode, glow, showing, commandsRef, onShowing, onDelivered, onPick }: CellStageProps) {
   // Una apertura de tapa (0..1) por caja: el controlador la anima y cada caja la lee.
-  const openRefs = useRef<MutableRefObject<number>[]>(CELL_BOXES.map(() => ({ current: 0 })));
+  const openRefs = useRef<MutableRefObject<number>[]>(Array.from({ length: TOTAL_BOXES }, () => ({ current: 0 })));
   // Luz interior ÚNICA de las cajas: siempre presente (intensidad 0 si ninguna está abierta).
   const sharedLight = useRef<PointLight | null>(null);
   // Antes que las cajas (prioridad negativa): apaga la luz para que la caja más abierta la reclame.
@@ -37,6 +40,7 @@ export default function CellStage({ active, mode, glow, showing, commandsRef, on
     l.userData.best = 0;
     l.intensity = 0;
   }, -1);
+  const zoomRef = useRef(0);
   const { poseRef, boxRefs } = useCellController({
     count: CELL_BOXES.length,
     active,
@@ -45,6 +49,7 @@ export default function CellStage({ active, mode, glow, showing, commandsRef, on
     onDelivered,
     commandsRef,
     openRefs: openRefs.current,
+    zoomRef,
   });
 
   return (
@@ -52,23 +57,28 @@ export default function CellStage({ active, mode, glow, showing, commandsRef, on
       <pointLight ref={sharedLight} intensity={0} distance={1} decay={2} />
       <RobotArm poseRef={poseRef} />
       <DeliveryPad />
-      {CELL_BOXES.map((box, i) => {
-        const slot = slotOf(i);
+      <TechRack />
+      <CameraZoom zoomRef={zoomRef} />
+      {[...CELL_BOXES, ...CELL_TECH].map((box, i) => {
+        const slot = slotFor(i);
+        const tech = i >= CELL_BOXES.length ? (box as (typeof CELL_TECH)[number]) : null;
         return (
           <CargoBox
-            key={box.id}
+            key={tech ? `tech-${tech.id}` : box.id}
             ref={(group) => {
               boxRefs.current[i] = group;
             }}
-            id={box.id}
-            label={box.label}
+            id={tech ? `tech-${tech.id}` : box.id}
+            label={tech ? tech.label : box.label}
+            plateText={tech?.short}
+            labelOnHover={!!tech}
             glow={glow}
             openRef={openRefs.current[i]}
             sharedLight={sharedLight}
             selected={showing === i}
             onSelect={() => onPick(i)}
             position={cartesian(slot, BOX_HALF_H)}
-            rotationY={facingOutward(slot.phi)}
+            rotationY={facingOutward(slot.phi) + yawFlip(i)}
           />
         );
       })}

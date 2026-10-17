@@ -1,4 +1,5 @@
-import { CELL_BOXES } from "../../../data/cell";
+import { LAB_BOXES as CELL_BOXES } from "../../../data/cell";
+import { CELL_TECH } from "../../../data/cellTech";
 
 /**
  * Geometría de la celda: dónde está cada caja y la plataforma de entrega.
@@ -20,6 +21,38 @@ export function slotOf(index: number): Polar {
   const count = CELL_BOXES.length;
   const t = count === 1 ? 0.5 : index / (count - 1);
   return { phi: ARC_CENTER - ARC_SPREAD / 2 + t * ARC_SPREAD, r: ARC_RADIUS };
+}
+
+/**
+ * Estante de tecnologías, detrás del brazo (hacia -Z): un arco al alcance de la
+ * garra. El índice de una caja de tecnología es `CELL_BOXES.length + i`.
+ */
+export const TECH_RADIUS = 2.5;
+export const TECH_CENTER = Math.PI / 2; // yaw que apunta hacia el fondo (-Z)
+export const TECH_SPREAD = 2.0;
+
+export function techSlot(i: number): Polar {
+  const count = CELL_TECH.length;
+  const t = count === 1 ? 0.5 : i / (count - 1);
+  // De derecha a izquierda vista desde la cámara: el yaw crece hacia -X.
+  return { phi: TECH_CENTER - TECH_SPREAD / 2 + t * TECH_SPREAD, r: TECH_RADIUS };
+}
+
+/** Total de cajas de la escena: secciones + tecnologías. */
+export const TOTAL_BOXES = CELL_BOXES.length + CELL_TECH.length;
+
+/** Lugar de reposo de cualquier caja (sección o tecnología). */
+export function slotFor(index: number): Polar {
+  return index < CELL_BOXES.length ? slotOf(index) : techSlot(index - CELL_BOXES.length);
+}
+
+/**
+ * Las cajas del estante trasero se guardan con la chapa mirando hacia la base
+ * (o sea hacia la cámara, porque están detrás): media vuelta respecto de las
+ * del arco delantero, que miran hacia afuera.
+ */
+export function yawFlip(index: number) {
+  return index < CELL_BOXES.length ? 0 : Math.PI;
 }
 
 /** Posición cartesiana de un punto polar (y a la altura dada). */

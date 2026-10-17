@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { PROJECTS } from "../../../data/projects";
 import {
@@ -9,6 +9,7 @@ import {
   type SkillNode,
 } from "../../../data/skillTree";
 import { useMeasuredEdges, type MeasuredEdge } from "../../../hooks/useMeasuredEdges";
+import PanZoom from "./PanZoom";
 import SkillNodeButton, { SLOT_H, SLOT_W } from "./SkillNodeButton";
 
 type SkillTreeProps = {
@@ -147,8 +148,19 @@ export default function SkillTree({
 
   const hasFilter = picked.size > 0;
 
-  return (
-    <div>
+  // Por debajo de `wide` (1360px) el mapa va en un visor con arrastre y zoom, con el
+  // layout ancho (familias en columnas): entra a lo ancho a escala chica en vez de
+  // crecer ~3.000px hacia abajo.
+  const [compact, setCompact] = useState(() => window.matchMedia("(max-width: 1359px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1359px)");
+    const on = () => setCompact(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+
+  const map = (
+    <>
       {/* En `wide` el mapa (1280px con 14 hojas) no entra en la columna de
           texto (1152px de `max-w-6xl` menos su padding), así que se sale de
           ella: `w-max` lo deja medir lo que ocupa y `left-1/2` +
@@ -230,6 +242,19 @@ export default function SkillTree({
           </div>
         </div>
       </div>
+
+    </>
+  );
+
+  return (
+    <div>
+      {compact ? (
+        <PanZoom label="Mapa de skills: arrastrá para moverte">
+          <div className="force-wide">{map}</div>
+        </PanZoom>
+      ) : (
+        map
+      )}
 
       <div
         aria-live="polite"

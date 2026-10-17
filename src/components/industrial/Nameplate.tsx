@@ -37,7 +37,7 @@ export default function Nameplate() {
   const engraved = { textShadow: "0 1px 0 rgba(255,255,255,0.55), 0 -1px 0 rgba(0,0,0,0.35)" } as const;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-14 md:px-10 [perspective:1200px]">
+    <div className="mx-auto w-full max-w-6xl px-6 py-14 md:px-10 overflow-x-clip [perspective:1200px]">
       <motion.div
         className="relative mx-auto max-w-3xl origin-top overflow-hidden rounded-xl border border-white/40 p-6 shadow-[0_22px_48px_-22px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.75),inset_0_-3px_6px_rgba(0,0,0,0.4)] md:p-8"
         style={{ background: steel }}

@@ -18,7 +18,7 @@ const PLATE = { x: 0.12, y: -0.05, z: 0.93, w: 0.8, h: 0.5 };
  * metal oscuro (sin texto: se lee a distancia y se memoriza). El mismo icono
  * aparece en el rótulo, los botones y el panel de la sección.
  */
-function makePlateTexture(id: string, accent: string) {
+function makePlateTexture(id: string, accent: string, text?: string) {
   const W = 512;
   const H = 320;
   const canvas = document.createElement("canvas");
@@ -42,8 +42,23 @@ function makePlateTexture(id: string, accent: string) {
     ctx.lineWidth = 10;
     ctx.strokeRect(14, 14, W - 28, H - 28);
     ctx.globalAlpha = 1;
-    // Icono grande con brillo
-    const paths = CELL_ICON_PATHS[id as CellIconId];
+    // Icono grande con brillo (o, en las cajas de tecnología, la sigla en grande)
+    const paths = text ? null : CELL_ICON_PATHS[id as CellIconId];
+    if (text) {
+      let size = 150;
+      ctx.font = `800 ${size}px Sora, system-ui, sans-serif`;
+      while (ctx.measureText(text).width > W - 90 && size > 40) {
+        size -= 6;
+        ctx.font = `800 ${size}px Sora, system-ui, sans-serif`;
+      }
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = accent;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 14;
+      ctx.fillText(text, W / 2, H / 2 + 6);
+      ctx.shadowBlur = 0;
+    }
     if (paths) {
       const size = 285;
       ctx.save();
@@ -69,6 +84,10 @@ function makePlateTexture(id: string, accent: string) {
 type CargoBoxProps = {
   id: string;
   label: string;
+  /** Sigla estampada en la chapa en lugar del icono (cajas de tecnología). */
+  plateText?: string;
+  /** El rótulo flotante solo aparece al pasar el mouse (cajas de tecnología: la chapa ya lo dice). */
+  labelOnHover?: boolean;
   /** Color del resplandor del piso (hover / seleccionada). */
   glow: string;
   /** Está en la plataforma de entrega (resaltada). */
@@ -88,12 +107,12 @@ type CargoBoxProps = {
  * posición inicial es solo el punto de partida.
  */
 const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
-  { id, label, glow, selected = false, onSelect, openRef, sharedLight, position, rotationY = 0 },
+  { id, label, plateText, labelOnHover = false, glow, selected = false, onSelect, openRef, sharedLight, position, rotationY = 0 },
   ref
 ) {
   // El icono va en el color del tema (`glow` = color de marca del tema).
   const accent = glow;
-  const texture = useMemo(() => makePlateTexture(id, accent), [id, accent]);
+  const texture = useMemo(() => makePlateTexture(id, accent, plateText), [id, accent, plateText]);
   const [hovered, setHovered] = useState(false);
   const lit = hovered || selected;
 
@@ -119,13 +138,13 @@ const CargoBox = forwardRef<THREE.Group, CargoBoxProps>(function CargoBox(
     >
       <CargoBoxModel openRef={openRef} glow={glow} sharedLight={sharedLight} />
       {/* Rótulo legible: la placa del modelo es chica a esta distancia */}
-      {!selected && (
+      {!selected && (!labelOnHover || hovered) && (
         <Html position={[0, 1.35, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
           <span
             className="flex items-center gap-1.5 whitespace-nowrap rounded border bg-black/70 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur"
             style={{ borderColor: accent }}
           >
-            <CellIcon id={id as CellIconId} size={12} color={accent} />
+            {!plateText && <CellIcon id={id as CellIconId} size={12} color={accent} />}
             {label}
           </span>
         </Html>

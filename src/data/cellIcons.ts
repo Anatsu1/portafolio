@@ -9,7 +9,7 @@
  * Más adelante (Lab de iconos con red neuronal) son también los glifos que se
  * dibujan para navegar: por eso son formas simples y distinguibles entre sí.
  */
-export type CellIconId = "sobre-mi" | "educacion" | "experiencia" | "proyectos" | "contacto" | "auto" | "manual";
+export type CellIconId = "sobre-mi" | "educacion" | "experiencia" | "proyectos" | "contacto" | "auto" | "manual" | "pilot";
 
 export const CELL_ICON_PATHS: Record<CellIconId, readonly string[]> = {
   // Persona
@@ -30,4 +30,6 @@ export const CELL_ICON_PATHS: Record<CellIconId, readonly string[]> = {
   auto: ["M17 2l4 4l-4 4", "M3 11V9a4 4 0 0 1 4-4h14", "M7 22l-4-4l4-4", "M21 13v2a4 4 0 0 1-4 4H3"],
   // Puntero (modo manual)
   manual: ["M4 4l7.07 17l2.51-7.39L21 11.07Z"],
+  // Joystick (modo piloto)
+  pilot: ["M12 3v8", "M12 11a3 3 0 1 0 0 .01", "M5 16h14a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2Z"],
 };

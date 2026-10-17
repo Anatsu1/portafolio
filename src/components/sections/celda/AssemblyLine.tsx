@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import * as THREE from "three";
@@ -12,12 +12,21 @@ import AssemblyStations, { StackLight } from "./AssemblyStations";
 import StaticInstances, { type Xform } from "./StaticInstances";
 import { useKit } from "./assemblyKit";
 import {
+  BELT_SPEED,
+  BELT_TOP,
+  BELT_W,
   IN_X,
+  LINE_BOX_COUNT,
+  LINE_BOX_HALF_H,
+  LINE_BOX_SCALE,
   OUT_X,
   PATH_LEN,
   TUNNEL_Z,
   WALL_Z,
+  boxAt,
+  lineTime,
   stationView,
+  type BoxState,
 } from "./assemblyPath";
 import {
   glowTexture,
@@ -129,7 +138,7 @@ function LoadingBay({ x, theme, glow, title, sub, sAtDoor }: { x: number; theme:
   const boltGeo = useMemo(() => new THREE.CylinderGeometry(0.045, 0.045, 0.05, 6), []);
 
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
+    const t = lineTime(state.clock.elapsedTime);
     const near = stationView(sAtDoor, t).near;
     // Ámbar mientras una caja cruza la boca; verde el resto del tiempo.
     status.current = Math.abs(near) < 0.9 ? 1 : 0;
@@ -194,6 +203,128 @@ function LoadingBay({ x, theme, glow, title, sub, sAtDoor }: { x: number; theme:
       </mesh>
     </group>
   );
+}
+
+/*
+ * Cortinas de tiras en las dos bocas de la cinta. Son las que esconden el
+ * reciclado: las cajas nacen (s = 0) y mueren (s = PATH_LEN) dentro del túnel,
+ * detrás de la cortina, así que nunca se las ve aparecer ni esfumarse; solo
+ * empujan las tiras al cruzar. Tiras opacas con una ranura finita entre una y
+ * otra (por ahí se filtra la luz del túnel); sobre la cinta cuelgan hasta
+ * apenas encima de las guías, al costado llegan al piso.
+ */
+const STRIP_N = 11;
+const STRIP_PITCH = DOOR_W / STRIP_N;
+const STRIP_W = STRIP_PITCH - 0.008;
+const STRIP_TOP = DOOR_H - 0.57; // cuelgan de la barra amarilla de la persiana
+const STRIP_Z = WALL_Z - 0.12;
+const STRIP_BOTTOM_BELT = BELT_TOP + 0.13; // libra las guías amarillas
+const STRIP_L_BELT = STRIP_TOP - STRIP_BOTTOM_BELT;
+/** Distancia recorrida por una caja al llegar a la cortina de la boca de entrada. */
+const CURTAIN_S = STRIP_Z - TUNNEL_Z;
+// La caja empuja las tiras hasta que su borde inferior le pasa por encima a la tapa.
+const BOX_HALF_L = 0.24;
+const BOX_TOP_Y = BELT_TOP + LINE_BOX_HALF_H + 0.88 * LINE_BOX_SCALE;
+const SWING_MAX = Math.acos(Math.min((STRIP_TOP - BOX_TOP_Y - 0.01) / STRIP_L_BELT, 1));
+const SWING_REACH = STRIP_L_BELT * Math.sin(SWING_MAX);
+
+/**
+ * Ángulo de una tira por una caja a distancia `d` (con signo, en el sentido
+ * de avance; negativa = todavía no llegó). Empuje geométrico mientras el
+ * frente la corre, apoyada sobre la tapa mientras pasa, y al soltarse cae con
+ * un vaivén amortiguado. Continua en todo el rango: sumar el aporte de todas
+ * las cajas no da saltos aunque cambie cuál es la más cercana.
+ */
+function stripSwing(d: number, freq: number) {
+  if (d < -BOX_HALF_L) return 0;
+  const push = d + BOX_HALF_L;
+  if (push < SWING_REACH) return Math.asin(push / STRIP_L_BELT);
+  if (d < BOX_HALF_L + SWING_REACH) return SWING_MAX;
+  const r = (d - BOX_HALF_L - SWING_REACH) / BELT_SPEED; // segundos desde que se soltó
+  return SWING_MAX * Math.exp(-3.2 * r) * Math.cos(freq * r);
+}
+
+function StripCurtains({ theme, glow }: { theme: Theme; glow: string }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 0.012).translate(0, -0.5, 0), []);
+  // PVC grueso: opaco (tiene que tapar), pero con un poco de la luz del túnel
+  // "pasando" por el material para que la boca no quede como un hueco negro.
+  const material = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: theme === "dark" ? "#2c3331" : "#66716c",
+        emissive: glow,
+        emissiveIntensity: theme === "dark" ? 0.09 : 0.05,
+        metalness: 0.05,
+        roughness: 0.38,
+      }),
+    [theme, glow]
+  );
+  // Por boca: x de la cinta, `s` de la cortina y sentido de avance en Z (+1 sale de la pared, −1 entra).
+  const bays = useMemo(
+    () => [
+      { x: IN_X, s0: CURTAIN_S, dir: 1 },
+      { x: OUT_X, s0: PATH_LEN - CURTAIN_S, dir: -1 },
+    ],
+    []
+  );
+  const strips = useMemo(
+    () =>
+      Array.from({ length: STRIP_N }, (_, i) => {
+        const dx = (i - (STRIP_N - 1) / 2) * STRIP_PITCH;
+        const overBelt = Math.abs(dx) - STRIP_W / 2 < BELT_W / 2 + 0.1;
+        const side = Math.abs(i - (STRIP_N - 1) / 2);
+        return {
+          dx,
+          len: overBelt ? STRIP_L_BELT : STRIP_TOP - 0.02,
+          // La caja (≈0,47 de ancho) solo empuja las tres del medio; las vecinas apenas se mecen.
+          gain: side <= 1 ? 1 : side === 2 ? 0.18 : 0,
+          freq: 7.2 + ((i * 5) % 4) * 0.7,
+        };
+      }),
+    []
+  );
+  const tmp = useMemo(
+    () => ({
+      o: new THREE.Object3D(),
+      st: { s: 0, visible: false, jitter: 0, flip: 0, lap: 0, held: false } as BoxState,
+      near: new Float32Array(LINE_BOX_COUNT),
+    }),
+    []
+  );
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => material.dispose(), [material]);
+
+  useFrame((state) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const t = lineTime(state.clock.elapsedTime);
+    const { o, st, near } = tmp;
+    let n = 0;
+    for (const bay of bays) {
+      // Distancias de las cajas que pueden estar tocando o haciendo mecer esta cortina.
+      let m = 0;
+      for (let k = 0; k < LINE_BOX_COUNT; k++) {
+        boxAt(k, t, st);
+        const d = st.s - bay.s0;
+        if (st.visible && d > -BOX_HALF_L && d < 4) near[m++] = d;
+      }
+      for (const strip of strips) {
+        let a = 0;
+        for (let i = 0; i < m && strip.gain > 0; i++) a += stripSwing(near[i], strip.freq);
+        a = Math.min(a, SWING_MAX) * strip.gain;
+        o.position.set(bay.x + strip.dx, STRIP_TOP, STRIP_Z);
+        // rotation.x positivo lleva la punta hacia −Z: así la empuja en el sentido de avance.
+        o.rotation.set(-bay.dir * a, 0, 0);
+        o.scale.set(STRIP_W, strip.len, 1);
+        o.updateMatrix();
+        mesh.setMatrixAt(n++, o.matrix);
+      }
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+
+  return <instancedMesh ref={ref} args={[geometry, material, STRIP_N * 2]} frustumCulled={false} />;
 }
 
 /** Columnas de alma llena contra la pared, con banda de peligro abajo. */
@@ -270,7 +401,7 @@ function ForkDoor({ theme }: { theme: Theme }) {
   const st = useMemo(newStationState, []);
   const depth = WALL_Z - FORK_TUNNEL_Z;
   useFrame((state) => {
-    stationAt(state.clock.elapsedTime, st);
+    stationAt(lineTime(state.clock.elapsedTime), st);
     const open = st.fork.door;
     // La persiana se enrolla hacia arriba: queda la parte que todavía cubre el hueco.
     const cover = Math.max(0.02, 1 - open);
@@ -366,6 +497,7 @@ export default function AssemblyLine({ theme, rim }: { theme: Theme; rim: string
       <LoadingBay x={OUT_X} theme={theme} glow={rim} title="DESPACHO" sub="LINEA 01 · BOCA B" sAtDoor={PATH_LEN - DOOR_S} />
 
       <AssemblyConveyor />
+      <StripCurtains theme={theme} glow={pal.tunnelIn} />
       <AssemblyStations rim={rim} />
       <AssemblyPalletizer rim={rim} />
       <ForkDoor theme={theme} />

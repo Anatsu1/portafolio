@@ -2,8 +2,7 @@ import { useLayoutEffect, useRef, type MutableRefObject } from "react";
 import type { ArmPoints } from "./arm2d";
 
 /**
- * Partes móviles del brazo en estilo "plano técnico" (las comparten el Hero
- * móvil y el laboratorio 2D): dos segmentos con contorno fino y eje punteado,
+ * Partes móviles del brazo en estilo "plano técnico" del laboratorio 2D: dos segmentos con contorno fino y eje punteado,
  * articulaciones con círculo de tornillos y una pinza de dos dedos que cuelga
  * siempre vertical (muñeca compensada, como un pick-and-place).
  *

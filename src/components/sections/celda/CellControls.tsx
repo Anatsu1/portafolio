@@ -1,4 +1,4 @@
-import { CELL_BOXES } from "../../../data/cell";
+import { LAB_BOXES as CELL_BOXES } from "../../../data/cell";
 import type { CellIconId } from "../../../data/cellIcons";
 import CellIcon from "./CellIcon";
 import type { CellMode } from "../../../hooks/useCellController";
@@ -16,6 +16,7 @@ type CellControlsProps = {
 const MODES: { id: CellMode; label: string; hint: string }[] = [
   { id: "auto", label: "Automático", hint: "El brazo recorre las cajas solo, una tras otra" },
   { id: "manual", label: "Manual", hint: "Elegís vos qué caja trae el brazo" },
+  { id: "pilot", label: "Pilotar", hint: "Manejás el brazo con el teclado: agarrá una caja y llevala al círculo de ENTREGA" },
 ];
 
 /**

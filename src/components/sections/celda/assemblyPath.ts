@@ -12,6 +12,23 @@
  * instante se puede reproducir (útil para las capturas de prueba).
  */
 
+// --- reloj ---
+
+/*
+ * Solo en desarrollo: `?linet=90` adelanta el reloj de la línea 90 s, para
+ * capturar un instante concreto del ciclo (cambio de pallet, una caja en la
+ * boca) sin esperar minutos con el render por software. En producción
+ * `import.meta.env.DEV` es falso y el bloque desaparece del paquete.
+ */
+const DEV_T0 =
+  import.meta.env.DEV && typeof window !== "undefined" ? Number(new URLSearchParams(window.location.search).get("linet")) || 0 : 0;
+
+/** Tiempo de la línea: el reloj de three (más el desplazamiento de desarrollo). */
+export function lineTime(elapsed: number) {
+  if (import.meta.env.DEV && typeof window !== "undefined") (window as unknown as { __lineT?: number }).__lineT = elapsed + DEV_T0;
+  return elapsed + DEV_T0;
+}
+
 // --- trazado (unidades de la escena; el brazo está en el origen) ---
 export const IN_X = -5.6; // pata de entrada (puerta izquierda)
 export const OUT_X = 5.6; // pata de salida (puerta derecha)

@@ -142,7 +142,7 @@ export default function Trayectoria() {
   const headTop = useTransform(spine, (v) => `${v * 100}%`);
 
   return (
-    <section id="trayectoria" className="section-shell">
+    <section id="trayectoria" className="section-shell overflow-x-clip">
       <SectionHeading
         index="03"
         eyebrow="Trayectoria"

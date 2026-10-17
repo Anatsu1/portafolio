@@ -81,7 +81,8 @@ src/
     sections/                Bloques de contenido de la landing (en orden)
       Hero.tsx                 Sección inicial (#inicio): nombre + video del brazo
       hero/
-        HeroArmVideo.tsx         Video del brazo (claro/oscuro según tema, presentacional)
+        HeroArmVideo.tsx         Video del brazo (claro/oscuro según tema, presentacional) — escritorio
+        HeroMobile.tsx           Credencial del Hero en teléfonos (placa que agrupa todo el contenido)
         HeroStats.tsx            Tira de métricas (proyectos / años / para clientes), derivadas de los datos
       About.tsx                 Sección "Sobre mí" (#sobre-mi)
       Projects.tsx              Sección "Proyectos" (#proyectos): fichas + árbol de skills (filtro)
@@ -110,7 +111,7 @@ src/
     useProjectSlider.ts      Slider de fichas: next/prev/goTo animados, índice desde el scroll real, focus del filtro
     useHeroReveal.ts         Reveal GSAP del texto del Hero + impacto (halo y nombre quedan prendidos, botones parpadean)
     usePageLoaderExit.ts     Animación de "puertas de vault" al cerrar el PageLoader
-    useArmFollowCam.ts       Cámara (zoom + pan del video) que sigue la pinza (solo mobile)
+    useArmFollowCam.ts       Cámara que seguía la pinza en el video móvil (sin uso: en teléfono no hay video)
   assets/                    Videos del brazo (arm-{light,dark}.mp4) + posters
     prestarte/               Capturas de cada proyecto — una carpeta por proyecto
     utn-necochea/            (assets/<id-del-proyecto>/, 2-4 capturas que rotan
@@ -549,10 +550,10 @@ ocurre en ningún componente).
 partir de ese ancho se da vuelta (familias en columnas, fases en filas —
 ver "Árbol de skills"). Es un screen normal, no "raw". El mapa usa base +
 `wide:` y **nada de `md:`**, justamente para no caer en el problema de
-orden de arriba: una sola variante por propiedad y no hay ambigüedad. El follow-cam del video
-(`HeroArmVideo.tsx`) sigue chequeando `(max-width: 767px)` a propósito:
-esa decisión es por *ancho* (en apaisado la pantalla es ancha y el recorte
-estático del brazo se entiende bien, no hace falta la cámara con zoom).
+orden de arriba: una sola variante por propiedad y no hay ambigüedad. La elección
+video/credencial del Hero (`isPhone` en `Hero.tsx`) chequea `(max-width: 767px)`
+a propósito: es por *ancho* (en apaisado la pantalla es ancha y el video del
+brazo se entiende; en vertical va la credencial).
 
 **La tira de métricas (`hero/HeroStats.tsx`):** tres números entre el slogan
 y los botones — proyectos, años programando y tecnologías. Es la prueba
@@ -694,95 +695,58 @@ que nadie scrollee. Reglas:
   quedan en su estado normal — sin video no hay historia de energía que
   contar.
 
-**El Hero en celular (mobile-first):** es la vista por la que pasa la mayoría
-de las visitas, y tiene reglas propias:
+**El Hero en celular: la credencial (`hero/HeroMobile.tsx`).** Es la vista
+por la que pasa la mayoría de las visitas. En teléfonos (`max-width: 767px`,
+medido una vez en `Hero.tsx` con `isPhone`) **no hay brazo ni video**: todo el
+contenido va agrupado en una sola placa remachada — franja de peligro soldada
+arriba, sello "DISPONIBLE" (`OWNER.availability`), nombre, rol, slogan, tabla de
+3 métricas, CTAs, redes y aviso del laboratorio. Decisión del dueño después de
+probar dos versiones con el brazo (video recortado con cámara que seguía la
+pinza, y una escena SVG del brazo en la franja de abajo): la máquina competía
+con el texto y la información quedaba desparramada. Propuesta, referencias y
+conceptos descartados: **`docs/plan-hero-movil.md`**.
 
-- **`min-h-[100svh]`, nunca `min-h-screen`.** En Chrome de Android `100vh`
-  mide contra la barra de direcciones **desplegada**: al scrollear el alto
-  cambia y el bloque salta. `svh` usa el viewport chico y queda quieto.
-- **El nombre va en 2 renglones** ("Cesar Augusto" / "Fernandez Carbonell").
-  A `text-4xl` el apellido no entraba en uno solo y el nombre se comía casi
-  medio viewport en 4 renglones. Se resuelve **sólo con CSS**, sin tocar la
-  estructura del `<h1>`: `text-[1.7rem]` en base y el **primer** `<br />` con
-  `hidden sm:inline` (más un `{" "}` antes, porque los spans son
-  `inline-block` y sin el `<br>` quedarían pegados). Los tres `<span>` con
-  sus refs siguen intactos — fusionarlos rompe el reveal de GSAP.
-- **Los dos CTA van lado a lado** (`flex-1 ... md:flex-none`, `text-sm`,
-  `px-4`, `whitespace-nowrap`): apilados a todo el ancho empujaban las redes
-  fuera del fold, y sin el `nowrap` "Descargar CV" partía en dos renglones a
-  360px y los dejaba de alturas distintas.
-- **El bloque se reparte en el alto, no se apila arriba.** La `<section>` es
-  `flex flex-col` y el contenedor del texto `flex-1 items-center`, así que el
-  bloque se centra en el alto que sobra debajo del nav. **Con un `pb-32` que
-  corre ese centro hacia arriba**: centrado a secas, en un teléfono corto
-  (360×740) el texto llegaba al 85% y tapaba la cinta del video. Con esos
-  128px reservados queda entre el ~20% y el ~73% en cualquier alto, y el
-  último cuarto es la franja donde se ve la máquina.
-  Va con flex y **no con paddings a mano** justamente porque los altos de
-  teléfono van de 640 a 930+: una medida fija queda mal en alguno. Medido en
-  360×740, 390×844, 412×915 y 430×932.
-  Las dos versiones anteriores fallaron por los dos extremos opuestos —
-  primero todo pegado arriba con una franja muerta abajo, después todo
-  estirado y encimado con el brazo. El equilibrio es *repartir* el bloque
-  reservando la franja de la máquina, no estirarlo.
-- **El scrim cambia de sentido con la orientación**, porque cambia dónde está
-  el texto: `bg-gradient-to-b` en mobile (el texto ocupa todo el ancho, así
-  que tapa arriba y deja limpia la franja de abajo) y `md:bg-gradient-to-r`
-  en desktop (el texto vive a la izquierda).
-- **El video sigue siendo el problema abierto.** El clip es 16:9 y la
-  pantalla ~9:19: con `object-cover` se recorta cerca del 70% del ancho del
-  frame. `useArmFollowCam` (abajo) es un parche, no una solución — el
-  encuadre que falta no está en el render. Ver
-  **`docs/video-brazo-vertical.md`**: tiene el prompt de Flow para el clip
-  9:16, la receta de encode, dónde tiene que caer la celda y por qué, y el
-  checklist de qué cambia en el código cuando los assets existan.
+- **Un solo bloque de texto para los dos layouts.** `Hero.tsx` arma
+  `textBlock` (con todos los refs del reveal de GSAP) y lo pone suelto sobre el
+  video en escritorio o adentro de `<HeroMobile>` en teléfono. Las clases base
+  son las del teléfono y las `md:` devuelven las de escritorio: si se toca un
+  margen del Hero, revisar las dos variantes.
+- **Render condicional, no CSS**: en teléfono no se monta `HeroArmVideo`, así
+  que no se baja el mp4 (verificado en producción). El fondo es una grilla de
+  puntos tenue (`HeroMobileBackdrop`) y no hay scrim.
+- **Contrato de `HeroMobile`** (igual que el video): `onReady` al montar,
+  arranca con `play` (puertas del vault abiertas) y llama `onDrop` cuando el
+  sello golpea la placa (~2,1 s) → se encienden el nombre, el halo y los
+  botones sociales. La animación (aparece → franja → cordón al rojo → remaches →
+  sello → destello) es una timeline GSAP que sólo anima `transform`/`opacity`.
+- **Cambio de tema**: los hijos NO se remontan (perderían los refs del
+  reveal); `HeroMobile` muestra "Cargando el tema…" con el engranaje en el
+  lugar del sello 0,9 s (`THEME_SWITCH_MS`), vuelve a soldar y sellar, y
+  dispara `onDrop` otra vez. Reemplaza en teléfono al cartel a pantalla
+  completa (`HeroThemeLoader`, que sigue en escritorio dentro de
+  `HeroArmVideo`).
+- **Movimiento reducido**: placa terminada de entrada, `onDrop` al abrirse el
+  vault.
+- **`min-h-[100svh]`, nunca `min-h-screen`** (en Chrome de Android `100vh`
+  salta con la barra de direcciones).
+- **Alto**: la credencial se centra con `flex-1 items-center` entre el nav y la
+  flecha "Sobre mí"; el `pb` reserva la flecha (`pb-16`, `pb-20` desde 701px de
+  alto, donde la flecha lleva rótulo). Entra entera arriba del pliegue de
+  360×568 a 412×915. En teléfonos de 780px+ de alto la placa gana padding.
+- **El nombre va en 2 renglones** ("Cesar Augusto" / "Fernandez Carbonell"):
+  `text-[1.7rem]` y el primer `<br />` con `hidden sm:inline`. Los tres
+  `<span>` con sus refs siguen intactos — fusionarlos rompe el reveal.
+- **Anchos ajustados a 360px** (contenido útil ~294px): botones `px-3`,
+  celdas de métricas `px-2` con `tracking` reducido debajo de 380px, y el aviso
+  del laboratorio corto ("Probá el brazo") al lado de las redes. Objetivos
+  táctiles de 46px de alto. Si se alarga un texto, medir a 360.
+- Solo dev: `window.__heroPlateTl` (la timeline, para `pause().seek(s)` en
+  pruebas headless) y `window.__heroDrops` (cuenta de entregas).
 
-**La "cámara" que sigue la pinza en mobile (`hooks/useArmFollowCam.ts`):**
-- Problema que resuelve: en mobile, `object-cover object-center` sobre un
-  video 16:9 dentro de una sección `min-h-screen` recorta tanto los costados
-  que solo se ve una tira central angosta — la pinza agarrando/soltando el
-  círculo queda fuera de cuadro casi siempre, así que no se entiende qué
-  hace el brazo.
-- **Primer intento descartado**: un punto/overlay separado que seguía la
-  posición de la pinza (`useArmMarker.ts`, ya no existe). Se veía como un
-  puntito azul flotando cerca de los botones, sin conexión visual clara con
-  el brazo (que apenas se asoma en el borde del video) — confuso, no
-  contaba ninguna historia.
-- **Solución actual**: en vez de un overlay inventado, animar el propio
-  `<video>` — `objectPosition` (qué parte del frame queda centrada) +
-  `scale` (zoom), como una cámara que hace foco y sigue la acción. Se ve el
-  contenido *real* del video, más cerca y siguiendo el gesto, no un
-  sustituto abstracto.
-- `KEYFRAMES` en `useArmFollowCam.ts` son coordenadas (% del frame del
-  video) + nivel de zoom en cada momento, tomadas a ojo de varios frames
-  reales del clip (no tracking pixel a pixel — si se regenera el video, hay
-  que volver a mirar frames y ajustar los números). Recorre: reach → agarra
-  en la cinta → levanta → cruza → entrega (mismo instante que `DROP_TIME`,
-  así el foco llega a la celda justo cuando se activa el aura) → vuelve al
-  reposo (`scale: 1`, encuadre normal, igual que desktop). 1 segundo de
-  timeline GSAP = 1 segundo real de video (`start()` se llama junto con
-  `.play()` real, desde `handleCanPlayThrough` en `HeroArmVideo.tsx`).
-- **Zoom sutil a propósito** (`scale` máx. ~1.2): la primera versión
-  llegaba a 1.7 y el pan se sentía brusco/inestable durante toda la
-  animación (feedback real del usuario) — con menos zoom el seguimiento se
-  nota igual pero no "sacude" la escena.
-- Solo corre en mobile: `enabled` viene de un `matchMedia("(max-width: 767px)")`
-  medido una sola vez al montar (`isMobile` en `HeroArmVideo.tsx`) — a
-  diferencia del resto del sitio, acá sí hace falta detección de mobile en
-  JS porque se anima directamente el `<video>`, no algo que CSS pueda
-  mostrar/ocultar solo.
-- `prefers-reduced-motion`: no arma la timeline, el video queda con su
-  `object-position`/`scale` normales (como desktop).
-- **Se repite en cada cambio de tema** (`resetKey: theme`, pasado por
-  `HeroArmVideo.tsx`): el `<video>` se remonta (`key={theme}`) y el timeline
-  viejo queda apuntando a un nodo ya desmontado si no se reconstruye — el
-  `useGSAP` de este hook toma `[enabled, resetKey]` como dependencias
-  justamente para rearmarse contra el `<video>` nuevo y permitir que
-  `start()` dispare de nuevo. Iba de la mano de otro bug real que se
-  arregló junto con este: `firedDropRef` en `HeroArmVideo.tsx` (guarda si
-  ya se disparó `onDrop`) no se reseteaba entre temas, así que el aura
-  (`useHeroReveal`) tampoco se reactivaba después del primer toggle — ahora
-  un `useEffect` con dependencia `theme` lo resetea en cada ciclo.
+**La "cámara" que sigue la pinza (`hooks/useArmFollowCam.ts`)** ya no corre:
+servía al video en teléfonos, y en teléfonos ya no se monta el video. Queda en
+el repo (y su rama `isMobile` en `HeroArmVideo`) por si se vuelve al video.
+Lo mismo `docs/video-brazo-vertical.md` (prompt del clip 9:16, en pausa).
 
 Para regenerar los videos: prompts de Flow/Veo y receta de encode (denoise
 `hqdn3d`, `-an`, h264 `libopenh264`) en el plan de trabajo del feature. El render
@@ -801,7 +765,8 @@ fuente de verdad (decisiones, fases, pendientes, bitácora) es
   importar `three`/`drei`/`@react-three/*` (rompió el chunk una vez por
   `useProgress`). En teléfonos, sin WebGL o con `prefers-reduced-motion` se
   muestra el **laboratorio 2D** (`sections/mobile/MobileLab.tsx`, SVG).
-- **Hero**: sigue siendo el video del brazo. Arranca recién cuando se abren las
+- **Hero**: en escritorio sigue siendo el video del brazo; en teléfonos es la
+  credencial (`hero/HeroMobile.tsx`, sin brazo). Arranca recién cuando se abren las
   puertas del vault; el `PageLoader` espera los modelos 3D con avance real
   (`useCellPreload`, lista en `src/data/cellModels.ts`: actualizarla si cambia
   la escena inicial).
@@ -873,8 +838,8 @@ docker compose pull && docker compose up -d
 | Tocar el reveal del texto del Hero o el aura      | `src/hooks/useHeroReveal.ts` |
 | Tocar la tira de métricas del Hero                | `src/components/sections/hero/HeroStats.tsx` (los números se derivan; el año de inicio está en `src/data.ts`) |
 | Tocar el splash de entrada (puertas de vault)     | `src/components/layout/PageLoader.tsx`, `src/hooks/usePageLoaderExit.ts` |
-| Tocar la cámara que sigue la pinza en mobile      | `src/hooks/useArmFollowCam.ts` |
-| Generar el video vertical del brazo (9:16)        | `docs/video-brazo-vertical.md` (prompt de Flow, encode y checklist) |
+| Tocar el Hero en teléfonos (credencial)           | `src/components/sections/hero/HeroMobile.tsx`, `docs/plan-hero-movil.md` |
+| Video vertical del brazo (9:16, en pausa)         | `docs/video-brazo-vertical.md` (prompt de Flow, encode y checklist) |
 | Lógica con estado reusable                       | `src/hooks/`                                      |
 | Colores de marca, modo claro/oscuro              | `src/index.css` (variables), `tailwind.config.ts` (tokens) |
 | Clases utilitarias globales (`.card`, etc.)      | `src/index.css`                                    |
