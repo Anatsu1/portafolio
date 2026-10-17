@@ -50,7 +50,7 @@ const PILOT_R_MAX = 2.65;
 const PILOT_Y_MAX = 1.9;
 const PILOT_GRAB_DIST = 0.42; // distancia horizontal máxima garra–caja para agarrarla
 const PILOT_GRAB_DY = 0.4;
-const PHYS_FINGER_R = 0.34; // distancia de contacto dedo–centro de caja (grosor del dedo + media caja)
+const PHYS_FINGER_R = 0.27; // distancia de contacto dedo–centro de caja (grosor del dedo + media caja)
 const PHYS_FINGER_HALF = 0.15; // los dedos son largos en sentido radial: segmento de ±este largo
 const PHYS_LOW_Y = 0.8; // por encima de esta altura del centro de la garra las puntas no tocan las cajas del piso
 const PHYS_BOX_DIST = 0.5; // distancia mínima entre centros de dos cajas
@@ -412,7 +412,7 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
       const tx = (ax - gx) / tl_;
       const tz = (az - gz) / tl_;
       const gripOpen = poseRef.current.grip;
-      const pad = 0.17 + 0.35 * gripOpen; // distancia de cada almohadilla al eje de la garra
+      const pad = 0.2 + 0.18 * gripOpen; // distancia de cada almohadilla al eje de la garra
       const boxes = boxRefs.current;
       const free: number[] = [];
       for (let i = 0; i < boxes.length; i++) {
