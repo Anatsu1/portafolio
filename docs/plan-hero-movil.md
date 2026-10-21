@@ -118,3 +118,14 @@ monta el video (no se baja el mp4).
   (`ol.relative.mt-16`), y 2px a 700px por el contenedor de `Nameplate`. En
   un teléfono real eso hace que el navegador aleje el zoom de TODA la página.
   En las pruebas se neutralizó con `#trayectoria{overflow-x:clip}`.
+
+## Rediseño 21-oct: "línea de ensamblaje"
+
+La credencial remachada se reemplazó (`hero/HeroMobile.tsx`): panel de mando
+(escuadras, cabecera mono, regla con marcas, reloj) armado por cuatro brazos de
+plano técnico que traen piezas fantasma (PZ-01..04) y las encastran; el
+encastre de la última dispara `onDrop` y enciende el contorno (destello +
+pulso). Salió de comparar 4 variantes con agentes; elegida la que combina el
+HUD con los brazos. Las zonas fantasma se ubican por posición de índice en el
+bloque de texto de `Hero.tsx`: si cambia su estructura hay que actualizar el
+mapeo. Dev: `window.__heroVBTl` pausa/posiciona la timeline.

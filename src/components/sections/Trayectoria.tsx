@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import { CURRENT_FRONTS, TIMELINE } from "../../data/timeline";
 import CellIcon from "./celda/CellIcon";
@@ -10,6 +10,11 @@ const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const KIND_LABEL = { educacion: "Educación", experiencia: "Experiencia" } as const;
 
 const SPARKS = Array.from({ length: 16 }, (_, i) => i);
+// En teléfono el golpe se aligera (pedido del usuario: saturaba): una sola
+// onda, pocas chispas, sin destello blanco y una brasa corta y tenue. Se mide
+// una vez al montar, como `isPhone` del Hero.
+const PHONE_SPARKS = [0, 3, 6, 9, 12];
+const isPhoneScreen = () => window.matchMedia("(max-width: 767px)").matches;
 
 // El observer lo lleva el CONTENEDOR (16px estables) y las piezas se animan
 // por propagación de variants. NO un whileInView por pieza: con `once: false`
@@ -33,6 +38,8 @@ function WeldNode({ featured }: { featured?: boolean }) {
   // Chicos a propósito: se leen como puntos de fijación/remaches a lo largo
   // del cordón, no como hitos que compiten con el texto (pedido del usuario).
   const size = featured ? "h-5 w-5" : "h-4 w-4";
+  const [phone] = useState(isPhoneScreen);
+  const sparks = phone ? PHONE_SPARKS : SPARKS;
   return (
     <span aria-hidden className="absolute left-3 top-0.5 -translate-x-1/2 md:left-1/2">
       <motion.span
@@ -42,7 +49,7 @@ function WeldNode({ featured }: { featured?: boolean }) {
         viewport={NODE_VIEWPORT}
       >
         {/* Ondas de choque del golpe */}
-        {[0, 1].map((n) => (
+        {(phone ? [0] : [0, 1]).map((n) => (
           <motion.span
             key={n}
             className="absolute inset-0 rounded-full border-2 border-[#ffb347]"
@@ -79,11 +86,14 @@ function WeldNode({ featured }: { featured?: boolean }) {
           variants={{
             oculto: { opacity: 0 },
             visible: {
-              opacity: [0, 1, 0.85, 0.5, 0],
-              transition: { duration: 3, times: [0, 0.09, 0.3, 0.6, 1], ease: "easeOut" },
+              opacity: phone ? [0, 0.55, 0.25, 0] : [0, 1, 0.85, 0.5, 0],
+              transition: phone
+                ? { duration: 1.2, times: [0, 0.15, 0.5, 1], ease: "easeOut" }
+                : { duration: 3, times: [0, 0.09, 0.3, 0.6, 1], ease: "easeOut" },
             },
           }}
         />
+        {!phone && (
         <motion.span
           className="absolute -inset-1.5 rounded-full bg-white mix-blend-screen"
           variants={{
@@ -94,9 +104,10 @@ function WeldNode({ featured }: { featured?: boolean }) {
             },
           }}
         />
+        )}
         {/* Chispas con estela, con gravedad */}
-        {SPARKS.map((n) => {
-          const angle = (n / SPARKS.length) * Math.PI * 2 + (n % 2) * 0.18;
+        {sparks.map((n) => {
+          const angle = (n / sparks.length) * Math.PI * 2 + (n % 2) * 0.18;
           const dist = 15 + (n % 4) * 6;
           const dx = Math.cos(angle) * dist;
           const dy = Math.sin(angle) * dist;
