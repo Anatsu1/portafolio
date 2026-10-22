@@ -392,3 +392,14 @@ estante va a 0,68), 3 pasadas de separación (racimos de 3+) y la caja llevada
 (`PHYS_KIN_DIST` 0,6, para que al tomar una del estante no corra a las de al
 lado). Medido: caja llevada ≥ 0,60 de las demás, 0 vecinas movidas al tomar
 del estante, sin solapes al soltar ni tras volver a casa.
+
+### Ajuste 22-oct (garra: empuje radial y tope trasero)
+
+- La garra cerrada ya empuja (antes solo con la garra abierta) y una caja
+  desfasada del eje se empuja aunque la garra esté abierta: solo se respeta la
+  que entra entre los dedos (`straddled`: desfase lateral < `pad - R + 0.05`).
+  `PHYS_FINGER_R` 0,27 → 0,33 (caja cuadrada: media caja + grosor del dedo);
+  el golpe se escala con la profundidad, así las vecinas del estante que rozan
+  los dedos solo se corren (~0,02) y no salen disparadas.
+- `PILOT_R_MIN` 0,95 → 1,5: tope trasero; con 0,95 la garra entraba en la
+  torreta (radio ~1,0 + ~0,45 de la garra).

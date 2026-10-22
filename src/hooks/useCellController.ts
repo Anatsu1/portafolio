@@ -45,12 +45,12 @@ export type PilotKey = "left" | "right" | "forward" | "back" | "up" | "down";
 const PILOT_YAW_SPEED = 1.5; // rad/s
 const PILOT_REACH_SPEED = 1.3; // unidades/s
 const PILOT_LIFT_SPEED = 1.5;
-const PILOT_R_MIN = 0.95;
+const PILOT_R_MIN = 1.5; // tope hacia atrás: la torreta mide ~1,0 de radio y la garra ~0,45 de media: más cerca se funde con el chasis
 const PILOT_R_MAX = 2.65;
 const PILOT_Y_MAX = 1.9;
 const PILOT_GRAB_DIST = 0.42; // distancia horizontal máxima garra–caja para agarrarla
 const PILOT_GRAB_DY = 0.4;
-const PHYS_FINGER_R = 0.27; // distancia de contacto dedo–centro de caja (grosor del dedo + media caja)
+const PHYS_FINGER_R = 0.33; // distancia de contacto dedo–centro de caja (grosor del dedo + media caja)
 const PHYS_FINGER_HALF = 0.15; // los dedos son largos en sentido radial: segmento de ±este largo
 const PHYS_LOW_Y = 0.8; // por encima de esta altura del centro de la garra las puntas no tocan las cajas del piso
 const PHYS_BOX_DIST = 0.66; // distancia mínima entre centros de dos cajas (una caja mide ~0,6; las del estante van a 0,68)
@@ -422,9 +422,12 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
         // Una caja con escala o altura de "mostrada" no es del piso.
         if (box.position.y > GRASP_Y + 0.15) continue;
         free.push(i);
-        if (low && gripOpen > 0.5 && Math.hypot(box.position.x - gx, box.position.z - gz) > PILOT_GRAB_DIST) {
-          // Cada dedo es un segmento radial a un lado de la garra: una caja que
-          // queda entre los dos (a punto de agarrarse) no se toca.
+        // Con la garra abierta, una caja que entra entre los dos dedos (a punto de
+        // agarrarse) no se toca; una desfasada, o con la garra cerrada, sí se empuja.
+        const across = Math.abs((box.position.x - gx) * tx + (box.position.z - gz) * tz);
+        const straddled = gripOpen > 0.5 && across < pad - PHYS_FINGER_R + 0.05 && Math.hypot(box.position.x - gx, box.position.z - gz) <= PILOT_GRAB_DIST;
+        if (low && !straddled) {
+          // Cada dedo es un segmento radial a un lado de la garra.
           for (const side of [-1, 1]) {
             const cx = gx + tx * side * pad;
             const cz = gz + tz * side * pad;
@@ -439,7 +442,9 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
             const nz = d > 1e-4 ? dz / d : tz * side;
             box.position.x += nx * (PHYS_FINGER_R - d);
             box.position.z += nz * (PHYS_FINGER_R - d);
-            const kick = Math.min(3, 0.5 + gSpeed * 0.7);
+            // Un roce leve (las vecinas del estante rozan los dedos) solo las corre; el golpe
+            // con velocidad las lanza.
+            const kick = Math.min(3, 0.5 + gSpeed * 0.7) * Math.min(1, (PHYS_FINGER_R - d) / 0.1);
             phys.vx[i] = nx * kick;
             phys.vz[i] = nz * kick;
             phys.spin[i] = (Math.random() - 0.5) * kick * 1.6;
