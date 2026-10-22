@@ -53,7 +53,8 @@ const PILOT_GRAB_DY = 0.4;
 const PHYS_FINGER_R = 0.27; // distancia de contacto dedo–centro de caja (grosor del dedo + media caja)
 const PHYS_FINGER_HALF = 0.15; // los dedos son largos en sentido radial: segmento de ±este largo
 const PHYS_LOW_Y = 0.8; // por encima de esta altura del centro de la garra las puntas no tocan las cajas del piso
-const PHYS_BOX_DIST = 0.5; // distancia mínima entre centros de dos cajas
+const PHYS_BOX_DIST = 0.66; // distancia mínima entre centros de dos cajas (una caja mide ~0,6; las del estante van a 0,68)
+const PHYS_KIN_DIST = 0.6; // idem, contra la caja que lleva la garra o que vuelve a casa (más chico: al tomar una del estante no corre a sus vecinas)
 const PHYS_SETTLE_S = 1.4; // quietas y corridas de su lugar: vuelven solas pasado este tiempo
 const PHYS_BASE_R = 1.0;
 // Tope del paso de la física; en desarrollo con `?nolag` (render a ~1 cuadro/s) se deja pasar el tiempo real.
@@ -445,31 +446,60 @@ export function useCellController({ count, active, mode, onShowing, onDelivered,
           }
         }
       }
-      // Entre cajas.
-      for (let a = 0; a < free.length; a++) {
-        for (let b = a + 1; b < free.length; b++) {
-          const i = free[a];
-          const j = free[b];
-          const A = boxes[i]!;
-          const B = boxes[j]!;
-          const dx = B.position.x - A.position.x;
-          const dz = B.position.z - A.position.z;
-          const d = Math.hypot(dx, dz);
-          if (d >= PHYS_BOX_DIST || d < 1e-4) continue;
-          const nx = dx / d;
-          const nz = dz / d;
-          const half = (PHYS_BOX_DIST - d) / 2;
-          A.position.x -= nx * half;
-          A.position.z -= nz * half;
-          B.position.x += nx * half;
-          B.position.z += nz * half;
-          // Se pasan algo de impulso (la que venía rápida arrastra a la otra).
-          const rel = (phys.vx[i] - phys.vx[j]) * nx + (phys.vz[i] - phys.vz[j]) * nz;
-          if (rel > 0) {
-            phys.vx[j] += nx * rel * 0.7;
-            phys.vz[j] += nz * rel * 0.7;
-            phys.vx[i] -= nx * rel * 0.3;
-            phys.vz[i] -= nz * rel * 0.3;
+      // Entre cajas. La que lleva la garra (si va baja) y las que vuelven a su
+      // lugar no se dejan empujar pero sí empujan: antes atravesaban a las
+      // vecinas y quedaban encimadas. Varias pasadas para que un racimo de
+      // 3+ cajas apretadas termine sin solaparse.
+      const kin: { x: number; z: number }[] = [];
+      const cb = carried.current;
+      if (cb && t.y < GRASP_Y + 0.45) {
+        const [cx, , cz] = cartesian(t, 0);
+        kin.push({ x: cx, z: cz });
+      }
+      homing.forEach((h) => {
+        const hb = boxes[h];
+        if (hb && hb !== cb && hb.position.y < GRASP_Y + 0.45) kin.push({ x: hb.position.x, z: hb.position.z });
+      });
+      for (let pass = 0; pass < 3; pass++) {
+        for (const k of kin) {
+          for (const i of free) {
+            const A = boxes[i]!;
+            const dx = A.position.x - k.x;
+            const dz = A.position.z - k.z;
+            const d = Math.hypot(dx, dz);
+            if (d >= PHYS_KIN_DIST) continue;
+            const nx = d > 1e-4 ? dx / d : 1;
+            const nz = d > 1e-4 ? dz / d : 0;
+            A.position.x += nx * (PHYS_KIN_DIST - d);
+            A.position.z += nz * (PHYS_KIN_DIST - d);
+          }
+        }
+        for (let a = 0; a < free.length; a++) {
+          for (let b = a + 1; b < free.length; b++) {
+            const i = free[a];
+            const j = free[b];
+            const A = boxes[i]!;
+            const B = boxes[j]!;
+            const dx = B.position.x - A.position.x;
+            const dz = B.position.z - A.position.z;
+            const d = Math.hypot(dx, dz);
+            if (d >= PHYS_BOX_DIST || d < 1e-4) continue;
+            const nx = dx / d;
+            const nz = dz / d;
+            const half = (PHYS_BOX_DIST - d) / 2;
+            A.position.x -= nx * half;
+            A.position.z -= nz * half;
+            B.position.x += nx * half;
+            B.position.z += nz * half;
+            if (pass > 0) continue;
+            // Se pasan algo de impulso (la que venía rápida arrastra a la otra).
+            const rel = (phys.vx[i] - phys.vx[j]) * nx + (phys.vz[i] - phys.vz[j]) * nz;
+            if (rel > 0) {
+              phys.vx[j] += nx * rel * 0.7;
+              phys.vz[j] += nz * rel * 0.7;
+              phys.vx[i] -= nx * rel * 0.3;
+              phys.vz[i] -= nz * rel * 0.3;
+            }
           }
         }
       }

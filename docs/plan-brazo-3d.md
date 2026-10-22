@@ -382,3 +382,13 @@ los navegadores actuales.
 ### Ajuste 17-oct (físicas y piloto)
 - Contacto garra–caja por **dedos** (dos segmentos radiales a ±0,17+0,35·grip del eje) en vez de un círculo central: una caja entre los dedos no se toca y se puede agarrar; las cajas del estante ya no quedan incrustadas. `PHYS_MAX_R` 3,3.
 - La caja abierta en la plataforma se toma **cerrando la garra** (Espacio / botón) además de con Esc: cierra el panel y la caja vuelve a su tamaño mientras se lleva.
+
+### Ajuste 22-oct (cajas encimadas)
+
+Grabación del dueño: las cajas del piso quedaban atravesadas entre sí y por la
+caja que lleva la garra. `PHYS_BOX_DIST` 0,5 → 0,66 (una caja mide ~0,6; el
+estante va a 0,68), 3 pasadas de separación (racimos de 3+) y la caja llevada
+(si va baja) y las que vuelven a casa pasan a empujar a las vecinas
+(`PHYS_KIN_DIST` 0,6, para que al tomar una del estante no corra a las de al
+lado). Medido: caja llevada ≥ 0,60 de las demás, 0 vecinas movidas al tomar
+del estante, sin solapes al soltar ni tras volver a casa.
