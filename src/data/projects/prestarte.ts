@@ -12,7 +12,7 @@ export const prestarte: Project = {
   title: "PrestARTE",
   role: "cliente",
   status: "activo",
-  featured: true,
+  featured: false,
   summary:
     "Sitio de intermediación de préstamos en Argentina: adelantos de dinero " +
     "respaldados por tarjeta de crédito, con simulador de cuotas (1, 3, 6 y " +

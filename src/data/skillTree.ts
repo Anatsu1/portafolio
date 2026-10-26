@@ -21,7 +21,7 @@ export type SkillNode = {
  *   python → flask
  *   php
  *   java   → spring boot
- *   js     → { typescript, react → next, nodejs → express }
+ *   js     → { typescript, react → next, nodejs → { express, electron } }
  *   bd     → sql → { postgresql, mysql, sqlite } ; nosql → mongodb
  *   herram.→ { git → github actions, docker }
  *
@@ -74,6 +74,7 @@ export const SKILL_NODES: SkillNode[] = [
   { id: "next", label: "Next.js", requires: ["react"], aliases: ["Next"] },
   { id: "nodejs", label: "Node.js", requires: ["javascript"], aliases: ["Node"] },
   { id: "express", label: "Express", requires: ["nodejs"] },
+  { id: "electron", label: "Electron", requires: ["nodejs"] },
   // Familia bases de datos
   { id: "bd", label: "BD", requires: [], aliases: ["Bases de datos"] },
   { id: "sql", label: "SQL", requires: ["bd"] },

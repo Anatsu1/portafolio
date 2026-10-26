@@ -166,7 +166,7 @@ export default function ProjectPlate({
           Expandido pasa a min-h y crece solo esta ficha. */}
       <p
         ref={summaryRef}
-        className={`mt-3 text-sm leading-relaxed text-body ${
+        className={`mt-3 whitespace-pre-line text-sm leading-relaxed text-body ${
           expanded ? "min-h-[4.875em]" : "h-[4.875em] overflow-hidden line-clamp-3"
         }`}
       >

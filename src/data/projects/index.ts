@@ -18,15 +18,19 @@ export * from "./types";
 // Acá sólo van proyectos REALES: los `ejemplo-*` que había para probar el
 // slider marcaban nodos como probados (Docker, Linux, TypeScript…) sin
 // trabajo detrás, que en un portafolio de búsqueda laboral miente.
+//
+// El orden del array es el orden en pantalla: primero los proyectos para
+// clientes, del más contundente al menos; después los personales y al final
+// los de formación. `featured` solo sube al frente a los dos primeros.
 export const PROJECTS: Project[] = [
-  prestarte,
+  migracionLegacy,
   utnNecochea,
   mostrador,
-  manarem,
-  beastore,
-  sater,
+  paraVestirSantos,
+  prestarte,
   vps,
   portafolio,
-  migracionLegacy,
-  paraVestirSantos,
+  beastore,
+  sater,
+  manarem,
 ];

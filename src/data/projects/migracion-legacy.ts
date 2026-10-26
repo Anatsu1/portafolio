@@ -20,17 +20,27 @@ export const migracionLegacy: Project = {
   title: "Migración de un sistema de gestión heredado",
   role: "cliente",
   status: "en-progreso",
-  featured: false,
+  featured: true,
   summary:
-    "Reemplazo del sistema de gestión con el que trabaja desde 1996 una " +
-    "empresa con larga trayectoria en el mercado local, escrito en " +
-    "QuickBasic para DOS. Se recuperaron los 21 archivos de datos del " +
-    "sistema original y se migraron 5.234 registros a PostgreSQL sin perder " +
-    "ninguno. La aplicación nueva es de escritorio, multiusuario sobre la " +
-    "red local del negocio y con permisos por rol, y la respaldan más de " +
-    "3.000 pruebas automatizadas. Las capturas son de la demo, con datos " +
-    "inventados.",
-  stack: ["TypeScript", "React", "Node.js", "PostgreSQL"],
+    "Reemplazo del sistema de gestión que una empresa con larga trayectoria " +
+    "en el mercado local usa desde 1996, escrito en QuickBasic para DOS y " +
+    "sin documentación.\n\n" +
+    "Datos: ingeniería inversa, byte a byte, de los 21 archivos binarios del " +
+    "sistema original, sin perder un solo registro: 74.400 registros " +
+    "recuperados y 5.234 unidades migradas a PostgreSQL. Un solo comando " +
+    "repite toda la extracción el día del traspaso, la compara con la " +
+    "anterior y genera automáticamente las planillas Excel del histórico.\n\n" +
+    "Aplicación: de escritorio y multiusuario en la red local, con tres " +
+    "perfiles cuyos permisos se hacen cumplir en la propia base y registro " +
+    "de quién cargó y quién modificó cada unidad. Alta con legajo " +
+    "automático, validación de dominios en formato viejo y nuevo, baja " +
+    "lógica y reconexión sin perder lo que se estaba cargando. Más de 3.900 " +
+    "pruebas automatizadas.\n\n" +
+    "En desarrollo (versión 0.2). Siguen clientes y asesores; búsquedas, " +
+    "listados y estadísticas con exportación a Excel; etiquetas para las " +
+    "carpetas, fotos de las unidades y copias de seguridad automáticas " +
+    "cifradas. Las capturas son de la demo, con datos inventados.",
+  stack: ["TypeScript", "React", "Electron", "Node.js", "PostgreSQL"],
   links: {},
   media: [
     { type: "image", src: capture01, aspect: ASPECT }, // inicio con el resumen de unidades
