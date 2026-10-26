@@ -7,6 +7,8 @@ import { beastore } from "./beastore";
 import { sater } from "./sater";
 import { vps } from "./vps";
 import { portafolio } from "./portafolio";
+import { migracionLegacy } from "./migracion-legacy";
+import { paraVestirSantos } from "./para-vestir-santos";
 
 export * from "./types";
 
@@ -25,4 +27,6 @@ export const PROJECTS: Project[] = [
   sater,
   vps,
   portafolio,
+  migracionLegacy,
+  paraVestirSantos,
 ];
