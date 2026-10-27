@@ -767,9 +767,9 @@ fuente de verdad (decisiones, fases, pendientes, bitácora) es
   muestra el **laboratorio 2D** (`sections/mobile/MobileLab.tsx`, SVG).
 - **Hero**: en escritorio sigue siendo el video del brazo; en teléfonos es la
   credencial (`hero/HeroMobile.tsx`, sin brazo). Arranca recién cuando se abren las
-  puertas del vault; el `PageLoader` espera los modelos 3D con avance real
-  (`useCellPreload`, lista en `src/data/cellModels.ts`: actualizarla si cambia
-  la escena inicial).
+  puertas del vault; el `PageLoader` espera solo al Hero. La celda 3D carga en
+  paralelo y muestra su propio cartel "Cargando modelos 3D" (decisión de
+  rendimiento: antes las puertas retenían hasta ~8 MB de modelos).
 - **Piezas**: `sections/celda/` (escena, brazo con IK `kinematics.ts`,
   controlador `hooks/useCellController.ts` como máquina de estados
   ir→espera→volver, entornos `AssemblyLine*` (línea de montaje, por defecto) y

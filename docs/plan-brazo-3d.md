@@ -40,7 +40,7 @@ navegador).
   interactiva abajo. El Hero lo anuncia con un aviso ("Probá el laboratorio").
 - El video del Hero **no arranca** mientras se cargan los modelos 3D: espera a
   que se abran las puertas del vault (`PageLoader`), que ahora muestra el
-  avance real de la descarga (`useCellPreload`) y se abre cuando la escena ya
+  avance real de la descarga y se abre cuando la escena ya
   dibujó su primer cuadro. En una PC lenta no se pierde la animación.
 - Entornos: se sacó "Planta". Por defecto **Línea de montaje**; el segundo es
   un **Bosque genérico y lindo** (no pinos). Modelos gratis CC0 de Kenney

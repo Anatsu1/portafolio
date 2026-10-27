@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { MotionConfig } from "motion/react";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
@@ -14,36 +14,24 @@ import { MARQUEE_WORDS } from "./data";
 import Projects from "./components/sections/Projects";
 import Contact from "./components/sections/Contact";
 import { useCellSupport } from "./hooks/useCellSupport";
-import { useCellPreload } from "./hooks/useCellPreload";
-
-// Tope de espera por la celda 3D: si algo falla o la conexión es muy lenta, las
-// puertas se abren igual (la celda es opcional, la página tiene que abrir).
-const CELL_SAFETY_MS = 30_000;
 
 export default function App() {
   const [heroReady, setHeroReady] = useState(false);
-  const [cellReady, setCellReady] = useState(false);
   const cellSupported = useCellSupport();
-  const preload = useCellPreload(cellSupported);
 
-  useEffect(() => {
-    if (!cellSupported) return;
-    const safety = window.setTimeout(() => setCellReady(true), CELL_SAFETY_MS);
-    return () => window.clearTimeout(safety);
-  }, [cellSupported]);
-
-  // Las puertas del vault se abren cuando el Hero está listo Y (si hay celda
-  // 3D) sus modelos están cargados y la escena ya dibujó su primer cuadro.
-  const ready = heroReady && (!cellSupported || cellReady);
+  // Las puertas del vault se abren cuando el Hero está listo. La celda 3D ya no
+  // las retiene: se descarga en paralelo y, mientras llega, su propio cartel
+  // ("Cargando modelos 3D") ocupa su lugar en la página.
+  const ready = heroReady;
 
   return (
     <MotionConfig reducedMotion="user">
-      <PageLoader visible={!ready} progress={cellSupported ? (cellReady ? 1 : preload.progress * 0.97) : undefined} />
+      <PageLoader visible={!ready} />
       <ScrollProgress />
       <Navbar />
       <main>
         <Hero onReady={() => setHeroReady(true)} go={ready} labAvailable />
-        <Celda supported={cellSupported} onReady={() => setCellReady(true)} />
+        <Celda supported={cellSupported} />
         <MarqueeBand words={MARQUEE_WORDS} />
         <About />
         <Trayectoria />
