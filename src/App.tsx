@@ -23,6 +23,8 @@ const SCENE_MOUNT_DELAY_MS = 3000;
 export default function App() {
   const [heroReady, setHeroReady] = useState(false);
   const [doorsOpen, setDoorsOpen] = useState(false);
+  // El brazo del Hero (video + texto) arranca cuando las puertas están por terminar de abrirse.
+  const [heroGo, setHeroGo] = useState(false);
   const [mountScene, setMountScene] = useState(false);
   const cellSupported = useCellSupport();
   // Solo baja los archivos a la caché HTTP mientras el loader está a la vista
@@ -41,11 +43,11 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <PageLoader visible={!ready} onOpened={() => setDoorsOpen(true)} />
+      <PageLoader visible={!ready} onOpened={() => setDoorsOpen(true)} onNearlyOpen={() => setHeroGo(true)} />
       <ScrollProgress />
       <Navbar />
       <main>
-        <Hero onReady={() => setHeroReady(true)} go={ready} labAvailable />
+        <Hero onReady={() => setHeroReady(true)} go={heroGo} labAvailable />
         <Celda supported={cellSupported} mountScene={mountScene} />
         <MarqueeBand words={MARQUEE_WORDS} />
         <About />

@@ -8,6 +8,8 @@ type PageLoaderProps = {
   progress?: number;
   /** Las hojas terminaron de abrirse. */
   onOpened?: () => void;
+  /** Falta poco para que terminen de abrirse. */
+  onNearlyOpen?: () => void;
 };
 
 const RIVETS = Array.from({ length: 8 });
@@ -30,7 +32,7 @@ const RIVETS = Array.from({ length: 8 });
  * Tonos neutros (`heading`/`muted`/`border`), no colores de marca: mismo
  * look en claro/oscuro, sin adelantar la paleta de ninguna sección.
  */
-export default function PageLoader({ visible, progress, onOpened }: PageLoaderProps) {
+export default function PageLoader({ visible, progress, onOpened, onNearlyOpen }: PageLoaderProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const gearsRef = useRef<HTMLDivElement>(null);
   const leftDoorRef = useRef<HTMLDivElement>(null);
@@ -45,7 +47,7 @@ export default function PageLoader({ visible, progress, onOpened }: PageLoaderPr
     };
   }, [visible]);
 
-  usePageLoaderExit({ visible, rootRef, gearsRef, leftDoorRef, rightDoorRef, onOpened });
+  usePageLoaderExit({ visible, rootRef, gearsRef, leftDoorRef, rightDoorRef, onOpened, onNearlyOpen });
 
   return (
     <div ref={rootRef} aria-hidden className="fixed inset-0 z-[100] overflow-hidden">
@@ -56,7 +58,7 @@ export default function PageLoader({ visible, progress, onOpened }: PageLoaderPr
           degradé casi imperceptible contra bg-background). */}
       <div
         ref={leftDoorRef}
-        className="absolute inset-y-0 left-0 flex w-1/2 justify-end border-b border-r border-t border-border/25 bg-surface shadow-[inset_-16px_0_30px_-20px_rgb(var(--color-heading)/0.35)]"
+        className="absolute inset-y-0 left-0 flex w-1/2 will-change-transform justify-end border-b border-r border-t border-border/25 bg-surface shadow-[inset_-16px_0_30px_-20px_rgb(var(--color-heading)/0.35)]"
       >
         <div className="flex w-6 flex-col items-center justify-evenly py-10">
           {RIVETS.map((_, i) => (
@@ -66,7 +68,7 @@ export default function PageLoader({ visible, progress, onOpened }: PageLoaderPr
       </div>
       <div
         ref={rightDoorRef}
-        className="absolute inset-y-0 right-0 flex w-1/2 justify-start border-b border-l border-t border-border/25 bg-surface shadow-[inset_16px_0_30px_-20px_rgb(var(--color-heading)/0.35)]"
+        className="absolute inset-y-0 right-0 flex w-1/2 will-change-transform justify-start border-b border-l border-t border-border/25 bg-surface shadow-[inset_16px_0_30px_-20px_rgb(var(--color-heading)/0.35)]"
       >
         <div className="flex w-6 flex-col items-center justify-evenly py-10">
           {RIVETS.map((_, i) => (

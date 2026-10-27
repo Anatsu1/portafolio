@@ -11,6 +11,8 @@ type UsePageLoaderExitArgs = {
   rightDoorRef: RefObject<HTMLDivElement>;
   /** Se llama cuando las hojas terminaron de abrirse (o de inmediato con movimiento reducido). */
   onOpened?: () => void;
+  /** Falta un instante para que terminen de abrirse: ahí arranca el Hero (video y texto). */
+  onNearlyOpen?: () => void;
 };
 
 /**
@@ -31,6 +33,7 @@ export function usePageLoaderExit({
   leftDoorRef,
   rightDoorRef,
   onOpened,
+  onNearlyOpen,
 }: UsePageLoaderExitArgs) {
   const openedRef = useRef(false);
 
@@ -41,21 +44,34 @@ export function usePageLoaderExit({
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) {
       gsap.set(rootRef.current, { autoAlpha: 0, display: "none" });
+      onNearlyOpen?.();
       onOpened?.();
       return;
     }
 
+    // Fluidez: las hojas se mueven solo con transform (capa propia, ver
+    // PageLoader) y, apenas se apagan los engranajes, el bloque entero sale del
+    // render (display:none) para que no corran spins/flotadores CSS mientras
+    // las hojas se desplazan. El Hero espera a que falte poco para abrir.
+    gsap.set([leftDoorRef.current, rightDoorRef.current], { force3D: true });
     gsap
       .timeline({
-        defaults: { ease: "power3.inOut" },
-        // display:none (no solo invisible) para que dejen de correr los engranajes y flotadores CSS.
+        defaults: { ease: "power2.inOut" },
         onComplete: () => {
           gsap.set(rootRef.current, { autoAlpha: 0, display: "none" });
           onOpened?.();
         },
       })
-      .to(gearsRef.current, { opacity: 0, scale: 0.85, duration: 0.3 })
-      .to(leftDoorRef.current, { xPercent: -100, duration: 0.9 }, "+=0.1")
-      .to(rightDoorRef.current, { xPercent: 100, duration: 0.9 }, "<");
+      .to(gearsRef.current, {
+        opacity: 0,
+        scale: 0.85,
+        duration: 0.3,
+        onComplete: () => {
+          gsap.set(gearsRef.current, { display: "none" });
+        },
+      })
+      .to(leftDoorRef.current, { xPercent: -100, duration: 1.1 }, "+=0.1")
+      .to(rightDoorRef.current, { xPercent: 100, duration: 1.1 }, "<")
+      .call(() => onNearlyOpen?.(), undefined, ">-0.3");
   }, [visible]);
 }
