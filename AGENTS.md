@@ -767,12 +767,13 @@ fuente de verdad (decisiones, fases, pendientes, bitácora) es
   muestra el **laboratorio 2D** (`sections/mobile/MobileLab.tsx`, SVG).
 - **Hero**: en escritorio sigue siendo el video del brazo; en teléfonos es la
   credencial (`hero/HeroMobile.tsx`, sin brazo). Arranca recién cuando se abren las
-  puertas del vault; el `PageLoader` espera solo al Hero. Los modelos 3D se
-  bajan a la caché mientras tanto (`useCellPreload`, lista en
-  `src/data/cellModels.ts`) pero la escena se MONTA 3 s después de abrirse las
-  puertas (o antes si el visitante llega a la sección): construirla durante la
-  animación de las puertas/Hero la entrecortaba. Las fuentes de Google van
-  bloqueantes a propósito (async causaba reflujo de texto al abrir las puertas).
+  puertas del vault; el `PageLoader` espera al Hero, a la celda 3D lista
+  (`useCellPreload`, lista en `src/data/cellModels.ts`, + primer cuadro) y a
+  que la página termine de pintarse (`usePaintSettled`). Se probó abrir sin
+  esperar al 3D: entraba rápido pero la escena se armaba con la página a la
+  vista y el scroll se trababa; se prefiere un loader más largo. El Hero
+  (video + texto) arranca 0.6 s antes de que las puertas terminen de abrirse.
+  Las fuentes de Google van bloqueantes a propósito (async causaba reflujo).
 - **Piezas**: `sections/celda/` (escena, brazo con IK `kinematics.ts`,
   controlador `hooks/useCellController.ts` como máquina de estados
   ir→espera→volver, entornos `AssemblyLine*` (línea de montaje, por defecto) y

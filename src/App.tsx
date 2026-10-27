@@ -17,39 +17,39 @@ import { useCellSupport } from "./hooks/useCellSupport";
 import { useCellPreload } from "./hooks/useCellPreload";
 import { usePaintSettled } from "./hooks/usePaintSettled";
 
-// Margen tras abrirse las puertas antes de construir la escena 3D: el Hero está
-// en plena animación de entrada y armar la escena a la vez la entrecortaba.
-const SCENE_MOUNT_DELAY_MS = 3000;
+// Tope de espera por la celda 3D: si algo falla o la conexión es muy lenta, las
+// puertas se abren igual (la celda es opcional, la página tiene que abrir).
+const CELL_SAFETY_MS = 30_000;
 
 export default function App() {
   const [heroReady, setHeroReady] = useState(false);
-  const [doorsOpen, setDoorsOpen] = useState(false);
+  const [cellReady, setCellReady] = useState(false);
   // El brazo del Hero (video + texto) arranca cuando las puertas están por terminar de abrirse.
   const [heroGo, setHeroGo] = useState(false);
-  const [mountScene, setMountScene] = useState(false);
   const cellSupported = useCellSupport();
-  // Solo baja los archivos a la caché HTTP mientras el loader está a la vista
-  // (red, sin trabajo en el hilo principal): la construcción espera a las puertas.
-  useCellPreload(cellSupported);
+  const preload = useCellPreload(cellSupported);
 
   useEffect(() => {
-    if (!doorsOpen) return;
-    const t = window.setTimeout(() => setMountScene(true), SCENE_MOUNT_DELAY_MS);
-    return () => window.clearTimeout(t);
-  }, [doorsOpen]);
+    if (!cellSupported) return;
+    const safety = window.setTimeout(() => setCellReady(true), CELL_SAFETY_MS);
+    return () => window.clearTimeout(safety);
+  }, [cellSupported]);
 
-  // Las puertas del vault se abren cuando el Hero está listo; la celda 3D no las
-  // retiene: se descarga mientras tanto y se monta después (ver `mountScene`).
-  const ready = usePaintSettled(heroReady);
+  // Las puertas del vault se abren cuando el Hero Y la celda 3D (modelos
+  // cargados, shaders compilados, primer cuadro dibujado) están listos, y la
+  // página ya terminó de pintarse. Se prefiere un loader un poco más largo a
+  // abrir enseguida y que la escena se arme (y trabe el scroll) con la página
+  // a la vista.
+  const ready = usePaintSettled(heroReady && (!cellSupported || cellReady));
 
   return (
     <MotionConfig reducedMotion="user">
-      <PageLoader visible={!ready} onOpened={() => setDoorsOpen(true)} onNearlyOpen={() => setHeroGo(true)} />
+      <PageLoader visible={!ready} progress={cellSupported ? (cellReady ? 1 : preload.progress * 0.97) : undefined} onNearlyOpen={() => setHeroGo(true)} />
       <ScrollProgress />
       <Navbar />
       <main>
         <Hero onReady={() => setHeroReady(true)} go={heroGo} labAvailable />
-        <Celda supported={cellSupported} mountScene={mountScene} />
+        <Celda supported={cellSupported} onReady={() => setCellReady(true)} mountScene />
         <MarqueeBand words={MARQUEE_WORDS} />
         <About />
         <Trayectoria />
