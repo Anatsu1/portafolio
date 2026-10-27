@@ -44,12 +44,13 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-12px)" },
         },
-        // Respiración de luz de los chips de TOOLBOX. Solo box-shadow: el
-        // borde y el color se dejan a clases, para que el hover pueda
-        // pisarlos (una animación en curso le gana a una declaración suelta).
+        // Respiración de luz de los chips de TOOLBOX. Anima solo la opacidad
+        // de un pseudo-elemento que lleva la sombra (`.glow-chip::after`):
+        // animar box-shadow repinta en cada cuadro, y con ~30 chips pesaba en
+        // el teléfono; la opacidad corre en el compositor.
         glow: {
-          "0%, 100%": { boxShadow: "0 0 0 0 rgb(var(--color-brand-skills) / 0)" },
-          "50%": { boxShadow: "0 0 14px -2px rgb(var(--color-brand-skills) / 0.4)" },
+          "0%, 100%": { opacity: "0" },
+          "50%": { opacity: "1" },
         },
         // Banda de texto en bucle (MarqueeBand): recorre la mitad, porque el contenido va duplicado.
         marquee: {

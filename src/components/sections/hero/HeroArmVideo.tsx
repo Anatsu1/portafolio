@@ -4,9 +4,9 @@ import { useTheme } from "../../../hooks/useTheme";
 import HeroThemeLoader from "./HeroThemeLoader";
 import { useArmFollowCam } from "../../../hooks/useArmFollowCam";
 import armLightMp4 from "../../../assets/arm-light.mp4";
-import armLightPoster from "../../../assets/arm-light-poster.jpg";
+import armLightPoster from "../../../assets/arm-light-poster.webp";
 import armDarkMp4 from "../../../assets/arm-dark.mp4";
-import armDarkPoster from "../../../assets/arm-dark-poster.jpg";
+import armDarkPoster from "../../../assets/arm-dark-poster.webp";
 
 const ARM = {
   light: { mp4: armLightMp4, poster: armLightPoster },

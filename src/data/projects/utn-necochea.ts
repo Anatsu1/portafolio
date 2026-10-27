@@ -1,8 +1,8 @@
 import type { Project } from "./types";
-import capture01 from "../../assets/utn-necochea/utn-necochea-01.jpg";
-import capture02 from "../../assets/utn-necochea/utn-necochea-02.jpg";
-import capture03 from "../../assets/utn-necochea/utn-necochea-03.jpg";
-import capture04 from "../../assets/utn-necochea/utn-necochea-04.jpg";
+import capture01 from "../../assets/utn-necochea/utn-necochea-01.webp";
+import capture02 from "../../assets/utn-necochea/utn-necochea-02.webp";
+import capture03 from "../../assets/utn-necochea/utn-necochea-03.webp";
+import capture04 from "../../assets/utn-necochea/utn-necochea-04.webp";
 
 // Capturas 1910×943 (browser full-screen) re-escaladas a 1440×711.
 const ASPECT = "1910 / 943";

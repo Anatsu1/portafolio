@@ -115,7 +115,7 @@ src/
   assets/                    Videos del brazo (arm-{light,dark}.mp4) + posters
     prestarte/               Capturas de cada proyecto — una carpeta por proyecto
     utn-necochea/            (assets/<id-del-proyecto>/, 2-4 capturas que rotan
-                             en el carrusel, nombradas <id>-01.jpg, -02…)
+                             en el carrusel, nombradas <id>-01.webp, -02…)
 ```
 
 **Regla al agregar código:**
@@ -217,13 +217,13 @@ con proyectos reales, no con barras de porcentaje inventadas.
     la captura se ve completa, sin recorte lateral. Sin `aspect`, 16:9.
     Toda la media landscape de un proyecto debe compartir proporción (el
     escenario es uno solo: usa la del primer ítem). Las capturas se
-    re-escalan a 1440 de ancho (JPEG q88) y van en
+    re-escalan a 1440 de ancho (WebP q90) y van en
     `assets/<id-del-proyecto>/`.
     **Además, todos los proyectos comparten la misma proporción entre sí**
     (~1440×711, o sea ~2.02:1): si una ficha trae capturas más altas, su
     escenario crece y esa ficha se ve distinta de las demás. Cuando la
     captura original no tiene esa proporción se **recorta desde arriba**
-    (`magick foto.jpg -gravity North -crop 1440x711+0+0 +repage -quality 88 foto.jpg`),
+    (`magick foto.jpg -gravity North -crop 1440x711+0+0 +repage foto.jpg`, y luego `magick foto.jpg -quality 90 -define webp:method=6 foto.webp`),
     que es el mismo recorte que haría el carrusel con su `object-top`. Pasó
     con Mostrador, BeaStore y SATER, que venían 1440×900 y 1440×863.
   - **Videos**: mudos, loop, `preload="metadata"`. Solo el slide activo
@@ -578,7 +578,7 @@ que nadie scrollee. Reglas:
 **El video del brazo (`HeroArmVideo`):**
 - Assets en `src/assets/`: `arm-light.mp4` (azul/fondo claro) y
   `arm-dark.mp4` (verde/fondo oscuro), ambos 1080p, más
-  `arm-{light,dark}-poster.jpg` (frame 0 de cada uno).
+  `arm-{light,dark}-poster.webp` (frame 0 de cada uno).
   Se importan en el componente (Vite los fingerprintea). Son el render **completo
   sin texto** (generado con Google Flow/Veo), sin audio, con denoise y optimizados
   (~1–1.5 MB). **mp4-only** (h264 anda en todos lados; vp9/webm no comprimía mejor
@@ -767,9 +767,9 @@ fuente de verdad (decisiones, fases, pendientes, bitácora) es
   muestra el **laboratorio 2D** (`sections/mobile/MobileLab.tsx`, SVG).
 - **Hero**: en escritorio sigue siendo el video del brazo; en teléfonos es la
   credencial (`hero/HeroMobile.tsx`, sin brazo). Arranca recién cuando se abren las
-  puertas del vault; el `PageLoader` espera los modelos 3D con avance real
-  (`useCellPreload`, lista en `src/data/cellModels.ts`: actualizarla si cambia
-  la escena inicial).
+  puertas del vault; el `PageLoader` espera solo al Hero. La celda 3D carga en
+  paralelo y muestra su propio cartel "Cargando modelos 3D" (decisión de
+  rendimiento: antes las puertas retenían hasta ~8 MB de modelos).
 - **Piezas**: `sections/celda/` (escena, brazo con IK `kinematics.ts`,
   controlador `hooks/useCellController.ts` como máquina de estados
   ir→espera→volver, entornos `AssemblyLine*` (línea de montaje, por defecto) y
@@ -845,3 +845,20 @@ docker compose pull && docker compose up -d
 | Clases utilitarias globales (`.card`, etc.)      | `src/index.css`                                    |
 | Cómo se sirve en producción                      | `nginx.conf`, `Dockerfile`                          |
 | Cómo se despliega                                | `.github/workflows/deploy.yml`, README.md            |
+
+## Rendimiento (convenciones)
+
+- **Imágenes en WebP** (q90, `-define webp:method=6`), nunca JPG nuevo en `src/assets/`.
+  Dentro de carruseles, solo el primer `<img>` va eager; el resto
+  `loading="lazy" decoding="async"`.
+- **Animaciones infinitas solo con `transform`/`opacity`.** Animar `box-shadow`
+  o `text-shadow` repinta cada cuadro (por eso el chip de TOOLBOX usa
+  `.glow-chip::after` con opacidad). Los tweens infinitos de GSAP se pausan
+  fuera de pantalla (ver `useHeroReveal`).
+- **3D adaptativo** (`useCellQuality` + `PerformanceMonitor`): el `dpr` baja
+  solo si los FPS caen; equipos con ≤4 núcleos/≤4 GB/ahorro de datos arrancan
+  con tope 1.25. No bajar geometría ni efectos para "aliviar": se baja resolución.
+- **Fuentes** de Google no bloqueantes (`media="print"` + `onload`). El
+  `index.html` se sirve `no-cache`; `/assets/` y `/models/` usan `^~` en
+  nginx para que la regla por extensión no les pise el caché.
+- **Chunks**: `react` y `anim` (motion+gsap) separados vía `manualChunks`.

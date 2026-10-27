@@ -212,6 +212,21 @@ export function useHeroReveal(refs: UseHeroRevealArgs) {
     { scope: sectionRef }
   );
 
+  // Los pulsos del halo y del nombre son infinitos (el de text-shadow repinta
+  // texto en cada cuadro): con el Hero fuera de pantalla se pausan, y vuelven
+  // al scrollear de regreso.
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      const paused = !entry.isIntersecting;
+      pulseTweenRef.current?.paused(paused);
+      namePulseTweenRef.current?.paused(paused);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [sectionRef]);
+
   // El video se remonta y repite la animación en cada cambio de tema
   // (`key={theme}` en HeroArmVideo). Todo lo que quedó "encendido" acompaña
   // ese ciclo: se apaga apenas cambia el tema y se reactiva cuando el video

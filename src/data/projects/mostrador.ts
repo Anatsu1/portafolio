@@ -1,8 +1,8 @@
 import type { Project } from "./types";
-import capture01 from "../../assets/mostrador/mostrador-01.jpg";
-import capture02 from "../../assets/mostrador/mostrador-02.jpg";
-import capture03 from "../../assets/mostrador/mostrador-03.jpg";
-import capture04 from "../../assets/mostrador/mostrador-04.jpg";
+import capture01 from "../../assets/mostrador/mostrador-01.webp";
+import capture02 from "../../assets/mostrador/mostrador-02.webp";
+import capture03 from "../../assets/mostrador/mostrador-03.webp";
+import capture04 from "../../assets/mostrador/mostrador-04.webp";
 
 // No hay link de demo porque la aplicación necesita PHP, MySQL y filesystem
 // persistente: no entra en un hosting estático como Vercel. Los datos del

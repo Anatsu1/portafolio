@@ -13,10 +13,8 @@ const RIVETS = Array.from({ length: 8 });
 /**
  * Splash de entrada estilo puerta de refugio/vault: tapa toda la página
  * (Navbar incluido) mientras el Hero no está listo — texto revelado y video
- * con buffer suficiente para arrancar sin trabarse (ver `Hero`/`onReady`) — y,
- * en escritorio, mientras se descargan los modelos 3D de la celda y la escena
- * dibuja su primer cuadro (ver `useCellPreload`): las puertas se abren cuando
- * todo está cargado, así la pantalla de carga muestra un avance real.
+ * con buffer suficiente para arrancar sin trabarse (ver `Hero`/`onReady`). La celda
+ * 3D ya no retiene las puertas: carga en paralelo con su propio cartel.
  * Se muestra siempre, no solo en conexiones lentas: en visitas repetidas
  * con todo cacheado dura un instante, en la primera carga sin caché lo que
  * tarde el video en bufferear.

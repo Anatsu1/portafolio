@@ -1,9 +1,9 @@
 import type { Project } from "./types";
-import capture01 from "../../assets/portafolio/portafolio-01.jpg";
-import capture02 from "../../assets/portafolio/portafolio-02.jpg";
-import capture03 from "../../assets/portafolio/portafolio-03.jpg";
-import capture04 from "../../assets/portafolio/portafolio-04.jpg";
-import capture05 from "../../assets/portafolio/portafolio-05.jpg";
+import capture01 from "../../assets/portafolio/portafolio-01.webp";
+import capture02 from "../../assets/portafolio/portafolio-02.webp";
+import capture03 from "../../assets/portafolio/portafolio-03.webp";
+import capture04 from "../../assets/portafolio/portafolio-04.webp";
+import capture05 from "../../assets/portafolio/portafolio-05.webp";
 
 // Capturas del propio sitio (viewport de escritorio, tema claro), escaladas a
 // 1440 de ancho y recortadas desde arriba a 1440×711 (la proporción común de

@@ -15,8 +15,8 @@ import { DEFAULT_ENV, ENVIRONMENTS, type EnvId } from "./celda/environments";
 import type { CellCommands, CellMode } from "../../hooks/useCellController";
 
 // El chunk con three y la escena es lazy: no entra al paquete principal. En
-// escritorio arranca a cargarse al abrir la página (ver `useCellPreload`), así
-// que el loader del vault espera a que esté listo.
+// escritorio arranca a cargarse al montar la sección, en paralelo al Hero; el
+// loader del vault ya no lo espera (la escena muestra su propio cartel de carga).
 const CellScene = lazy(() => import("./celda/CellScene"));
 // Respaldo 2D (teléfonos, sin WebGL, movimiento reducido o si el 3D falló).
 // También lazy: el escritorio con 3D nunca lo baja.

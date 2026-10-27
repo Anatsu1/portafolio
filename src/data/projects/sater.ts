@@ -1,6 +1,6 @@
 import type { Project } from "./types";
-import capture01 from "../../assets/sater/sater-01.jpg";
-import capture02 from "../../assets/sater/sater-02.jpg";
+import capture01 from "../../assets/sater/sater-01.webp";
+import capture02 from "../../assets/sater/sater-02.webp";
 
 // El stack lleva sólo SQLite a propósito: VB.NET, Windows Forms y Access no
 // son nodos del árbol de skills y se cuentan en el resumen, porque no son

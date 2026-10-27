@@ -1,7 +1,7 @@
 import type { Project } from "./types";
-import capture01 from "../../assets/manarem/manarem-01.jpg";
-import capture02 from "../../assets/manarem/manarem-02.jpg";
-import capture03 from "../../assets/manarem/manarem-03.jpg";
+import capture01 from "../../assets/manarem/manarem-01.webp";
+import capture02 from "../../assets/manarem/manarem-02.webp";
+import capture03 from "../../assets/manarem/manarem-03.webp";
 
 // Capturas 1910×943 (browser full-screen) re-escaladas a 1440×711, sacadas
 // contra la demo de Vercel con el navegador headless.
