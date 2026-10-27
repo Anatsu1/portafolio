@@ -1,7 +1,7 @@
 import type { Project } from "./types";
-import capture01 from "../../assets/vps/vps-01.jpg";
-import capture02 from "../../assets/vps/vps-02.jpg";
-import capture03 from "../../assets/vps/vps-03.jpg";
+import capture01 from "../../assets/vps/vps-01.webp";
+import capture02 from "../../assets/vps/vps-02.webp";
+import capture03 from "../../assets/vps/vps-03.webp";
 
 // Capturas de los paneles del propio servidor, con los datos sensibles
 // pixelados ANTES de entrar al repo: versiones exactas de las imágenes

@@ -126,7 +126,14 @@ export default function ProjectCarousel({ media, title, autoplay = false }: Proj
                   className={fit}
                 />
               ) : (
-                <img src={item.src} alt={`Captura ${i + 1} de ${title}`} className={fit} />
+                <img
+                  src={item.src}
+                  alt={`Captura ${i + 1} de ${title}`}
+                  className={fit}
+                  // Solo la portada va de entrada: las demás capturas rotan bajo demanda.
+                  loading={i === 0 ? undefined : "lazy"}
+                  decoding="async"
+                />
               )}
             </div>
           );

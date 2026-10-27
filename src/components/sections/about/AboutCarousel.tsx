@@ -1,8 +1,8 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCarousel } from "../../../hooks/useCarousel";
-import aboutLinkedin from "../../../assets/about-linkedin.jpg";
-import about1 from "../../../assets/about-1.jpg";
-import about2 from "../../../assets/about-2.jpg";
+import aboutLinkedin from "../../../assets/about-linkedin.webp";
+import about1 from "../../../assets/about-1.webp";
+import about2 from "../../../assets/about-2.webp";
 
 // Foto de LinkedIn primero, después explicando a varias personas, después
 // la de uno solo.
@@ -23,6 +23,8 @@ export default function AboutCarousel() {
             key={i}
             src={src}
             alt={`Cesar Fernandez — foto ${i + 1}`}
+            loading={i === 0 ? undefined : "lazy"}
+            decoding="async"
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
               i === index ? "opacity-100" : "opacity-0"
             }`}

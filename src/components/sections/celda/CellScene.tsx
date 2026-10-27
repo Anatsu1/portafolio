@@ -1,6 +1,6 @@
 import { Suspense, useEffect } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { ContactShadows, useProgress } from "@react-three/drei";
+import { ContactShadows, PerformanceMonitor, useProgress } from "@react-three/drei";
 import type { MutableRefObject } from "react";
 import CellStage from "./CellStage";
 import type { CellCommands, CellMode } from "../../../hooks/useCellController";
@@ -8,6 +8,7 @@ import CellEnvironment from "./CellEnvironment";
 import type { EnvId } from "./environments";
 import { CAMERA_POS, CAMERA_TARGET } from "./cellLayout";
 import ViewShift from "./ViewShift";
+import { useCellQuality } from "../../../hooks/useCellQuality";
 
 type CellSceneProps = {
   /** Se llama una vez: los modelos cargaron y la escena ya dibujó sus primeros cuadros. */
@@ -82,16 +83,20 @@ function LoadingOverlay() {
 
 export default function CellScene({ onReady, onEnvReady, theme, active, env, mode, panelOpen, showing, commandsRef, onShowing, onDelivered, onPick }: CellSceneProps) {
   const rim = theme === "dark" ? "#34d399" : "#3b82f6";
+  const { dpr, onChange, onFallback } = useCellQuality();
 
   return (
     <>
     <Canvas
       frameloop={active ? "always" : "demand"}
-      dpr={[1, 1.75]}
+      dpr={dpr}
       camera={{ position: [CAMERA_POS.x, CAMERA_POS.y, CAMERA_POS.z], fov: 34, near: 0.1, far: 400 }}
-      gl={{ antialias: true, alpha: true }}
+      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       onCreated={({ camera }) => camera.lookAt(CAMERA_TARGET.x, CAMERA_TARGET.y, CAMERA_TARGET.z)}
     >
+      {/* Mide los FPS reales y ajusta la resolución (ver useCellQuality). */}
+      <PerformanceMonitor onChange={onChange} onFallback={onFallback} flipflops={3} />
+
       {/* El entorno va en su propio Suspense: al cambiar de entorno (carga y
           construcción pesadas) el brazo y las cajas no desaparecen de la escena. */}
       <Suspense fallback={null}>

@@ -1,5 +1,5 @@
 import type { Project } from "./types";
-import capture01 from "../../assets/para-vestir-santos/pvs-01.jpg";
+import capture01 from "../../assets/para-vestir-santos/pvs-01.webp";
 
 // Cliente real, nombrado con su permiso. Sin repo público. La captura es
 // del estado actual (26/10/2026): la base de la aplicación funciona y las

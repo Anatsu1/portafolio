@@ -1,10 +1,10 @@
 import type { Project } from "./types";
-import capture01 from "../../assets/migracion-legacy/migracion-01.jpg";
-import capture02 from "../../assets/migracion-legacy/migracion-02.jpg";
-import capture03 from "../../assets/migracion-legacy/migracion-03.jpg";
-import capture04 from "../../assets/migracion-legacy/migracion-04.jpg";
+import capture01 from "../../assets/migracion-legacy/migracion-01.webp";
+import capture02 from "../../assets/migracion-legacy/migracion-02.webp";
+import capture03 from "../../assets/migracion-legacy/migracion-03.webp";
+import capture04 from "../../assets/migracion-legacy/migracion-04.webp";
 import arranque from "../../assets/migracion-legacy/migracion-arranque.mp4";
-import arranquePoster from "../../assets/migracion-legacy/migracion-arranque-poster.jpg";
+import arranquePoster from "../../assets/migracion-legacy/migracion-arranque-poster.webp";
 
 // Cliente real que por ahora no se nombra. Las capturas salen de la demo
 // con datos sintéticos (50 unidades y usuarios inventados) y el nombre de

@@ -37,14 +37,15 @@ export function usePageLoaderExit({
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) {
-      gsap.set(rootRef.current, { autoAlpha: 0 });
+      gsap.set(rootRef.current, { autoAlpha: 0, display: "none" });
       return;
     }
 
     gsap
       .timeline({
         defaults: { ease: "power3.inOut" },
-        onComplete: () => gsap.set(rootRef.current, { autoAlpha: 0 }),
+        // display:none (no solo invisible) para que dejen de correr los engranajes y flotadores CSS.
+        onComplete: () => gsap.set(rootRef.current, { autoAlpha: 0, display: "none" }),
       })
       .to(gearsRef.current, { opacity: 0, scale: 0.85, duration: 0.3 })
       .to(leftDoorRef.current, { xPercent: -100, duration: 0.9 }, "+=0.1")

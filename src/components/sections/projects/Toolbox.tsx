@@ -68,7 +68,7 @@ export default function Toolbox() {
                       className={`group inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors duration-300 ${
                         lit
                           ? "border-solid border-brand-skills bg-brand-skills/10 text-heading shadow-[0_0_16px_-2px_rgb(var(--color-brand-skills)/0.55)]"
-                          : "animate-glow border-dashed border-brand-skills/30 text-body hover:border-brand-skills/70 hover:text-heading"
+                          : "glow-chip border-dashed border-brand-skills/30 text-body hover:border-brand-skills/70 hover:text-heading"
                       }`}
                     >
                       {/* La marca se pinta con `currentColor`: hereda el color

@@ -71,6 +71,23 @@
 }
 
 @layer components {
+  /* Chip con luz que respira (TOOLBOX): la sombra es estática y vive en el
+     ::after; lo único que se anima es su opacidad (ver keyframe `glow`). El
+     delay escalonado lo pone el chip en línea y el pseudo-elemento lo hereda. */
+  .glow-chip {
+    position: relative;
+  }
+  .glow-chip::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 14px -2px rgb(var(--color-brand-skills) / 0.4);
+    opacity: 0;
+    @apply animate-glow;
+    animation-delay: inherit;
+  }
   /* Franja de seguridad amarillo/negro (la de las cajas y el vault). */
   .hazard-stripe {
     background-image: repeating-linear-gradient(135deg, #d9a400 0 10px, #14181a 10px 20px);

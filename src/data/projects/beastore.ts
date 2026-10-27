@@ -1,8 +1,8 @@
 import type { Project } from "./types";
-import capture01 from "../../assets/beastore/beastore-01.jpg";
-import capture02 from "../../assets/beastore/beastore-02.jpg";
-import capture03 from "../../assets/beastore/beastore-03.jpg";
-import capture04 from "../../assets/beastore/beastore-04.jpg";
+import capture01 from "../../assets/beastore/beastore-01.webp";
+import capture02 from "../../assets/beastore/beastore-02.webp";
+import capture03 from "../../assets/beastore/beastore-03.webp";
+import capture04 from "../../assets/beastore/beastore-04.webp";
 
 // No hay demo online porque necesita una instancia de MongoDB propia; se
 // corre en local con `./mvnw spring-boot:run`.
