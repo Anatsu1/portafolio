@@ -15,6 +15,7 @@ import Projects from "./components/sections/Projects";
 import Contact from "./components/sections/Contact";
 import { useCellSupport } from "./hooks/useCellSupport";
 import { useCellPreload } from "./hooks/useCellPreload";
+import { usePaintSettled } from "./hooks/usePaintSettled";
 
 // Margen tras abrirse las puertas antes de construir la escena 3D: el Hero está
 // en plena animación de entrada y armar la escena a la vez la entrecortaba.
@@ -39,7 +40,7 @@ export default function App() {
 
   // Las puertas del vault se abren cuando el Hero está listo; la celda 3D no las
   // retiene: se descarga mientras tanto y se monta después (ver `mountScene`).
-  const ready = heroReady;
+  const ready = usePaintSettled(heroReady);
 
   return (
     <MotionConfig reducedMotion="user">

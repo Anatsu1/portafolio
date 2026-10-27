@@ -56,7 +56,7 @@ export function usePageLoaderExit({
     gsap.set([leftDoorRef.current, rightDoorRef.current], { force3D: true });
     gsap
       .timeline({
-        defaults: { ease: "power2.inOut" },
+        defaults: { ease: "power1.inOut" },
         onComplete: () => {
           gsap.set(rootRef.current, { autoAlpha: 0, display: "none" });
           onOpened?.();
@@ -65,13 +65,13 @@ export function usePageLoaderExit({
       .to(gearsRef.current, {
         opacity: 0,
         scale: 0.85,
-        duration: 0.3,
+        duration: 0.4,
         onComplete: () => {
           gsap.set(gearsRef.current, { display: "none" });
         },
       })
-      .to(leftDoorRef.current, { xPercent: -100, duration: 1.1 }, "+=0.1")
-      .to(rightDoorRef.current, { xPercent: 100, duration: 1.1 }, "<")
-      .call(() => onNearlyOpen?.(), undefined, ">-0.3");
+      .to(leftDoorRef.current, { xPercent: -100, duration: 1.4 }, "+=0.1")
+      .to(rightDoorRef.current, { xPercent: 100, duration: 1.4 }, "<")
+      .call(() => onNearlyOpen?.(), undefined, ">-0.6");
   }, [visible]);
 }
