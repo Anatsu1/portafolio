@@ -6,6 +6,8 @@ type PageLoaderProps = {
   visible: boolean;
   /** 0..1: avance real de lo que se está cargando (modelos 3D incluidos). */
   progress?: number;
+  /** Las hojas terminaron de abrirse. */
+  onOpened?: () => void;
 };
 
 const RIVETS = Array.from({ length: 8 });
@@ -14,7 +16,8 @@ const RIVETS = Array.from({ length: 8 });
  * Splash de entrada estilo puerta de refugio/vault: tapa toda la página
  * (Navbar incluido) mientras el Hero no está listo — texto revelado y video
  * con buffer suficiente para arrancar sin trabarse (ver `Hero`/`onReady`). La celda
- * 3D ya no retiene las puertas: carga en paralelo con su propio cartel.
+ * 3D descarga mientras tanto, pero no se monta hasta que las puertas terminan
+ * de abrirse (ver `App`): construir la escena en pleno movimiento lo entrecortaba.
  * Se muestra siempre, no solo en conexiones lentas: en visitas repetidas
  * con todo cacheado dura un instante, en la primera carga sin caché lo que
  * tarde el video en bufferear.
@@ -27,7 +30,7 @@ const RIVETS = Array.from({ length: 8 });
  * Tonos neutros (`heading`/`muted`/`border`), no colores de marca: mismo
  * look en claro/oscuro, sin adelantar la paleta de ninguna sección.
  */
-export default function PageLoader({ visible, progress }: PageLoaderProps) {
+export default function PageLoader({ visible, progress, onOpened }: PageLoaderProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const gearsRef = useRef<HTMLDivElement>(null);
   const leftDoorRef = useRef<HTMLDivElement>(null);
@@ -42,7 +45,7 @@ export default function PageLoader({ visible, progress }: PageLoaderProps) {
     };
   }, [visible]);
 
-  usePageLoaderExit({ visible, rootRef, gearsRef, leftDoorRef, rightDoorRef });
+  usePageLoaderExit({ visible, rootRef, gearsRef, leftDoorRef, rightDoorRef, onOpened });
 
   return (
     <div ref={rootRef} aria-hidden className="fixed inset-0 z-[100] overflow-hidden">

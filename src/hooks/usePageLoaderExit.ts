@@ -9,6 +9,8 @@ type UsePageLoaderExitArgs = {
   gearsRef: RefObject<HTMLDivElement>;
   leftDoorRef: RefObject<HTMLDivElement>;
   rightDoorRef: RefObject<HTMLDivElement>;
+  /** Se llama cuando las hojas terminaron de abrirse (o de inmediato con movimiento reducido). */
+  onOpened?: () => void;
 };
 
 /**
@@ -28,6 +30,7 @@ export function usePageLoaderExit({
   gearsRef,
   leftDoorRef,
   rightDoorRef,
+  onOpened,
 }: UsePageLoaderExitArgs) {
   const openedRef = useRef(false);
 
@@ -38,6 +41,7 @@ export function usePageLoaderExit({
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) {
       gsap.set(rootRef.current, { autoAlpha: 0, display: "none" });
+      onOpened?.();
       return;
     }
 
@@ -45,7 +49,10 @@ export function usePageLoaderExit({
       .timeline({
         defaults: { ease: "power3.inOut" },
         // display:none (no solo invisible) para que dejen de correr los engranajes y flotadores CSS.
-        onComplete: () => gsap.set(rootRef.current, { autoAlpha: 0, display: "none" }),
+        onComplete: () => {
+          gsap.set(rootRef.current, { autoAlpha: 0, display: "none" });
+          onOpened?.();
+        },
       })
       .to(gearsRef.current, { opacity: 0, scale: 0.85, duration: 0.3 })
       .to(leftDoorRef.current, { xPercent: -100, duration: 0.9 }, "+=0.1")

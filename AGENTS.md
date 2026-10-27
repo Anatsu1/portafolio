@@ -767,9 +767,12 @@ fuente de verdad (decisiones, fases, pendientes, bitácora) es
   muestra el **laboratorio 2D** (`sections/mobile/MobileLab.tsx`, SVG).
 - **Hero**: en escritorio sigue siendo el video del brazo; en teléfonos es la
   credencial (`hero/HeroMobile.tsx`, sin brazo). Arranca recién cuando se abren las
-  puertas del vault; el `PageLoader` espera solo al Hero. La celda 3D carga en
-  paralelo y muestra su propio cartel "Cargando modelos 3D" (decisión de
-  rendimiento: antes las puertas retenían hasta ~8 MB de modelos).
+  puertas del vault; el `PageLoader` espera solo al Hero. Los modelos 3D se
+  bajan a la caché mientras tanto (`useCellPreload`, lista en
+  `src/data/cellModels.ts`) pero la escena se MONTA 3 s después de abrirse las
+  puertas (o antes si el visitante llega a la sección): construirla durante la
+  animación de las puertas/Hero la entrecortaba. Las fuentes de Google van
+  bloqueantes a propósito (async causaba reflujo de texto al abrir las puertas).
 - **Piezas**: `sections/celda/` (escena, brazo con IK `kinematics.ts`,
   controlador `hooks/useCellController.ts` como máquina de estados
   ir→espera→volver, entornos `AssemblyLine*` (línea de montaje, por defecto) y
@@ -858,7 +861,7 @@ docker compose pull && docker compose up -d
 - **3D adaptativo** (`useCellQuality` + `PerformanceMonitor`): el `dpr` baja
   solo si los FPS caen; equipos con ≤4 núcleos/≤4 GB/ahorro de datos arrancan
   con tope 1.25. No bajar geometría ni efectos para "aliviar": se baja resolución.
-- **Fuentes** de Google no bloqueantes (`media="print"` + `onload`). El
+- **Fuentes** de Google bloqueantes (ver Hero/puertas). El
   `index.html` se sirve `no-cache`; `/assets/` y `/models/` usan `^~` en
   nginx para que la regla por extensión no les pise el caché.
 - **Chunks**: `react` y `anim` (motion+gsap) separados vía `manualChunks`.

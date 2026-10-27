@@ -15,8 +15,9 @@ import { DEFAULT_ENV, ENVIRONMENTS, type EnvId } from "./celda/environments";
 import type { CellCommands, CellMode } from "../../hooks/useCellController";
 
 // El chunk con three y la escena es lazy: no entra al paquete principal. En
-// escritorio arranca a cargarse al montar la sección, en paralelo al Hero; el
-// loader del vault ya no lo espera (la escena muestra su propio cartel de carga).
+// escritorio sus archivos se descargan mientras el loader del vault está a la
+// vista (ver `useCellPreload`), pero la escena se monta recién cuando las
+// puertas terminaron de abrirse (`mountScene`) o el visitante llega a la sección.
 const CellScene = lazy(() => import("./celda/CellScene"));
 // Respaldo 2D (teléfonos, sin WebGL, movimiento reducido o si el 3D falló).
 // También lazy: el escritorio con 3D nunca lo baja.
@@ -33,11 +34,15 @@ type CeldaProps = {
   supported: boolean;
   /** La escena cargó sus modelos y dibujó su primer cuadro. */
   onReady?: () => void;
+  /** Ya pasó el momento de las puertas del vault: se puede construir la escena. */
+  mountScene?: boolean;
 };
 
-export default function Celda({ supported, onReady }: CeldaProps) {
+export default function Celda({ supported, onReady, mountScene = false }: CeldaProps) {
   const { theme } = useTheme();
-  const { ref, visible } = useInViewport<HTMLDivElement>();
+  const { ref, visible, everSeen } = useInViewport<HTMLDivElement>();
+  // Si el visitante llega a la celda antes del plazo, se monta igual.
+  const sceneOn = mountScene || everSeen;
   // `env` es lo que eligió el visitante; `shownEnv` es el que dibuja la escena. Se
   // separan para mostrar el cartel de carga ANTES de empezar el trabajo pesado de
   // construir el entorno nuevo (si no, la página se congela sin avisar).
@@ -185,6 +190,7 @@ export default function Celda({ supported, onReady }: CeldaProps) {
                 </div>
               }
             >
+              {sceneOn ? (
               <CellScene
                 theme={shownTheme}
                 active={visible}
@@ -199,6 +205,11 @@ export default function Celda({ supported, onReady }: CeldaProps) {
                 onDelivered={setDelivered}
                 onPick={pick}
               />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm uppercase tracking-[0.2em] text-muted">
+                  Cargando celda…
+                </div>
+              )}
             </Suspense>
           </CellErrorBoundary>
           <AnimatePresence>

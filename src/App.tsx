@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MotionConfig } from "motion/react";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
@@ -14,24 +14,39 @@ import { MARQUEE_WORDS } from "./data";
 import Projects from "./components/sections/Projects";
 import Contact from "./components/sections/Contact";
 import { useCellSupport } from "./hooks/useCellSupport";
+import { useCellPreload } from "./hooks/useCellPreload";
+
+// Margen tras abrirse las puertas antes de construir la escena 3D: el Hero está
+// en plena animación de entrada y armar la escena a la vez la entrecortaba.
+const SCENE_MOUNT_DELAY_MS = 3000;
 
 export default function App() {
   const [heroReady, setHeroReady] = useState(false);
+  const [doorsOpen, setDoorsOpen] = useState(false);
+  const [mountScene, setMountScene] = useState(false);
   const cellSupported = useCellSupport();
+  // Solo baja los archivos a la caché HTTP mientras el loader está a la vista
+  // (red, sin trabajo en el hilo principal): la construcción espera a las puertas.
+  useCellPreload(cellSupported);
 
-  // Las puertas del vault se abren cuando el Hero está listo. La celda 3D ya no
-  // las retiene: se descarga en paralelo y, mientras llega, su propio cartel
-  // ("Cargando modelos 3D") ocupa su lugar en la página.
+  useEffect(() => {
+    if (!doorsOpen) return;
+    const t = window.setTimeout(() => setMountScene(true), SCENE_MOUNT_DELAY_MS);
+    return () => window.clearTimeout(t);
+  }, [doorsOpen]);
+
+  // Las puertas del vault se abren cuando el Hero está listo; la celda 3D no las
+  // retiene: se descarga mientras tanto y se monta después (ver `mountScene`).
   const ready = heroReady;
 
   return (
     <MotionConfig reducedMotion="user">
-      <PageLoader visible={!ready} />
+      <PageLoader visible={!ready} onOpened={() => setDoorsOpen(true)} />
       <ScrollProgress />
       <Navbar />
       <main>
         <Hero onReady={() => setHeroReady(true)} go={ready} labAvailable />
-        <Celda supported={cellSupported} />
+        <Celda supported={cellSupported} mountScene={mountScene} />
         <MarqueeBand words={MARQUEE_WORDS} />
         <About />
         <Trayectoria />
